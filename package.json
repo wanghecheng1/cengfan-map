@@ -1,0 +1,8 @@
+{
+  "name": "cengfan-map",
+  "version": "1.0.0",
+  "description": "高中同学全国蹭饭图 - Netlify部署版",
+  "dependencies": {
+    "@netlify/blobs": "^7.3.0"
+  }
+}
