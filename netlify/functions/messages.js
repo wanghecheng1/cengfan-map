@@ -1,6 +1,11 @@
 const { getStore } = require('@netlify/blobs');
 
-const getMessagesStore = () => getStore('messages');
+const getMessagesStore = () => {
+  const options = {};
+  if (process.env.NETLIFY_SITE_ID) options.siteID = process.env.NETLIFY_SITE_ID;
+  if (process.env.NETLIFY_TOKEN) options.token = process.env.NETLIFY_TOKEN;
+  return getStore('messages', options);
+};
 
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'admin-token-cengfan-2024';
 
