@@ -831,6 +831,12 @@
         return headers;
       },
 
+      // 云端操作失败时，标记为不可用，后续全部走本地
+      _markCloudFailed() {
+        this._useCloud = false;
+        console.warn('[DataProvider] 云端不可用，已切换为本地模式');
+      },
+
       // ===== 学生档案 =====
       async getStudents() {
         const cloudOk = await this._isCloudAvailable();
@@ -844,8 +850,13 @@
                 idCounter = Math.max(...data.map(s => s.id), 0) + 1;
               }
               return data;
+            } else {
+              this._markCloudFailed();
             }
-          } catch (e) { console.warn('云端获取学生失败，使用本地:', e); }
+          } catch (e) {
+            console.warn('云端获取学生失败，使用本地:', e);
+            this._markCloudFailed();
+          }
         }
         const local = localStorage.getItem('cengfan_students');
         if (local) {
@@ -875,8 +886,13 @@
               const saved = await res.json();
               studentsStore.list.push(saved);
               return saved;
+            } else {
+              this._markCloudFailed();
             }
-          } catch (e) { console.warn('云端添加失败，使用本地:', e); }
+          } catch (e) {
+            console.warn('云端添加失败，使用本地:', e);
+            this._markCloudFailed();
+          }
         }
         studentsStore.list.push(newItem);
         localStorage.setItem('cengfan_students', JSON.stringify(studentsStore.list));
@@ -897,8 +913,13 @@
               const idx = studentsStore.list.findIndex(s => s.id == id);
               if (idx > -1) studentsStore.list[idx] = saved;
               return saved;
+            } else {
+              this._markCloudFailed();
             }
-          } catch (e) { console.warn('云端更新失败:', e); }
+          } catch (e) {
+            console.warn('云端更新失败:', e);
+            this._markCloudFailed();
+          }
         }
         const idx = studentsStore.list.findIndex(s => s.id == id);
         if (idx > -1) {
@@ -920,8 +941,13 @@
               const idx = studentsStore.list.findIndex(s => s.id == id);
               if (idx > -1) studentsStore.list.splice(idx, 1);
               return true;
+            } else {
+              this._markCloudFailed();
             }
-          } catch (e) { console.warn('云端删除失败:', e); }
+          } catch (e) {
+            console.warn('云端删除失败:', e);
+            this._markCloudFailed();
+          }
         }
         const idx = studentsStore.list.findIndex(s => s.id == id);
         if (idx > -1) {
@@ -946,8 +972,13 @@
                 appIdCounter = Math.max(...data.map(s => s.id), 0) + 1;
               }
               return data;
+            } else {
+              this._markCloudFailed();
             }
-          } catch (e) { console.warn('云端获取待审核失败:', e); }
+          } catch (e) {
+            console.warn('云端获取待审核失败:', e);
+            this._markCloudFailed();
+          }
         }
         const local = localStorage.getItem('cengfan_pending');
         if (local) {
@@ -977,8 +1008,13 @@
               const saved = await res.json();
               pendingApplications.list.push(saved);
               return saved;
+            } else {
+              this._markCloudFailed();
             }
-          } catch (e) { console.warn('云端提交申请失败，使用本地:', e); }
+          } catch (e) {
+            console.warn('云端提交申请失败，使用本地:', e);
+            this._markCloudFailed();
+          }
         }
         pendingApplications.list.push(newItem);
         localStorage.setItem('cengfan_pending', JSON.stringify(pendingApplications.list));
@@ -997,8 +1033,13 @@
               const idx = pendingApplications.list.findIndex(s => s.id == id);
               if (idx > -1) pendingApplications.list.splice(idx, 1);
               return true;
+            } else {
+              this._markCloudFailed();
             }
-          } catch (e) { console.warn('云端删除待审核失败:', e); }
+          } catch (e) {
+            console.warn('云端删除待审核失败:', e);
+            this._markCloudFailed();
+          }
         }
         const idx = pendingApplications.list.findIndex(s => s.id == id);
         if (idx > -1) {
@@ -1021,8 +1062,13 @@
                 msgIdCounter = Math.max(...data.map(m => m.id), 0) + 1;
               }
               return data;
+            } else {
+              this._markCloudFailed();
             }
-          } catch (e) { console.warn('云端获取留言失败，使用本地:', e); }
+          } catch (e) {
+            console.warn('云端获取留言失败，使用本地:', e);
+            this._markCloudFailed();
+          }
         }
         const local = localStorage.getItem('cengfan_messages');
         if (local) {
@@ -1054,8 +1100,13 @@
               const saved = await res.json();
               messagesStore.list.push(saved);
               return saved;
+            } else {
+              this._markCloudFailed();
             }
-          } catch (e) { console.warn('云端留言失败，使用本地:', e); }
+          } catch (e) {
+            console.warn('云端留言失败，使用本地:', e);
+            this._markCloudFailed();
+          }
         }
         messagesStore.list.push(newItem);
         localStorage.setItem('cengfan_messages', JSON.stringify(messagesStore.list));
@@ -1074,8 +1125,13 @@
               const idx = messagesStore.list.findIndex(m => m.id == id);
               if (idx > -1) messagesStore.list.splice(idx, 1);
               return true;
+            } else {
+              this._markCloudFailed();
             }
-          } catch (e) { console.warn('云端删除留言失败:', e); }
+          } catch (e) {
+            console.warn('云端删除留言失败:', e);
+            this._markCloudFailed();
+          }
         }
         const idx = messagesStore.list.findIndex(m => m.id == id);
         if (idx > -1) {
@@ -1105,7 +1161,10 @@
               }
             }
             return false;
-          } catch (e) { console.warn('云端登录失败，尝试本地:', e); }
+          } catch (e) {
+            console.warn('云端登录失败，尝试本地:', e);
+            this._markCloudFailed();
+          }
         }
         if (password === 'I_LV_WHC') {
           adminToken = 'local-admin';
