@@ -1,1 +1,16 @@
-[]
+[
+  {
+    "id": "jr_1785339782640_217",
+    "studentId": 1785296708731,
+    "studentName": "钱淼",
+    "communityId": "c_1785339389565_234",
+    "communityName": "奶龙一族",
+    "applyNote": "喜欢奶龙尸块",
+    "status": "pending",
+    "created_at": "2026-07-29 23:43",
+    "decided_by_role": null,
+    "decided_by_id": null,
+    "decided_at": null,
+    "rejectReason": ""
+  }
+]
