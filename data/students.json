@@ -541,5 +541,22 @@
     "looking_for_food": false,
     "longitude": 113.42502251774289,
     "latitude": 23.186038614091053
+  },
+  {
+    "id": 1785300360297,
+    "created_at": "2026-07-29 12:46",
+    "nickname": "张津瑞",
+    "province": "广东",
+    "city": "广州",
+    "university": "逸仙大学",
+    "major": "汉语言",
+    "hobbies": [
+      "writing"
+    ],
+    "wechat": "",
+    "qq": "",
+    "looking_for_food": false,
+    "longitude": 113.1705949489031,
+    "latitude": 23.209762531400163
   }
 ]
