@@ -180,5 +180,19 @@
     "longitude": 123.537195786292,
     "latitude": 41.827215145792564,
     "id": 1785293562138
+  },
+  {
+    "nickname": "卜睿杰",
+    "province": "天津",
+    "city": "天津市",
+    "university": "天津大学",
+    "major": "",
+    "hobbies": [],
+    "wechat": "",
+    "qq": "",
+    "looking_for_food": false,
+    "longitude": 117.23687270347129,
+    "latitude": 39.12588513056693,
+    "id": 1785293664888
   }
 ]
