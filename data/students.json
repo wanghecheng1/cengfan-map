@@ -102,5 +102,19 @@
     "longitude": 118.75452271458481,
     "latitude": 32.07185724930759,
     "id": 1785293337359
+  },
+  {
+    "nickname": "杨子江",
+    "province": "安徽",
+    "city": "合肥",
+    "university": "中国科学技术大学",
+    "major": "计算机科学与技术",
+    "hobbies": [],
+    "wechat": "",
+    "qq": "",
+    "looking_for_food": false,
+    "longitude": 117.13609572671307,
+    "latitude": 31.65665028513925,
+    "id": 1785293343953
   }
 ]
