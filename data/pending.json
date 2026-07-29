@@ -62,20 +62,5 @@
     "qq": "",
     "looking_for_food": true,
     "id": 1785293208881
-  },
-  {
-    "nickname": "王浩然",
-    "province": "辽宁",
-    "city": "沈阳",
-    "university": "东北大学",
-    "major": "机械类",
-    "hobbies": [
-      "美食",
-      "小说"
-    ],
-    "wechat": "whr18036946856",
-    "qq": "3152962736",
-    "looking_for_food": false,
-    "id": 1785293402206
   }
 ]
