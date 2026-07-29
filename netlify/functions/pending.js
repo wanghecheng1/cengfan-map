@@ -5,6 +5,15 @@ const GITHUB_REPO = process.env.GITHUB_REPO || '';
 const FILE_PATH = 'data/pending.json';
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'admin-token-cengfan-2024';
 
+// 东八区时间格式化（不管服务器时区，强制 Asia/Shanghai）
+const toBeijingTime = (date = new Date()) => {
+  return new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit'
+  }).format(date).replace(/\//g, '-');
+};
+
 console.log('[pending-github] ENV check:');
 console.log('  GITHUB_TOKEN:', GITHUB_TOKEN ? 'SET (' + GITHUB_TOKEN.substring(0, 8) + '...)' : 'MISSING');
 console.log('  GITHUB_REPO:', GITHUB_REPO || 'MISSING');
@@ -112,10 +121,18 @@ exports.handler = async (event) => {
       const body = JSON.parse(event.body);
       console.log('[POST] New pending app:', body.nickname, body.province);
       const { list, sha } = await getFileContent();
-      body.id = Date.now();
-      list.push(body);
+      const newItem = {
+        id: Date.now(),
+        created_at: toBeijingTime(),
+        ...body,
+        hobbies: body.hobbies || [],
+        looking_for_food: body.looking_for_food || false,
+        wechat: body.wechat || '',
+        qq: body.qq || ''
+      };
+      list.push(newItem);
       await writeFileContent(list, sha);
-      return { statusCode: 200, headers, body: JSON.stringify(body) };
+      return { statusCode: 200, headers, body: JSON.stringify(newItem) };
     }
 
     if (event.httpMethod === 'DELETE') {

@@ -2,7 +2,7 @@ const https = require('https');
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
 const GITHUB_REPO = process.env.GITHUB_REPO || '';
-const FILE_PATH = 'data/students.json';
+const FILE_PATH = 'data/announcements.json';
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'admin-token-cengfan-2024';
 
 // 东八区时间格式化（不管服务器时区，强制 Asia/Shanghai）
@@ -14,7 +14,7 @@ const toBeijingTime = (date = new Date()) => {
   }).format(date).replace(/\//g, '-');
 };
 
-console.log('[students-github] ENV check:');
+console.log('[announcements-github] ENV check:');
 console.log('  GITHUB_TOKEN:', GITHUB_TOKEN ? 'SET (' + GITHUB_TOKEN.substring(0, 8) + '...)' : 'MISSING');
 console.log('  GITHUB_REPO:', GITHUB_REPO || 'MISSING');
 console.log('  FILE_PATH:', FILE_PATH);
@@ -66,7 +66,14 @@ const getFileContent = async () => {
   if (res.status === 200 && res.data && res.data.content) {
     const jsonStr = Buffer.from(res.data.content, 'base64').toString('utf-8');
     console.log('[getFile] Parsed JSON length:', jsonStr.length);
-    return { list: JSON.parse(jsonStr), sha: res.data.sha };
+    let list;
+    try {
+      list = JSON.parse(jsonStr);
+    } catch (e) {
+      console.warn('[getFile] JSON parse failed, using empty array:', e.message);
+      list = [];
+    }
+    return { list: Array.isArray(list) ? list : [], sha: res.data.sha };
   }
   console.error('[getFile] Failed:', res.status, JSON.stringify(res.data || res.raw));
   throw new Error(`Failed to read file: status ${res.status}`);
@@ -75,7 +82,7 @@ const getFileContent = async () => {
 const writeFileContent = async (list, sha) => {
   const content = Buffer.from(JSON.stringify(list, null, 2)).toString('base64');
   const body = {
-    message: `Update students.json at ${new Date().toISOString()}`,
+    message: `Update announcements.json at ${new Date().toISOString()}`,
     content: content,
     sha: sha
   };
@@ -93,7 +100,7 @@ exports.handler = async (event) => {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Token',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
+    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS'
   };
 
   try {
@@ -109,61 +116,38 @@ exports.handler = async (event) => {
       };
     }
 
+    // GET：所有人可读取
     if (event.httpMethod === 'GET') {
       const { list } = await getFileContent();
-      return { statusCode: 200, headers, body: JSON.stringify(list) };
+      // 按创建时间倒序
+      const sorted = [...list].sort((a, b) => (b.id || 0) - (a.id || 0));
+      return { statusCode: 200, headers, body: JSON.stringify(sorted) };
     }
 
+    // POST：仅管理员可发布
     if (event.httpMethod === 'POST') {
       if (!verifyAdmin(event)) {
         return { statusCode: 401, headers, body: JSON.stringify({ error: 'Unauthorized' }) };
       }
       const body = JSON.parse(event.body);
-      console.log('[POST] New student:', body.nickname, body.province);
+      if (!body.content || !body.content.trim()) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: '公告内容不能为空' }) };
+      }
+      console.log('[POST] New announcement title:', body.title || '(无标题)', 'len:', body.content.length);
       const { list, sha } = await getFileContent();
       const newItem = {
         id: Date.now(),
-        created_at: toBeijingTime(),
-        ...body,
-        hobbies: body.hobbies || [],
-        looking_for_food: body.looking_for_food || false,
-        wechat: body.wechat || '',
-        qq: body.qq || ''
+        title: (body.title || '').trim() || '公告',
+        content: body.content.trim(),
+        pinned: !!body.pinned,
+        created_at: toBeijingTime()
       };
       list.push(newItem);
       await writeFileContent(list, sha);
       return { statusCode: 200, headers, body: JSON.stringify(newItem) };
     }
 
-    if (event.httpMethod === 'PUT') {
-      if (!verifyAdmin(event)) {
-        return { statusCode: 401, headers, body: JSON.stringify({ error: 'Unauthorized' }) };
-      }
-      const id = event.path.split('/').pop();
-      const body = JSON.parse(event.body);
-      console.log('[PUT] id:', id);
-      const { list, sha } = await getFileContent();
-      const idx = list.findIndex(s => s.id == id);
-      if (idx === -1) {
-        return { statusCode: 404, headers, body: JSON.stringify({ error: 'Not found' }) };
-      }
-      // 关键：合并字段，保留原有 id/created_at/wechat/qq/hobbies 等不丢失
-      const oldItem = list[idx];
-      const merged = {
-        ...oldItem,
-        ...body,
-        id: oldItem.id, // id 永远不变
-        created_at: oldItem.created_at || toBeijingTime(), // 保留原创建时间
-        hobbies: body.hobbies ?? (oldItem.hobbies || []),
-        looking_for_food: body.looking_for_food ?? (oldItem.looking_for_food || false),
-        wechat: body.wechat ?? (oldItem.wechat || ''),
-        qq: body.qq ?? (oldItem.qq || '')
-      };
-      list[idx] = merged;
-      await writeFileContent(list, sha);
-      return { statusCode: 200, headers, body: JSON.stringify(list[idx]) };
-    }
-
+    // DELETE：仅管理员可删除
     if (event.httpMethod === 'DELETE') {
       if (!verifyAdmin(event)) {
         return { statusCode: 401, headers, body: JSON.stringify({ error: 'Unauthorized' }) };
@@ -171,7 +155,7 @@ exports.handler = async (event) => {
       const id = event.path.split('/').pop();
       console.log('[DELETE] id:', id);
       const { list, sha } = await getFileContent();
-      const idx = list.findIndex(s => s.id == id);
+      const idx = list.findIndex(a => a.id == id);
       if (idx === -1) {
         return { statusCode: 404, headers, body: JSON.stringify({ error: 'Not found' }) };
       }
@@ -182,7 +166,7 @@ exports.handler = async (event) => {
 
     return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
   } catch (error) {
-    console.error('[students] FATAL:', error.message);
+    console.error('[announcements] FATAL:', error.message);
     console.error(error.stack);
     return { statusCode: 500, headers, body: JSON.stringify({ error: error.message, stack: error.stack }) };
   }

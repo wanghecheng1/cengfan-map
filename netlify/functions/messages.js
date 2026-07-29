@@ -5,6 +5,15 @@ const GITHUB_REPO = process.env.GITHUB_REPO || ''; // e.g. "wanghecheng1/cengfan
 const FILE_PATH = 'data/messages.json';
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN || 'admin-token-cengfan-2024';
 
+// 东八区时间格式化（不管服务器时区，强制 Asia/Shanghai）
+const toBeijingTime = (date = new Date()) => {
+  return new Intl.DateTimeFormat('zh-CN', {
+    timeZone: 'Asia/Shanghai',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit'
+  }).format(date).replace(/\//g, '-');
+};
+
 console.log('[messages-github] ENV check:');
 console.log('  GITHUB_TOKEN:', GITHUB_TOKEN ? 'SET (' + GITHUB_TOKEN.substring(0, 8) + '...)' : 'MISSING');
 console.log('  GITHUB_REPO:', GITHUB_REPO || 'MISSING');
@@ -111,12 +120,10 @@ exports.handler = async (event) => {
       console.log('[POST] New message content:', body.content);
       const { list, sha } = await getFileContent();
       console.log('[POST] Current list length:', list.length);
-      const now = new Date();
-      const timeStr = now.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
       const newItem = {
         id: Date.now(),
         content: body.content,
-        created_at: timeStr
+        created_at: toBeijingTime()
       };
       list.push(newItem);
       await writeFileContent(list, sha);

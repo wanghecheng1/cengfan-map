@@ -413,6 +413,38 @@
       color: #999;
       margin-left: 8px;
     }
+    /* 公告栏样式 */
+    .announcement-item {
+      padding: 12px;
+      background: linear-gradient(135deg, #FFF8E1 0%, #FFFBEB 100%);
+      border-left: 3px solid #D4A017;
+      border-radius: 6px;
+      animation: fadeInUp 0.4s ease both;
+    }
+    .announcement-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+    .announcement-title {
+      font-weight: 600;
+      font-size: 14px;
+      color: #8B4513;
+      font-family: "'Ma Shan Zheng', cursive";
+    }
+    .announcement-time {
+      font-size: 11px;
+      color: #A08C6F;
+      flex-shrink: 0;
+    }
+    .announcement-content {
+      font-size: 13px;
+      color: #4A3C2A;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
     .message-list {
       max-height: 240px;
       overflow-y: auto;
@@ -798,6 +830,7 @@
     const studentsStore = reactive({ list: [] });
     const pendingApplications = reactive({ list: [] });
     const messagesStore = reactive({ list: [] });
+    const announcementsStore = reactive({ list: [] }); // 公告
     // 云端连接状态：'checking' | 'cloud' | 'error'
     const cloudStatus = ref('checking');
     const cloudError = ref('');
@@ -991,6 +1024,37 @@
         return true;
       },
 
+      // ===== 公告（所有人可读，仅管理员可发布/删除） =====
+      async getAnnouncements() {
+        const r = await fetchWithRetry('/api/announcements', {
+          headers: this._getHeaders(false)
+        }, '读取公告');
+        announcementsStore.list = Array.isArray(r.data) ? r.data : [];
+        return announcementsStore.list;
+      },
+      async addAnnouncement({ title, content, pinned = false }) {
+        if (!adminToken) throw new Error('请先登录管理员账号');
+        const r = await fetchWithRetry('/api/announcements', {
+          method: 'POST',
+          headers: this._getHeaders(true),
+          body: JSON.stringify({ title, content, pinned })
+        }, '发布公告');
+        announcementsStore.list = [r.data, ...announcementsStore.list.filter(a => a.id !== r.data.id)];
+        // 按 id 倒序
+        announcementsStore.list.sort((a, b) => (b.id || 0) - (a.id || 0));
+        return r.data;
+      },
+      async deleteAnnouncement(id) {
+        if (!adminToken) throw new Error('请先登录管理员账号');
+        await fetchWithRetry(`/api/announcements/${id}`, {
+          method: 'DELETE',
+          headers: this._getHeaders(true)
+        }, `删除公告 id:${id}`);
+        const idx = announcementsStore.list.findIndex(a => a.id == id);
+        if (idx > -1) announcementsStore.list.splice(idx, 1);
+        return true;
+      },
+
       // ===== 管理员登录 =====
       async adminLogin(password) {
         try {
@@ -1038,7 +1102,8 @@
         try {
           await Promise.all([
             DataProvider.getStudents(),
-            DataProvider.getMessages()
+            DataProvider.getMessages(),
+            DataProvider.getAnnouncements()
           ]);
         } catch (e) {
           globalInitError.value = '初始化加载失败：' + e.message;
@@ -1275,6 +1340,31 @@
                 </button>
               </div>
 
+              <!-- 公告栏 -->
+              <div class="info-card" v-if="announcements.length > 0">
+                <div class="info-card-title calligraphy">
+                  📢 公告栏
+                  <span v-if="isAdmin" class="message-count" style="cursor:pointer;color:var(--cinnabar);" @click="$emit('openAdmin', 'announcement')">管理 →</span>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:12px;">
+                  <div
+                    v-for="(item, idx) in announcements"
+                    :key="item.id"
+                    class="announcement-item"
+                    :style="{ animationDelay: idx * 0.03 + 's' }"
+                  >
+                    <div class="announcement-head">
+                      <div style="display:flex;align-items:center;gap:6px;">
+                        <span v-if="item.pinned" style="font-size:11px;padding:1px 6px;background:#FDE8A8;color:#8B4513;border-radius:8px;">📌 置顶</span>
+                        <span class="announcement-title">{{ item.title || '公告' }}</span>
+                      </div>
+                      <span class="announcement-time">{{ item.created_at }}</span>
+                    </div>
+                    <div class="announcement-content">{{ item.content }}</div>
+                  </div>
+                </div>
+              </div>
+
               <div class="info-card message-card">
                 <div class="info-card-title calligraphy">
                   💬 留言板
@@ -1333,6 +1423,52 @@
                 <div class="form-actions">
                   <button class="btn btn-secondary" @click="showLogin = false">取消</button>
                   <button class="btn btn-primary" @click="doLogin">登录</button>
+                </div>
+              </div>
+            </div>
+          </transition>
+
+          <!-- 学生详情弹窗 -->
+          <transition name="modal">
+            <div v-if="showDetail && selectedStudent" class="modal-mask" @click.self="showDetail = false">
+              <div class="modal-content" style="max-width:420px;">
+                <div class="modal-title calligraphy">🧑 {{ selectedStudent.nickname }} 的档案
+                  <span v-if="selectedStudent.looking_for_food" class="status-badge status-approved" style="margin-left:8px;font-size:12px;">🍜 找饭搭子</span>
+                </div>
+                <div style="padding:8px 0 20px 0;font-size:14px;line-height:2.2;">
+                  <div style="display:flex;padding:8px 0;border-bottom:1px dashed #eee;">
+                    <span style="width:90px;color:#888;flex-shrink:0;">📍 所在地</span>
+                    <span style="color:#2C2C2C;">{{ selectedStudent.province }} · {{ selectedStudent.city }}</span>
+                  </div>
+                  <div style="display:flex;padding:8px 0;border-bottom:1px dashed #eee;">
+                    <span style="width:90px;color:#888;flex-shrink:0;">🏫 大学</span>
+                    <span style="color:#2C2C2C;">{{ selectedStudent.university }}</span>
+                  </div>
+                  <div v-if="selectedStudent.major" style="display:flex;padding:8px 0;border-bottom:1px dashed #eee;">
+                    <span style="width:90px;color:#888;flex-shrink:0;">📚 专业</span>
+                    <span style="color:#2C2C2C;">{{ selectedStudent.major }}</span>
+                  </div>
+                  <div v-if="selectedStudent.hobbies && selectedStudent.hobbies.length" style="display:flex;padding:8px 0;border-bottom:1px dashed #eee;">
+                    <span style="width:90px;color:#888;flex-shrink:0;">🎯 兴趣爱好</span>
+                    <span style="color:#2C2C2C;">{{ selectedStudent.hobbies.join('、') }}</span>
+                  </div>
+                  <div v-if="selectedStudent.wechat || selectedStudent.qq" style="padding:8px 0;">
+                    <div style="color:#888;margin-bottom:6px;">💬 联系方式</div>
+                    <div v-if="selectedStudent.wechat" style="padding:6px 12px;background:#ECFDF5;border-radius:6px;margin:4px 0;">
+                      <span style="color:#065F46;font-weight:500;">微信：</span>
+                      <span style="color:#065F46;user-select:all;">{{ selectedStudent.wechat }}</span>
+                    </div>
+                    <div v-if="selectedStudent.qq" style="padding:6px 12px;background:#EFF6FF;border-radius:6px;margin:4px 0;">
+                      <span style="color:#1E40AF;font-weight:500;">QQ：</span>
+                      <span style="color:#1E40AF;user-select:all;">{{ selectedStudent.qq }}</span>
+                    </div>
+                  </div>
+                  <div v-else style="padding:12px 0;color:#999;text-align:center;">
+                    该同学暂未填写联系方式
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button class="btn btn-primary" @click="showDetail = false">关闭</button>
                 </div>
               </div>
             </div>
@@ -1405,6 +1541,8 @@
         const keyword = ref('');
         const showLogin = ref(false);
         const showApply = ref(false);
+        const showDetail = ref(false);
+        const selectedStudent = ref(null);
         const password = ref('');
         const pwdError = ref(false);
         const pwdShake = ref(false);
@@ -1549,10 +1687,17 @@
                   const foodBadge = s.looking_for_food
                     ? `<span style="display:inline-block;padding:2px 8px;background:#D5F5E3;color:#1E8449;border-radius:10px;font-size:11px;margin-left:8px;">🍜 找饭搭子</span>`
                     : '';
+                  // 联系方式（兼容旧数据）
+                  const contactHtml = [];
+                  if (s.wechat) contactHtml.push(`💬 微信：${s.wechat}`);
+                  if (s.qq) contactHtml.push(`🐧 QQ：${s.qq}`);
+                  const contactStr = contactHtml.length
+                    ? `<div style="margin-top:8px;padding-top:8px;border-top:1px dashed #eee;font-size:12px;color:#555;line-height:1.8;">${contactHtml.join('<br>')}</div>`
+                    : '';
                   return `
                     <div style="min-width:240px;">
                       <div style="font-size:18px;font-weight:600;margin-bottom:8px;color:#C0392B;">
-                        � ${s.nickname}
+                        🧑 ${s.nickname}
                         ${foodBadge}
                       </div>
                       <div style="border-top:1px solid #eee;padding-top:10px;font-size:13px;line-height:1.9;">
@@ -1560,6 +1705,7 @@
                         <div>🏫 ${s.university}</div>
                         ${s.major ? `<div>📚 ${s.major}</div>` : ''}
                         ${hobbiesHtml}
+                        ${contactStr}
                       </div>
                     </div>
                   `;
@@ -1629,6 +1775,8 @@
         };
 
         const highlightStudent = (student) => {
+          selectedStudent.value = student;
+          showDetail.value = true;
           const center = PROVINCE_DATA[student.province]?.center;
           if (chartInstance && center) {
             chartInstance.dispatchAction({ type: 'showTip', seriesIndex: 0, name: student.nickname });
@@ -1689,6 +1837,13 @@
         const messageListRef = ref(null);
         const isAdmin = computed(() => DataProvider.isAdmin());
         const messages = computed(() => [...messagesStore.list].reverse());
+        const announcements = computed(() => {
+          // 先按 pinned 排序（置顶的排前面），再按 id 倒序
+          return [...announcementsStore.list].sort((a, b) => {
+            if (!!b.pinned !== !!a.pinned) return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
+            return (b.id || 0) - (a.id || 0);
+          });
+        });
 
         const sendMessage = async () => {
           const content = newMessage.value.trim();
@@ -1727,7 +1882,7 @@
 
         return {
           mapRef, mapLoading,
-          keyword, showLogin, showApply, password, pwdError, pwdShake, pwdInput,
+          keyword, showLogin, showApply, showDetail, selectedStudent, password, pwdError, pwdShake, pwdInput,
           initError, statusText, statusStyle,
           applyForm,
           PROVINCE_LIST,
@@ -1735,7 +1890,7 @@
           filteredStudents, groupedByProvince,
           totalCount, provinceCount, universityCount, foodCount,
           highlightStudent, doLogin, submitApply,
-          newMessage, messageListRef, isAdmin, messages,
+          newMessage, messageListRef, isAdmin, messages, announcements,
           sendMessage, deleteMessage
         };
       }
@@ -1767,48 +1922,111 @@
               </div>
             </div>
 
-            <div class="add-btn-wrap">
-              <button v-if="activeTab !== 'pending'" class="btn btn-primary" @click="openAddModal">➕ 添加同学档案</button>
+            <!-- 同学档案操作区 -->
+            <div v-if="activeTab !== 'announcement'">
+              <div class="add-btn-wrap">
+                <button v-if="activeTab !== 'pending'" class="btn btn-primary" @click="openAddModal">➕ 添加同学档案</button>
+              </div>
+
+              <div class="student-table">
+                <div class="table-header">
+                  <div class="col-name">姓名</div>
+                  <div class="col-province">省份/城市</div>
+                  <div class="col-school">大学</div>
+                  <div class="col-major">专业</div>
+                  <div class="col-status">饭搭子</div>
+                  <div class="col-actions">操作</div>
+                </div>
+                <div v-if="filteredList.length === 0" style="padding:60px;text-align:center;color:#999;">
+                  <div style="font-size:48px;margin-bottom:12px;">{{ activeTab === 'pending' ? '📬' : '📋' }}</div>
+                  <div>{{ activeTab === 'pending' ? '暂无待审核申请' : '暂无档案数据，点击上方按钮添加' }}</div>
+                </div>
+                <div
+                  v-for="(item, idx) in filteredList"
+                  :key="item.id"
+                  class="table-row fade-in-up"
+                  :style="{ animationDelay: idx * 0.03 + 's' }"
+                >
+                  <div class="col-name">
+                    <strong>{{ item.nickname }}</strong>
+                  </div>
+                  <div class="col-province">{{ item.province }} · {{ item.city }}</div>
+                  <div class="col-school">{{ item.university }}</div>
+                  <div class="col-major">{{ item.major || '—' }}</div>
+                  <div class="col-status">
+                    <span v-if="item.looking_for_food" class="status-badge status-approved">🍜 找饭搭子</span>
+                    <span v-else style="color:#999;font-size:12px;">—</span>
+                  </div>
+                  <div class="col-actions">
+                    <template v-if="activeTab === 'pending'">
+                      <button class="btn btn-sm btn-primary" @click="approveApplication(item)">通过</button>
+                      <button class="btn btn-sm btn-danger" @click="rejectApplication(item)">拒绝</button>
+                    </template>
+                    <template v-else>
+                      <button class="btn btn-sm btn-secondary" @click="openEditModal(item)">编辑</button>
+                      <button class="btn btn-sm btn-danger" @click="deleteStudent(item)">删除</button>
+                    </template>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="student-table">
-              <div class="table-header">
-                <div class="col-name">姓名</div>
-                <div class="col-province">省份/城市</div>
-                <div class="col-school">大学</div>
-                <div class="col-major">专业</div>
-                <div class="col-status">饭搭子</div>
-                <div class="col-actions">操作</div>
+            <!-- 公告管理区 -->
+            <div v-else>
+              <div class="add-btn-wrap">
+                <button class="btn btn-primary" @click="showAnnounceForm = !showAnnounceForm">
+                  {{ showAnnounceForm ? '收起表单' : '📢 发布新公告' }}
+                </button>
               </div>
-              <div v-if="filteredList.length === 0" style="padding:60px;text-align:center;color:#999;">
-                <div style="font-size:48px;margin-bottom:12px;">{{ activeTab === 'pending' ? '📬' : '📋' }}</div>
-                <div>{{ activeTab === 'pending' ? '暂无待审核申请' : '暂无档案数据，点击上方按钮添加' }}</div>
-              </div>
-              <div
-                v-for="(item, idx) in filteredList"
-                :key="item.id"
-                class="table-row fade-in-up"
-                :style="{ animationDelay: idx * 0.03 + 's' }"
-              >
-                <div class="col-name">
-                  <strong>{{ item.nickname }}</strong>
+
+              <!-- 发布表单 -->
+              <transition name="modal">
+                <div v-if="showAnnounceForm" class="info-card" style="margin-bottom:24px;">
+                  <div class="info-card-title calligraphy">✍️ 发布公告</div>
+                  <div class="form-group">
+                    <label>标题</label>
+                    <input type="text" v-model="announceForm.title" placeholder="例如：2026暑假聚会通知">
+                  </div>
+                  <div class="form-group">
+                    <label>内容 <span style="color:var(--cinnabar)">*</span></label>
+                    <textarea v-model="announceForm.content" rows="5" placeholder="请输入公告内容..." style="width:100%;padding:10px;border:1px solid var(--paper-dark);border-radius:6px;font-family:inherit;resize:vertical;"></textarea>
+                  </div>
+                  <div class="form-group">
+                    <label>
+                      <input type="checkbox" v-model="announceForm.pinned" style="margin-right:6px;accent-color:var(--cinnabar);">
+                      📌 置顶此公告
+                    </label>
+                  </div>
+                  <div class="form-actions">
+                    <button class="btn btn-secondary" @click="resetAnnounceForm">重置</button>
+                    <button class="btn btn-primary" @click="publishAnnouncement">📤 发布</button>
+                  </div>
                 </div>
-                <div class="col-province">{{ item.province }} · {{ item.city }}</div>
-                <div class="col-school">{{ item.university }}</div>
-                <div class="col-major">{{ item.major || '—' }}</div>
-                <div class="col-status">
-                  <span v-if="item.looking_for_food" class="status-badge status-approved">🍜 找饭搭子</span>
-                  <span v-else style="color:#999;font-size:12px;">—</span>
+              </transition>
+
+              <!-- 公告列表 -->
+              <div style="display:flex;flex-direction:column;gap:16px;">
+                <div v-if="sortedAnnouncements.length === 0" style="padding:60px;text-align:center;color:#999;">
+                  <div style="font-size:48px;margin-bottom:12px;">📭</div>
+                  <div>暂无公告，点击上方按钮发布第一条公告</div>
                 </div>
-                <div class="col-actions">
-                  <template v-if="activeTab === 'pending'">
-                    <button class="btn btn-sm btn-primary" @click="approveApplication(item)">通过</button>
-                    <button class="btn btn-sm btn-danger" @click="rejectApplication(item)">拒绝</button>
-                  </template>
-                  <template v-else>
-                    <button class="btn btn-sm btn-secondary" @click="openEditModal(item)">编辑</button>
-                    <button class="btn btn-sm btn-danger" @click="deleteStudent(item)">删除</button>
-                  </template>
+                <div
+                  v-for="(item, idx) in sortedAnnouncements"
+                  :key="item.id"
+                  class="announcement-item"
+                  :style="{ animationDelay: idx * 0.03 + 's' }"
+                >
+                  <div class="announcement-head">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <span v-if="item.pinned" style="font-size:11px;padding:2px 8px;background:#FDE8A8;color:#8B4513;border-radius:8px;font-weight:600;">📌 置顶</span>
+                      <span class="announcement-title" style="font-size:16px;">{{ item.title || '公告' }}</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <span class="announcement-time">{{ item.created_at }}</span>
+                      <button class="btn btn-sm btn-danger" @click="removeAnnouncement(item)">删除</button>
+                    </div>
+                  </div>
+                  <div class="announcement-content" style="margin-top:8px;">{{ item.content }}</div>
                 </div>
               </div>
             </div>
@@ -1879,16 +2097,29 @@
         const tabs = [
           { key: 'pending', label: '待审核' },
           { key: 'all', label: '全部档案' },
-          { key: 'food', label: '找饭搭子' }
+          { key: 'food', label: '找饭搭子' },
+          { key: 'announcement', label: '公告管理' }
         ];
         const activeTab = ref('pending');
         const showModal = ref(false);
         const isEdit = ref(false);
         const editId = ref(null);
+        const showAnnounceForm = ref(false);
 
         const form = reactive({
           nickname: '', province: '', city: '', university: '',
           major: '', hobbiesText: '', wechat: '', qq: '', looking_for_food: false
+        });
+
+        const announceForm = reactive({
+          title: '', content: '', pinned: false
+        });
+
+        const sortedAnnouncements = computed(() => {
+          return [...announcementsStore.list].sort((a, b) => {
+            if (!!b.pinned !== !!a.pinned) return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
+            return (b.id || 0) - (a.id || 0);
+          });
         });
 
         const filteredList = computed(() => {
@@ -1910,6 +2141,39 @@
           });
           isEdit.value = false;
           editId.value = null;
+        };
+
+        const resetAnnounceForm = () => {
+          Object.assign(announceForm, { title: '', content: '', pinned: false });
+        };
+
+        const publishAnnouncement = async () => {
+          if (!announceForm.content.trim()) {
+            alert('请填写公告内容！');
+            return;
+          }
+          try {
+            await DataProvider.addAnnouncement({
+              title: announceForm.title,
+              content: announceForm.content,
+              pinned: announceForm.pinned
+            });
+            alert('✅ 公告已发布');
+            resetAnnounceForm();
+            showAnnounceForm.value = false;
+          } catch (e) {
+            alert('❌ 发布失败：' + e.message);
+          }
+        };
+
+        const removeAnnouncement = async (item) => {
+          if (!confirm(`确定要删除公告「${item.title || '公告'}」吗？`)) return;
+          try {
+            await DataProvider.deleteAnnouncement(item.id);
+            alert('已删除');
+          } catch (e) {
+            alert('❌ 删除失败：' + e.message);
+          }
         };
 
         const openAddModal = () => { resetForm(); showModal.value = true; };
@@ -1957,46 +2221,62 @@
             latitude: center[1] + (Math.random() - 0.5) * 0.4
           };
 
-          if (isEdit.value) {
-            await DataProvider.updateStudent(editId.value, studentData);
-            alert('✅ 档案已更新');
-          } else {
-            await DataProvider.addStudent(studentData);
-            alert('✅ 档案已添加');
+          try {
+            if (isEdit.value) {
+              await DataProvider.updateStudent(editId.value, studentData);
+              alert('✅ 档案已更新');
+            } else {
+              await DataProvider.addStudent(studentData);
+              alert('✅ 档案已添加');
+            }
+            closeModal();
+          } catch (e) {
+            alert('❌ 操作失败：' + e.message);
           }
-          closeModal();
         };
 
         const deleteStudent = async (item) => {
           if (!confirm(`确定要删除「${item.nickname}」的档案吗？`)) return;
-          await DataProvider.deleteStudent(item.id);
-          alert('已删除');
+          try {
+            await DataProvider.deleteStudent(item.id);
+            alert('已删除');
+          } catch (e) {
+            alert('❌ 删除失败：' + e.message);
+          }
         };
 
         const approveApplication = async (item) => {
           if (!confirm(`确定要通过「${item.nickname}」的申请吗？`)) return;
           const center = PROVINCE_DATA[item.province]?.center || [105, 35];
-          await DataProvider.addStudent({
-            nickname: item.nickname,
-            province: item.province,
-            city: item.city,
-            university: item.university,
-            major: item.major || '',
-            hobbies: item.hobbies || [],
-            wechat: item.wechat || '',
-            qq: item.qq || '',
-            looking_for_food: item.looking_for_food,
-            longitude: center[0] + (Math.random() - 0.5) * 0.4,
-            latitude: center[1] + (Math.random() - 0.5) * 0.4
-          });
-          await DataProvider.removePending(item.id);
-          alert('✅ 已通过申请');
+          try {
+            await DataProvider.addStudent({
+              nickname: item.nickname,
+              province: item.province,
+              city: item.city,
+              university: item.university,
+              major: item.major || '',
+              hobbies: item.hobbies || [],
+              wechat: item.wechat || '',
+              qq: item.qq || '',
+              looking_for_food: item.looking_for_food,
+              longitude: center[0] + (Math.random() - 0.5) * 0.4,
+              latitude: center[1] + (Math.random() - 0.5) * 0.4
+            });
+            await DataProvider.removePending(item.id);
+            alert('✅ 已通过申请');
+          } catch (e) {
+            alert('❌ 操作失败：' + e.message);
+          }
         };
 
         const rejectApplication = async (item) => {
           if (!confirm(`确定要拒绝「${item.nickname}」的申请吗？`)) return;
-          await DataProvider.removePending(item.id);
-          alert('已拒绝申请');
+          try {
+            await DataProvider.removePending(item.id);
+            alert('已拒绝申请');
+          } catch (e) {
+            alert('❌ 操作失败：' + e.message);
+          }
         };
 
         const logout = () => {
@@ -2007,13 +2287,16 @@
 
         onMounted(() => {
           DataProvider.getPending();
+          DataProvider.getAnnouncements();
         });
 
         return {
           tabs, activeTab, showModal, isEdit, form,
+          showAnnounceForm, announceForm, sortedAnnouncements,
           PROVINCE_LIST, filteredList, pendingCount,
           openAddModal, openEditModal, closeModal, saveStudent, deleteStudent,
           approveApplication, rejectApplication,
+          resetAnnounceForm, publishAnnouncement, removeAnnouncement,
           logout, goMain
         };
       }
