@@ -99,8 +99,8 @@ exports.handler = async (event) => {
   const headers = {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Token',
-    'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS'
+    'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Token, X-Student-Token',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS'
   };
 
   try {
@@ -145,6 +145,44 @@ exports.handler = async (event) => {
       list.push(newItem);
       await writeFileContent(list, sha);
       return { statusCode: 200, headers, body: JSON.stringify(newItem) };
+    }
+
+    // PUT：仅管理员可修改公告
+    if (event.httpMethod === 'PUT') {
+      if (!verifyAdmin(event)) {
+        return { statusCode: 401, headers, body: JSON.stringify({ error: 'Unauthorized' }) };
+      }
+      const id = event.path.split('/').pop();
+      console.log('[PUT] id:', id);
+      const body = JSON.parse(event.body);
+      if (!body.content || !body.content.trim()) {
+        return { statusCode: 400, headers, body: JSON.stringify({ error: '公告内容不能为空' }) };
+      }
+      const { list, sha } = await getFileContent();
+      const idx = list.findIndex(a => a.id == id);
+      if (idx === -1) {
+        return { statusCode: 404, headers, body: JSON.stringify({ error: 'Not found' }) };
+      }
+      const oldItem = list[idx];
+      // 全部用 || 兜底（避免 ?? 和 || 混用的语法错误，兼容低版本 Node）
+      const newTitle = (body.title !== undefined && body.title !== null)
+        ? body.title
+        : (oldItem.title || '');
+      const newPinned = (body.pinned !== undefined && body.pinned !== null)
+        ? body.pinned
+        : (oldItem.pinned || false);
+      const merged = {
+        ...oldItem,
+        id: oldItem.id,
+        created_at: oldItem.created_at, // 保留原创建时间
+        title: (newTitle || '').trim() || '公告',
+        content: body.content.trim(),
+        pinned: !!newPinned,
+        updated_at: toBeijingTime() // 新增修改时间
+      };
+      list[idx] = merged;
+      await writeFileContent(list, sha);
+      return { statusCode: 200, headers, body: JSON.stringify(merged) };
     }
 
     // DELETE：仅管理员可删除

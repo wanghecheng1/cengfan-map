@@ -92,7 +92,7 @@ exports.handler = async (event) => {
   const headers = {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Token',
+    'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Token, X-Student-Token',
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS'
   };
 

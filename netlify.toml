@@ -40,3 +40,84 @@
   from = "/api/admin-login"
   to = "/.netlify/functions/admin-login"
   status = 200
+
+[[redirects]]
+  from = "/api/announcements"
+  to = "/.netlify/functions/announcements"
+  status = 200
+
+[[redirects]]
+  from = "/api/announcements/*"
+  to = "/.netlify/functions/announcements"
+  status = 200
+
+# ============ 新增：社区密码升级（2026-07-29）============
+[[redirects]]
+  from = "/api/student-login"
+  to = "/.netlify/functions/student-login"
+  status = 200
+
+[[redirects]]
+  from = "/api/student-login/*"
+  to = "/.netlify/functions/student-login"
+  status = 200
+
+[[redirects]]
+  from = "/api/student-verify-session"
+  to = "/.netlify/functions/student-login"
+  status = 200
+
+[[redirects]]
+  from = "/api/students/batch-fill-passwords"
+  to = "/.netlify/functions/students"
+  status = 200
+
+[[redirects]]
+  from = "/api/students/*/reset-password"
+  to = "/.netlify/functions/students"
+  status = 200
+
+[[redirects]]
+  from = "/api/students/*/leave-community"
+  to = "/.netlify/functions/students"
+  status = 200
+
+[[redirects]]
+  from = "/api/communities"
+  to = "/.netlify/functions/communities"
+  status = 200
+
+[[redirects]]
+  from = "/api/communities/*"
+  to = "/.netlify/functions/communities"
+  status = 200
+
+[[redirects]]
+  from = "/api/community-create-requests"
+  to = "/.netlify/functions/communities"
+  status = 200
+
+[[redirects]]
+  from = "/api/community-create-requests/*"
+  to = "/.netlify/functions/communities"
+  status = 200
+
+[[redirects]]
+  from = "/api/community-join-requests"
+  to = "/.netlify/functions/communities"
+  status = 200
+
+[[redirects]]
+  from = "/api/community-join-requests/*"
+  to = "/.netlify/functions/communities"
+  status = 200
+
+[[redirects]]
+  from = "/api/direct-messages"
+  to = "/.netlify/functions/direct-messages"
+  status = 200
+
+[[redirects]]
+  from = "/api/direct-messages/*"
+  to = "/.netlify/functions/direct-messages"
+  status = 200

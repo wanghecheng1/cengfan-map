@@ -333,11 +333,204 @@
       cursor: pointer;
       transition: all 0.2s ease;
       border: 1px solid transparent;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
     .student-name:hover {
       background: var(--cinnabar);
       color: #fff;
       border-color: var(--cinnabar);
+    }
+    /* 头衔色号：姓名框背景填充色 */
+    .student-name.title-gold {
+      background: linear-gradient(135deg, #FFF3B0 0%, #FFD700 50%, #FFB300 100%);
+      color: #5A3A00;
+      border-color: #FFA000;
+      box-shadow: 0 2px 8px rgba(255, 160, 0, 0.25);
+      font-weight: 600;
+    }
+    /* 档2：亮银（提亮高光+银白珠光） */
+    .student-name.title-silver {
+      background: linear-gradient(135deg, #FFFFFF 0%, #F2F5F9 30%, #D9E2EC 60%, #C5D3E3 100%);
+      color: #1F2937;
+      border-color: #94A3B8;
+      box-shadow:
+        0 1px 0 rgba(255,255,255,0.95) inset,
+        0 -1px 0 rgba(148,163,184,0.3) inset,
+        0 3px 10px rgba(148, 163, 184, 0.35);
+      font-weight: 600;
+    }
+    .student-name.title-bronze {
+      background: linear-gradient(135deg, #F5DEB3 0%, #CD7F32 50%, #A0522D 100%);
+      color: #FFF8EC;
+      border-color: #8B4513;
+      box-shadow: 0 2px 8px rgba(139, 69, 19, 0.3);
+      font-weight: 600;
+    }
+    /* 档4：赤红字体（姓名框透明底色不变，只改字色，字发光描边） */
+    .student-name.title-crimson {
+      color: #C0002A;
+      text-shadow:
+        0 0 2px rgba(255,255,255,0.85),
+        0 0 6px rgba(192, 0, 42, 0.55),
+        0 0 14px rgba(192, 0, 42, 0.35);
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      background: rgba(255, 245, 247, 0.65);
+      border: 1px dashed rgba(192, 0, 42, 0.35);
+    }
+    .student-name.title-crimson:hover {
+      background: #C0002A !important;
+      color: #fff !important;
+      border-color: #C0002A !important;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.25) !important;
+    }
+    /* 档5：天蓝耀眼（强发光+渐变+动画流光） */
+    .student-name.title-sky {
+      background: linear-gradient(135deg, #E0F2FE 0%, #7DD3FC 30%, #38BDF8 60%, #0EA5E9 100%);
+      color: #082F49;
+      border-color: #0284C7;
+      font-weight: 700;
+      box-shadow:
+        0 0 0 1px rgba(14, 165, 233, 0.5),
+        0 3px 10px rgba(14, 165, 233, 0.35),
+        0 0 16px rgba(56, 189, 248, 0.45),
+        0 0 24px rgba(125, 211, 252, 0.25);
+      animation: skyGlow 2.6s ease-in-out infinite alternate;
+    }
+    @keyframes skyGlow {
+      from { filter: brightness(1.02) saturate(1); }
+      to   { filter: brightness(1.18) saturate(1.15); }
+    }
+    .student-name.title-sky:hover {
+      background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%) !important;
+      color: #fff !important;
+      border-color: #075985 !important;
+      box-shadow: 0 3px 14px rgba(2, 132, 199, 0.55) !important;
+    }
+    .student-name.title-gold:hover,
+    .student-name.title-silver:hover,
+    .student-name.title-bronze:hover {
+      background: var(--cinnabar);
+      color: #fff;
+      border-color: var(--cinnabar);
+    }
+    /* 头衔文字徽章（嵌在姓名框内） */
+    .inline-title-badge {
+      display: inline-block;
+      padding: 1px 7px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 600;
+      line-height: 1.4;
+      white-space: nowrap;
+    }
+    .inline-title-badge.badge-gold { background: #FF8F00; color: #fff; }
+    .inline-title-badge.badge-silver { background: linear-gradient(135deg, #F1F5F9, #94A3B8); color: #0F172A; }
+    .inline-title-badge.badge-bronze { background: #8B4513; color: #fff; }
+    .inline-title-badge.badge-crimson {
+      background: #fff; color: #C0002A;
+      border: 1px solid #C0002A;
+      box-shadow: 0 0 6px rgba(192,0,42,0.35);
+    }
+    .inline-title-badge.badge-sky {
+      background: linear-gradient(135deg, #38BDF8, #0284C7); color: #fff;
+      box-shadow: 0 0 8px rgba(56,189,248,0.55);
+    }
+    .inline-title-badge.badge-normal { background: linear-gradient(135deg, #F5C842, #E67E22); color: #fff; }
+
+    /* 详情页头衔大徽章（4色号） */
+    .title-detail-badge {
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: 20px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .title-detail-badge.badge-normal {
+      background: linear-gradient(135deg, #F5C842, #E67E22);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(230, 126, 34, 0.3);
+    }
+    .title-detail-badge.badge-gold {
+      background: linear-gradient(135deg, #FFF3B0, #FFD700 40%, #FF8F00);
+      color: #5A3A00;
+      box-shadow: 0 4px 14px rgba(255, 143, 0, 0.4);
+      border: 1px solid #FFC107;
+    }
+    .title-detail-badge.badge-silver {
+      background: linear-gradient(135deg, #FAFAFA, #E0E0E0 40%, #9E9E9E);
+      color: #263238;
+      box-shadow: 0 4px 14px rgba(120, 120, 120, 0.3);
+      border: 1px solid #BDBDBD;
+    }
+    .title-detail-badge.badge-bronze {
+      background: linear-gradient(135deg, #F5DEB3, #CD7F32 40%, #8B4513);
+      color: #FFF8EC;
+      box-shadow: 0 4px 14px rgba(139, 69, 19, 0.4);
+      border: 1px solid #A0522D;
+    }
+    .title-detail-badge.badge-crimson {
+      background: #fff;
+      color: #C0002A;
+      border: 2px solid #C0002A;
+      box-shadow: 0 4px 14px rgba(192, 0, 42, 0.3);
+      font-weight: 700;
+    }
+    .title-detail-badge.badge-sky {
+      background: linear-gradient(135deg, #E0F2FE, #38BDF8 40%, #0284C7);
+      color: #082F49;
+      border: 1px solid #0284C7;
+      box-shadow:
+        0 4px 14px rgba(14, 165, 233, 0.35),
+        0 0 16px rgba(56, 189, 248, 0.45);
+      font-weight: 700;
+      animation: skyGlow 2.6s ease-in-out infinite alternate;
+    }
+    /* 详情页姓名主标题：档4赤红字体/档5天蓝亮字联动 */
+    .detail-student-name {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1F2937;
+      margin-right: 8px;
+    }
+    .detail-student-name.name-crimson {
+      color: #C0002A;
+      text-shadow:
+        0 0 2px rgba(255,255,255,0.9),
+        0 0 8px rgba(192, 0, 42, 0.5),
+        0 0 16px rgba(192, 0, 42, 0.3);
+    }
+    .detail-student-name.name-sky {
+      background: linear-gradient(135deg, #0369A1, #0284C7 45%, #38BDF8);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      filter: drop-shadow(0 0 6px rgba(56, 189, 248, 0.6));
+    }
+    /* 留言板三种标签标：实名/社区/匿名 */
+    .msg-tag {
+      display: inline-block;
+      padding: 1px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-right: 4px;
+      line-height: 1.5;
+    }
+    .msg-tag.realname { background: #ECFDF5; color: #065F46; border: 1px solid #10B981; }
+    .msg-tag.community { background: #EFF6FF; color: #1E40AF; border: 1px solid #60A5FA; }
+    .msg-tag.anonymous { background: #F3F4F6; color: #4B5563; border: 1px solid #9CA3AF; }
+    .msg-tag.community-owner { background: linear-gradient(135deg, #FEF3C7, #F59E0B); color: #78350F; border: 1px solid #D97706; }
+    /* 会话未读小红点 */
+    .unread-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: #EF4444;
+      box-shadow: 0 0 6px rgba(239, 68, 68, 0.7);
+      margin-left: 6px;
     }
 
     /* 中间地图 */
@@ -413,37 +606,123 @@
       color: #999;
       margin-left: 8px;
     }
-    /* 公告栏样式 */
+    /* 公告栏样式（优化版：更醒目） */
+    .notice-card {
+      border: 2px solid #F5C842;
+      background: linear-gradient(180deg, #FFFBF0 0%, #FFF6E0 100%);
+      box-shadow: 0 4px 16px rgba(214, 158, 46, 0.15);
+    }
+    .notice-card .info-card-title {
+      font-size: 18px !important;
+      letter-spacing: 1px;
+    }
+    /* 社区卡片 */
+    .community-card {
+      padding: 12px 14px;
+      background: linear-gradient(135deg, #FFFFFF 0%, #F0F9FF 100%);
+      border: 1px solid #BFDBFE;
+      border-radius: 10px;
+      animation: fadeInUp 0.45s ease both;
+      transition: transform 0.18s ease, box-shadow 0.18s ease;
+      box-shadow: 0 2px 8px rgba(30, 64, 175, 0.08);
+    }
+    .community-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(30, 64, 175, 0.15);
+    }
     .announcement-item {
-      padding: 12px;
-      background: linear-gradient(135deg, #FFF8E1 0%, #FFFBEB 100%);
-      border-left: 3px solid #D4A017;
-      border-radius: 6px;
-      animation: fadeInUp 0.4s ease both;
+      padding: 14px;
+      background: linear-gradient(135deg, #FFF8E1 0%, #FFFAF0 100%);
+      border-left: 4px solid #D4A017;
+      border-radius: 8px;
+      animation: fadeInUp 0.5s ease both;
+      margin-bottom: 10px;
+      transition: transform 0.2s ease;
+    }
+    .announcement-item.is-pinned {
+      background: linear-gradient(135deg, #FDE68A 0%, #FCD34D 100%);
+      border-left: 4px solid #B45309;
+      box-shadow: 0 4px 10px rgba(180, 83, 9, 0.15);
+    }
+    .announcement-item:hover { transform: translateX(2px); }
+    .pinned-badge {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 8px;
+      background: #B45309;
+      color: #FFF7ED;
+      border-radius: 10px;
+      margin-right: 6px;
+      font-weight: 600;
+      font-family: sans-serif;
     }
     .announcement-head {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
     }
     .announcement-title {
       font-weight: 600;
-      font-size: 14px;
-      color: #8B4513;
+      font-size: 15px;
+      color: #78350F;
       font-family: "'Ma Shan Zheng', cursive";
     }
-    .announcement-time {
+    .is-pinned .announcement-title { color: #7C2D12; }
+    .announcement-date {
       font-size: 11px;
-      color: #A08C6F;
+      color: #92400E;
       flex-shrink: 0;
+      background: rgba(255,255,255,0.6);
+      padding: 2px 8px;
+      border-radius: 10px;
     }
     .announcement-content {
-      font-size: 13px;
-      color: #4A3C2A;
-      line-height: 1.7;
+      font-size: 14px;
+      color: #451A03;
+      line-height: 1.8;
       white-space: pre-wrap;
       word-break: break-word;
+    }
+
+    /* 顶部置顶公告横幅 */
+    .announcement-banner {
+      background: linear-gradient(90deg, #FDE68A 0%, #FBBF24 50%, #F59E0B 100%);
+      color: #7C2D12;
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 0 2px 10px rgba(245, 158, 11, 0.2);
+      animation: bannerFlash 3s ease-in-out infinite alternate;
+    }
+    @keyframes bannerFlash {
+      from { filter: brightness(1); }
+      to   { filter: brightness(1.05); }
+    }
+    .announcement-banner .banner-tag {
+      background: #7C2D12;
+      color: #FDE68A;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      flex-shrink: 0;
+      letter-spacing: 1px;
+    }
+    .announcement-banner .banner-content {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 500;
+    }
+    .announcement-banner .banner-time {
+      font-size: 11px;
+      opacity: 0.8;
+      flex-shrink: 0;
     }
     .message-list {
       max-height: 240px;
@@ -518,6 +797,147 @@
     .char-count {
       font-size: 11px;
       color: #999;
+    }
+
+    /* ========== 聊天板（实名气泡）样式 ========== */
+    .chat-card {
+      background: linear-gradient(180deg, #FAFBFF 0%, #F0F4FF 100%);
+      border: 1px solid #DBEAFE;
+    }
+    .chat-list {
+      max-height: 300px;
+      padding-right: 6px;
+    }
+    .chat-bubble {
+      display: flex;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px dashed #E5E7EB;
+      animation: fadeInUp 0.4s ease both;
+      position: relative;
+    }
+    .chat-bubble:last-child { border-bottom: none; }
+    .chat-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #C0392B, #8B4513);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 4px rgba(192, 57, 43, 0.2);
+      font-family: "'Noto Serif SC', serif";
+    }
+    .chat-body {
+      flex: 1;
+      min-width: 0;
+    }
+    .chat-name-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+      gap: 8px;
+    }
+    .chat-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: #C0392B;
+    }
+    .chat-name.is-anon {
+      color: #6B7280;
+      font-weight: 500;
+    }
+    .chat-content {
+      font-size: 14px;
+      color: #1F2937;
+      line-height: 1.65;
+      word-break: break-word;
+      background: #fff;
+      padding: 8px 12px;
+      border-radius: 0 10px 10px 10px;
+      border: 1px solid #F3F4F6;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    }
+    .chat-sender-row {
+      margin-bottom: 8px;
+    }
+    .chat-name-input {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid #BFDBFE;
+      border-radius: 8px;
+      font-size: 13px;
+      font-family: inherit;
+      background: #fff;
+      box-sizing: border-box;
+      transition: all 0.2s;
+    }
+    .chat-name-input:focus {
+      outline: none;
+      border-color: #3B82F6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    .chat-input {
+      min-height: 72px;
+      border-color: #BFDBFE;
+    }
+    .chat-input:focus {
+      border-color: #3B82F6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+
+    /* ========== 头衔徽章 ========== */
+    .student-title-badge {
+      display: inline-block;
+      font-size: 11px;
+      margin-right: 2px;
+      color: #D97706;
+      animation: badgePulse 2s ease-in-out infinite;
+    }
+    @keyframes badgePulse {
+      0%, 100% { transform: scale(1); }
+      50%      { transform: scale(1.15); }
+    }
+    .mini-title-badge {
+      display: inline-block;
+      margin-left: 8px;
+      padding: 2px 8px;
+      background: linear-gradient(135deg, #FDE68A, #F59E0B);
+      color: #7C2D12;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      vertical-align: middle;
+      font-family: sans-serif;
+    }
+
+    /* ========== 申请卡片高亮（邀请参与感） ========== */
+    .apply-card {
+      border: 2px dashed var(--cinnabar);
+      background: linear-gradient(180deg, #FDF2F2 0%, #FFFFFF 100%);
+      box-shadow: 0 4px 14px rgba(192, 57, 43, 0.08);
+    }
+    .apply-card .btn-primary {
+      background: linear-gradient(135deg, #C0392B, #8B4513);
+      padding: 12px;
+      font-size: 15px;
+      box-shadow: 0 4px 12px rgba(192, 57, 43, 0.25);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .apply-card .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(192, 57, 43, 0.35);
+    }
+
+    /* ========== 小贴士卡片 ========== */
+    .tips-card {
+      background: linear-gradient(180deg, #FFFBEB 0%, #FFFFFF 100%);
+      border: 1px solid #FDE68A;
     }
 
     /* 搜索框 */
@@ -721,15 +1141,188 @@
       opacity: 0.8;
     }
 
+    /* 新增：密码管理 / 单聊会话 / 通用高亮 */
+    .pwd-plain {
+      display: inline-block;
+      padding: 2px 10px;
+      background: linear-gradient(135deg,#FEF3C7,#FCD34D);
+      color: #78350F;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      letter-spacing: 1.5px;
+      font-weight: 700;
+      border-radius: 6px;
+      border: 1px solid #F59E0B;
+      box-shadow: 0 0 8px rgba(251,191,36,0.35);
+    }
+    .pwd-masked {
+      display: inline-block;
+      padding: 2px 10px;
+      background: #F1F5F9;
+      color: #475569;
+      font-weight: 600;
+      border-radius: 6px;
+      border: 1px solid #CBD5E1;
+      letter-spacing: 2px;
+      user-select: none;
+    }
+    .is-crimson {
+      color: #C0002A !important;
+      text-shadow: 0 0 6px rgba(192,0,42,0.55);
+    }
+    .admin-tab-panel {
+      animation: fadeInUp 0.35s ease both;
+    }
+    .dm-conv-item { transition: background 0.15s ease, border-color 0.15s ease; }
+    .dm-conv-item:hover { background: #FFF8E6; }
+    .dm-conv-item.active {
+      background: linear-gradient(135deg,#EFF6FF,#DBEAFE);
+      border-left: 4px solid #2563EB !important;
+      border-bottom-color: #BFDBFE;
+    }
+    .admin-tabs { flex-wrap: wrap; }
+    .admin-tab {
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
     /* 响应式 */
     @media (max-width: 1200px) {
       .left-panel { width: 280px; }
       .right-panel { width: 240px; }
     }
-    @media (max-width: 900px) {
-      .main-content { flex-direction: column; }
-      .left-panel, .right-panel { width: 100%; max-height: none; }
-      .map-container { min-height: 500px; }
+    @media (max-width: 1024px) {
+      .main-content { flex-direction: column; padding: 14px; gap: 14px; }
+      .left-panel, .right-panel { width: 100%; max-height: none; box-sizing: border-box; }
+      .left-panel { padding: 14px; }
+      .map-panel { min-height: 520px; }
+    }
+    /* 手机端（≤768px）：完整显示顶部公告 + 三栏纵向堆叠 */
+    @media (max-width: 768px) {
+      /* 顶部栏缩小 */
+      .top-bar { padding: 10px 12px; flex-wrap: wrap; gap: 8px; }
+      .site-title { font-size: 18px !important; }
+      .site-subtitle { font-size: 12px !important; }
+      .top-actions { flex-wrap: wrap; width: 100%; justify-content: flex-end; }
+      .top-actions button { font-size: 12px; padding: 6px 10px; }
+
+      /* ★ 顶端公告横幅：改为纵向，完整显示所有内容，不省略 */
+      .announcement-banner {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+        padding: 12px 14px;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .announcement-banner .banner-tag {
+        align-self: flex-start;
+        padding: 3px 10px;
+        font-size: 11px;
+      }
+      .announcement-banner .banner-content {
+        /* 关键：取消 nowrap + ellipsis，改为自动换行完整显示 */
+        white-space: normal;
+        overflow: visible;
+        text-overflow: clip;
+        word-break: break-word;
+        font-weight: 500;
+      }
+      .announcement-banner .banner-time {
+        align-self: flex-end;
+        font-size: 10px;
+      }
+
+      /* 主体三栏：纵向堆叠，每栏 100% 宽 */
+      .main-content {
+        flex-direction: column;
+        padding: 10px;
+        gap: 12px;
+      }
+      .left-panel, .right-panel {
+        width: 100% !important;
+        max-height: none;
+        box-sizing: border-box;
+        padding: 14px;
+      }
+      .map-panel {
+        min-height: 460px;
+        border-radius: 10px;
+      }
+      .panel-title { font-size: 17px; padding-bottom: 10px; margin-bottom: 12px; }
+      .info-card { padding: 14px; }
+      .info-card-title { font-size: 15px; }
+
+      /* 同学名录：姓名框大小适配 */
+      .student-name {
+        font-size: 12px;
+        padding: 3px 8px;
+        max-width: 100%;
+      }
+      .inline-title-badge { font-size: 9px; padding: 1px 6px; }
+
+      /* 聊天板/公告栏 输入框缩小 */
+      .chat-input, .message-input, .search-input,
+      .modal-form input, .modal-form textarea, .modal-form select,
+      .announcement-card textarea, .announcement-card input {
+        font-size: 14px; /* 避免 iOS 聚焦时自动放大 */
+      }
+      .chat-name-input { font-size: 14px; }
+      .message-card { padding: 8px 10px; }
+      .modal-dialog {
+        width: calc(100% - 20px) !important;
+        max-height: 88vh;
+        margin: 6vh auto !important;
+        padding: 16px !important;
+        box-sizing: border-box;
+      }
+      .modal-title { font-size: 17px; }
+      .form-group label { font-size: 13px; }
+
+      /* 管理员标签页缩小 */
+      .tabs-row { flex-wrap: wrap; gap: 6px; }
+      .tab-btn { font-size: 12px; padding: 6px 10px; }
+
+      /* 详情弹窗头衔徽章 */
+      .title-detail-badge { font-size: 13px; padding: 5px 14px; }
+
+      /* 新增：单聊收件箱改为上下堆叠 */
+      .admin-tab-panel > div[style*="display:flex"] {
+        flex-direction: column;
+        min-height: auto !important;
+      }
+      .admin-tab-panel > div[style*="display:flex"] > div {
+        width: 100% !important;
+        flex: 1 1 auto !important;
+        min-height: 340px;
+      }
+      /* 密码管理表格：密码列和操作列自适应 */
+      .admin-tab-panel .student-table .table-header,
+      .admin-tab-panel .student-table .table-row {
+        flex-wrap: wrap;
+      }
+      .admin-tab-panel .student-table .col-major[style*="flex:0"] {
+        flex: 1 1 140px !important;
+      }
+      .admin-tab-panel .student-table .col-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+    }
+    /* 小屏手机（≤420px）进一步压缩 */
+    @media (max-width: 420px) {
+      .site-title { font-size: 16px !important; }
+      .site-subtitle { font-size: 11px !important; }
+      .announcement-banner { font-size: 12px; padding: 10px 12px; }
+      .panel-title { font-size: 15px; }
+      .left-panel, .right-panel { padding: 12px; }
+      .info-card { padding: 12px; }
+      .student-name { font-size: 11px; }
+      .map-panel { min-height: 400px; }
+      .search-input { font-size: 13px; padding: 8px 10px; }
+      /* 社区管理卡片进一步收紧 */
+      .admin-tab-panel > div[style*="grid-template-columns:repeat(auto-fill"] {
+        grid-template-columns: repeat(auto-fill,minmax(240px,1fr)) !important;
+      }
     }
   </style>
 </head>
@@ -831,6 +1424,25 @@
     const pendingApplications = reactive({ list: [] });
     const messagesStore = reactive({ list: [] });
     const announcementsStore = reactive({ list: [] }); // 公告
+    const communitiesStore = reactive({
+      list: [],
+      pendingCreateReqs: [],
+      pendingJoinReqs: [],
+      allCreateReqs: [],
+      allJoinReqs: []
+    });
+    // 管理端 / 社长端 Tab 用：{create: [], join: []}
+    const communityRequestsStore = ref(null);
+    // 同学端会话（sessionStorage 关闭标签页即失效）
+    const studentSession = ref(null);  // {token, student}
+    const directMessagesStore = reactive({
+      // 管理员收件箱用：会话列表
+      conversations: [],
+      // 当前选中会话的消息（管理员或同学端单聊）
+      active: { studentId: null, studentName: '', messages: [] },
+      // 同学端自己的会话消息（当 studentSession 存在时）
+      mine: { messages: [] }
+    });
     // 云端连接状态：'checking' | 'cloud' | 'error'
     const cloudStatus = ref('checking');
     const cloudError = ref('');
@@ -882,13 +1494,38 @@
 
     // 数据提供者：**仅云端模式**，3次重试，绝不降级本地
     const DataProvider = {
-      _getHeaders(needAuth = false) {
+      _getHeaders(needAdmin = false, needStudent = false) {
         const headers = { 'Content-Type': 'application/json' };
-        if (needAuth && adminToken) {
-          headers['X-Admin-Token'] = adminToken;
+        if (needAdmin && adminToken) headers['X-Admin-Token'] = adminToken;
+        if (needStudent && studentSession.value && studentSession.value.token) {
+          headers['X-Student-Token'] = studentSession.value.token;
         }
         return headers;
       },
+      // ========= 响应式数据属性（供 DataProvider.xxx 直接使用）=========
+      get studentSession() { return studentSession.value; },
+      set studentSession(v) { studentSession.value = v; },
+      get communities() { return communitiesStore.list || []; },
+      get communityRequests() {
+        return {
+          create: communitiesStore.allCreateReqs || [],
+          join: communitiesStore.allJoinReqs || [],
+          pendingCreate: communitiesStore.pendingCreateReqs || [],
+          pendingJoin: communitiesStore.pendingJoinReqs || []
+        };
+      },
+      get myCommunity() {
+        const sess = studentSession.value;
+        if (!sess || !sess.student || !sess.student.communityId) return null;
+        return (communitiesStore.list || []).find(c => String(c.id) === String(sess.student.communityId)) || null;
+      },
+      get isMyCommunityOwner() {
+        const me = this.myCommunity;
+        const sess = studentSession.value;
+        if (!me || !sess || !sess.student) return false;
+        return String(me.ownerId) === String(sess.student.id);
+      },
+      get directMineMessages() { return (directMessagesStore.mine && directMessagesStore.mine.messages) || []; },
 
       getCloudStatus() { return { status: cloudStatus.value, error: cloudError.value }; },
 
@@ -914,7 +1551,7 @@
 
       // ===== 学生档案 =====
       async getStudents() {
-        const r = await fetchWithRetry('/api/students', {}, '获取学生档案');
+        const r = await fetchWithRetry('/api/students', { headers: this._getHeaders(true) }, '获取学生档案');
         if (Array.isArray(r.data)) {
           studentsStore.list = r.data;
           if (r.data.length > 0) idCounter = Math.max(...r.data.map(s => s.id), 0) + 1;
@@ -922,7 +1559,6 @@
         }
         throw new Error('学生数据格式错误');
       },
-
       async addStudent(student) {
         if (!adminToken) throw new Error('请先登录管理员账号');
         const r = await fetchWithRetry('/api/students', {
@@ -933,7 +1569,6 @@
         studentsStore.list.push(r.data);
         return r.data;
       },
-
       async updateStudent(id, updates) {
         if (!adminToken) throw new Error('请先登录管理员账号');
         const r = await fetchWithRetry(`/api/students/${id}`, {
@@ -945,7 +1580,6 @@
         if (idx > -1) studentsStore.list[idx] = r.data;
         return r.data;
       },
-
       async deleteStudent(id) {
         if (!adminToken) throw new Error('请先登录管理员账号');
         await fetchWithRetry(`/api/students/${id}`, {
@@ -970,7 +1604,6 @@
         }
         throw new Error('待审核数据格式错误');
       },
-
       async addPending(app) {
         const r = await fetchWithRetry('/api/pending', {
           method: 'POST',
@@ -980,7 +1613,6 @@
         pendingApplications.list.push(r.data);
         return r.data;
       },
-
       async removePending(id) {
         if (!adminToken) throw new Error('请先登录管理员账号');
         await fetchWithRetry(`/api/pending/${id}`, {
@@ -1002,17 +1634,22 @@
         }
         throw new Error('留言数据格式错误');
       },
-
-      async addMessage(content) {
+      async addMessage({ content, name, studentName, studentPassword }) {
+        // 优先使用同学会话头（X-Student-Token）；否则回落到姓名+密码（兼容老调用）
+        const hasStudentToken = !!(studentSession.value && studentSession.value.token);
+        const payload = { content };
+        if (!hasStudentToken) {
+          payload.studentName = (studentName || name || '').trim();
+          payload.studentPassword = (studentPassword || '').trim();
+        }
         const r = await fetchWithRetry('/api/messages', {
           method: 'POST',
-          headers: this._getHeaders(false),
-          body: JSON.stringify({ content })
+          headers: this._getHeaders(false, true),
+          body: JSON.stringify(payload)
         }, '发送留言');
         messagesStore.list.push(r.data);
         return r.data;
       },
-
       async deleteMessage(id) {
         if (!adminToken) throw new Error('请先登录管理员账号');
         await fetchWithRetry(`/api/messages/${id}`, {
@@ -1024,7 +1661,7 @@
         return true;
       },
 
-      // ===== 公告（所有人可读，仅管理员可发布/删除） =====
+      // ===== 公告 =====
       async getAnnouncements() {
         const r = await fetchWithRetry('/api/announcements', {
           headers: this._getHeaders(false)
@@ -1040,7 +1677,6 @@
           body: JSON.stringify({ title, content, pinned })
         }, '发布公告');
         announcementsStore.list = [r.data, ...announcementsStore.list.filter(a => a.id !== r.data.id)];
-        // 按 id 倒序
         announcementsStore.list.sort((a, b) => (b.id || 0) - (a.id || 0));
         return r.data;
       },
@@ -1052,7 +1688,18 @@
         }, `删除公告 id:${id}`);
         const idx = announcementsStore.list.findIndex(a => a.id == id);
         if (idx > -1) announcementsStore.list.splice(idx, 1);
-        return true;
+      },
+      async updateAnnouncement(id, { title, content, pinned }) {
+        if (!adminToken) throw new Error('请先登录管理员账号');
+        const r = await fetchWithRetry(`/api/announcements/${id}`, {
+          method: 'PUT',
+          headers: this._getHeaders(true),
+          body: JSON.stringify({ title, content, pinned })
+        }, `修改公告 id:${id}`);
+        const idx = announcementsStore.list.findIndex(a => a.id == id);
+        if (idx > -1) announcementsStore.list.splice(idx, 1, r.data);
+        announcementsStore.list.sort((a, b) => (b.id || 0) - (a.id || 0));
+        return r.data;
       },
 
       // ===== 管理员登录 =====
@@ -1071,9 +1718,10 @@
           }
           return false;
         } catch (e) {
-          // 云端登录失败时，允许本地密码兜底（防止部署出错锁死管理员）
+          // 兜底本地密码
           console.warn('[Cloud] 云端登录失败，使用本地密码校验');
-          if (password === 'I_LV_WHC') {
+          const ADMIN_PASSWORD = 'I_LV_WHC';
+          if (password === ADMIN_PASSWORD) {
             adminToken = 'local-admin';
             localStorage.setItem('admin_token', adminToken);
             localStorage.setItem('admin_authed', '1');
@@ -1082,15 +1730,423 @@
           return false;
         }
       },
-
       adminLogout() {
         adminToken = '';
         localStorage.removeItem('admin_token');
         localStorage.removeItem('admin_authed');
       },
+      isAdmin() { return !!adminToken; },
 
-      isAdmin() {
-        return !!adminToken;
+      // ===== 同学端：登录 / 会话 / 登出 =====
+      async studentLogin(studentName, studentPassword) {
+        const r = await fetchWithRetry('/api/student-login', {
+          method: 'POST',
+          headers: this._getHeaders(false),
+          body: JSON.stringify({ studentName, studentPassword })
+        }, '同学登录');
+        if (r.data && r.data.ok) {
+          sessionStorage.setItem('STUDENT_TOKEN', r.data.token);
+          sessionStorage.setItem('STUDENT_INFO', JSON.stringify(r.data.student));
+          studentSession.value = { token: r.data.token, student: r.data.student };
+          return r.data;
+        }
+        throw new Error((r.data && r.data.error) || '登录失败');
+      },
+      async verifyStudentSession(token) {
+        const r = await fetchWithRetry('/api/student-login/me', {
+          method: 'POST',
+          headers: this._getHeaders(false),
+          body: JSON.stringify({ token })
+        }, '同学会话校验');
+        if (r.data && r.data.ok) {
+          sessionStorage.setItem('STUDENT_INFO', JSON.stringify(r.data.student));
+          studentSession.value = { token, student: r.data.student };
+          return r.data.student;
+        }
+        return null;
+      },
+      studentLogout() {
+        sessionStorage.removeItem('STUDENT_TOKEN');
+        sessionStorage.removeItem('STUDENT_INFO');
+        studentSession.value = null;
+        // 清同学端自己的 DM
+        if (directMessagesStore.mine) directMessagesStore.mine.messages = [];
+      },
+      refreshStudentInfo(patch = {}) {
+        const cur = studentSession.value;
+        if (!cur || !cur.student) return;
+        const next = { ...cur.student, ...patch };
+        studentSession.value = { ...cur, student: next };
+        sessionStorage.setItem('STUDENT_INFO', JSON.stringify(next));
+      },
+
+      // ===== 同学退社（需要密码二次确认；X-Student-Token 验证身份一致性）=====
+      async leaveCommunity(studentPasswordFromUI) {
+        const sess = studentSession.value;
+        if (!sess || !sess.student) throw new Error('请先登录同学身份');
+        const studentId = sess.student.id;
+        const studentPassword = String(studentPasswordFromUI || '').trim();
+        if (!studentPassword) throw new Error('退社需输入您的密码以确认身份');
+        const r = await fetchWithRetry(`/api/students/${studentId}/leave-community`, {
+          method: 'POST',
+          headers: this._getHeaders(false, true),
+          body: JSON.stringify({ studentPassword })
+        }, '退出社区');
+        if (r.data && r.data.ok) {
+          this.refreshStudentInfo({ communityId: null, communityName: '' });
+          const idx = studentsStore.list.findIndex(s => String(s.id) === String(studentId));
+          if (idx > -1) {
+            studentsStore.list[idx] = { ...studentsStore.list[idx], communityId: null, communityName: '' };
+          }
+          return r.data;
+        }
+        throw new Error((r.data && r.data.error) || '退社失败');
+      },
+
+      // ===== 管理员：密码管理 =====
+      async batchFillPasswords() {
+        if (!adminToken) throw new Error('请先登录管理员');
+        const r = await fetchWithRetry('/api/students/batch-fill-passwords', {
+          method: 'POST',
+          headers: this._getHeaders(true)
+        }, '批量补密码');
+        if (r.data && r.data.ok) {
+          // 刷新列表获取新密码
+          await this.getStudents();
+          return { filled: r.data.filledCount, total: r.data.total, ...r.data };
+        }
+        throw new Error((r.data && r.data.error) || '批量补密码失败');
+      },
+      async resetPassword(id) {
+        if (!adminToken) throw new Error('请先登录管理员');
+        const r = await fetchWithRetry(`/api/students/${id}/reset-password`, {
+          method: 'POST',
+          headers: this._getHeaders(true)
+        }, `重置密码 id:${id}`);
+        if (r.data && r.data.ok) {
+          const idx = studentsStore.list.findIndex(s => s.id == id);
+          if (idx > -1) studentsStore.list[idx].password = r.data.newPassword;
+          // 返回与 UI 兼容：{ password }
+          return { password: r.data.newPassword, ...r.data };
+        }
+        throw new Error((r.data && r.data.error) || '重置密码失败');
+      },
+
+      // ===== 社区 =====
+      async loadCommunities() {
+        const data = await this.getCommunities();
+        return data;
+      },
+      async loadCommunityRequests() {
+        // 申请详情通过 getCommunities 管理员接口已经返回
+        const data = await this.getCommunities();
+        communityRequestsStore.value = {
+          create: (data && data.allCreateReqs) || communitiesStore.allCreateReqs || [],
+          join: (data && data.allJoinReqs) || communitiesStore.allJoinReqs || []
+        };
+        return communityRequestsStore.value;
+      },
+      async getCommunities() {
+        const r = await fetchWithRetry('/api/communities', {
+          headers: this._getHeaders(true)
+        }, '获取社区列表');
+        const payload = r.data || { communities: [] };
+        communitiesStore.list = payload.communities || [];
+        communitiesStore.pendingCreateReqs = (payload.allCreateReqs || []).filter(x => x.status === 'pending');
+        communitiesStore.pendingJoinReqs = (payload.allJoinReqs || []).filter(x => x.status === 'pending');
+        communitiesStore.allCreateReqs = payload.allCreateReqs || [];
+        communitiesStore.allJoinReqs = payload.allJoinReqs || [];
+        return payload;
+      },
+      async requestCommunityCreate({ name, intro, password }) {
+        const sess = studentSession.value;
+        if (!sess || !sess.student) throw new Error('请先登录同学身份');
+        const studentName = (sess.student.nickname || '').trim();
+        const communityName = String(name || '').trim();
+        const communityIntro = String(intro || '').trim();
+        const studentPassword = String(password || '').trim();
+        if (!studentPassword) throw new Error('请输入您的密码以验证身份');
+        if (!communityName) throw new Error('请填写社区名称');
+        const r = await fetchWithRetry('/api/communities/create-request', {
+          method: 'POST',
+          headers: this._getHeaders(false),
+          body: JSON.stringify({ studentName, studentPassword, communityName, communityIntro })
+        }, '申请创建社区');
+        if (r.data && r.data.ok) return r.data;
+        throw new Error((r.data && r.data.error) || '申请创建社区失败');
+      },
+      async requestCommunityJoin({ communityId, password, note }) {
+        const sess = studentSession.value;
+        if (!sess || !sess.student) throw new Error('请先登录同学身份');
+        const studentName = (sess.student.nickname || '').trim();
+        const studentPassword = String(password || '').trim();
+        if (!studentPassword) throw new Error('请输入您的密码以验证身份');
+        if (!communityId) throw new Error('请选择要加入的社区');
+        const r = await fetchWithRetry('/api/communities/join-request', {
+          method: 'POST',
+          headers: this._getHeaders(false),
+          body: JSON.stringify({ studentName, studentPassword, communityId, applyNote: note || '' })
+        }, '申请加入社区');
+        if (r.data && r.data.ok) return r.data;
+        throw new Error((r.data && r.data.error) || '申请加入社区失败');
+      },
+      async approveCommunityCreate(id) {
+        if (!adminToken) throw new Error('请先登录管理员');
+        const r = await fetchWithRetry(`/api/communities/create-request/${id}/approve`, {
+          method: 'POST',
+          headers: this._getHeaders(true)
+        }, `审批创建社区通过 req:${id}`);
+        if (r.data && r.data.ok) {
+          await this.loadCommunities();
+          if (communityRequestsStore.value) await this.loadCommunityRequests();
+          return r.data;
+        }
+        throw new Error((r.data && r.data.error) || '审批失败');
+      },
+      async rejectCommunityCreate(id, reason = '') {
+        if (!adminToken) throw new Error('请先登录管理员');
+        const r = await fetchWithRetry(`/api/communities/create-request/${id}/reject`, {
+          method: 'POST',
+          headers: this._getHeaders(true),
+          body: JSON.stringify({ reason })
+        }, `拒绝创建社区 req:${id}`);
+        if (r.data && r.data.ok) {
+          await this.loadCommunities();
+          if (communityRequestsStore.value) await this.loadCommunityRequests();
+          return r.data;
+        }
+        throw new Error((r.data && r.data.error) || '拒绝失败');
+      },
+      async approveCommunityJoin(id, opt = {}) {
+        // 管理员或社长均可以审批；管理员走 X-Admin-Token，社长走 X-Student-Token
+        const role = opt.role || (adminToken ? 'admin' : 'owner');
+        const r = await fetchWithRetry(`/api/communities/join-request/${id}/approve`, {
+          method: 'POST',
+          headers: this._getHeaders(role === 'admin', role === 'owner'),
+          body: JSON.stringify(role === 'owner'
+            ? { studentName: opt.studentName, studentPassword: opt.studentPassword }
+            : {})
+        }, `审批加入社区 req:${id}`);
+        if (r.data && r.data.ok) {
+          await this.loadCommunities();
+          if (communityRequestsStore.value) await this.loadCommunityRequests();
+          return r.data;
+        }
+        throw new Error((r.data && r.data.error) || '加入审批失败');
+      },
+      async rejectCommunityJoin(id, opt = {}) {
+        const role = opt.role || (adminToken ? 'admin' : 'owner');
+        const r = await fetchWithRetry(`/api/communities/join-request/${id}/reject`, {
+          method: 'POST',
+          headers: this._getHeaders(role === 'admin', role === 'owner'),
+          body: JSON.stringify(role === 'owner'
+            ? { studentName: opt.studentName, studentPassword: opt.studentPassword, reason: opt.reason || '' }
+            : { reason: opt.reason || '' })
+        }, `拒绝加入社区 req:${id}`);
+        if (r.data && r.data.ok) {
+          await this.loadCommunities();
+          if (communityRequestsStore.value) await this.loadCommunityRequests();
+          return r.data;
+        }
+        throw new Error((r.data && r.data.error) || '拒绝失败');
+      },
+      async transferCommunityOwner(communityId, targetStudentId, opt = {}) {
+        const role = opt.role || (adminToken ? 'admin' : 'owner');
+        // 如果是社长操作，session 已注入，X-Student-Token 自动带，密码不强制
+        let body;
+        if (role === 'owner') {
+          const sess = studentSession.value;
+          body = {
+            studentName: opt.studentName || (sess && sess.student && sess.student.nickname) || '',
+            studentPassword: opt.studentPassword || '',
+            targetStudentId
+          };
+        } else {
+          body = { targetStudentId };
+        }
+        const r = await fetchWithRetry(`/api/communities/${communityId}/transfer`, {
+          method: 'POST',
+          headers: this._getHeaders(role === 'admin', role === 'owner'),
+          body: JSON.stringify(body)
+        }, `转让社区 ${communityId} -> ${targetStudentId}`);
+        if (r.data && r.data.ok) {
+          await this.loadCommunities();
+          // 如果当前会话是转让相关的学生，刷新其社区身份头衔
+          const sess = studentSession.value;
+          if (sess && sess.student && (String(sess.student.id) === String(targetStudentId) || this.isMyCommunityOwner)) {
+            const me = (studentsStore.list || []).find(x => String(x.id) === String(sess.student.id));
+            if (me) this.refreshStudentInfo({ titleLevel: me.titleLevel });
+          }
+          return r.data;
+        }
+        throw new Error((r.data && r.data.error) || '转让失败');
+      },
+      async adminRemoveMember(communityId, studentId) {
+        if (!adminToken) throw new Error('请先登录管理员');
+        const r = await fetchWithRetry(`/api/communities/${communityId}/remove-member`, {
+          method: 'POST',
+          headers: this._getHeaders(true),
+          body: JSON.stringify({ studentId })
+        }, `管理员移出社员 ${studentId} 从社区 ${communityId}`);
+        if (r.data && r.data.ok) {
+          await this.loadCommunities();
+          const idx = studentsStore.list.findIndex(s => String(s.id) === String(studentId));
+          if (idx > -1) {
+            studentsStore.list[idx] = { ...studentsStore.list[idx], communityId: null, communityName: '' };
+          }
+          const sess = studentSession.value;
+          if (sess && sess.student && String(sess.student.id) === String(studentId)) {
+            this.refreshStudentInfo({ communityId: null, communityName: '' });
+          }
+          return r.data;
+        }
+        throw new Error((r.data && r.data.error) || '移出失败');
+      },
+      async deleteCommunity(id) {
+        if (!adminToken) throw new Error('请先登录管理员');
+        const r = await fetchWithRetry(`/api/communities/${id}`, {
+          method: 'DELETE',
+          headers: this._getHeaders(true)
+        }, `删除社区 ${id}`);
+        if (r.data && r.data.ok) {
+          await this.loadCommunities();
+          if (communityRequestsStore.value) await this.loadCommunityRequests();
+          return r.data;
+        }
+        throw new Error((r.data && r.data.error) || '删除失败');
+      },
+
+      // ===== 单聊（同学 ↔ 管理员） =====
+      async loadDirectMessages(markRead = true) {
+        // 管理员端：返回会话列表；同学端：返回自己会话的消息
+        const sess = studentSession.value;
+        if (adminToken) {
+          const list = await this.getDirectMessages({});
+          return list && list.total ? 0 : 0;
+        }
+        if (sess && sess.student) {
+          const qs = {
+            studentId: String(sess.student.id),
+            studentName: sess.student.nickname || '',
+            // 同学端 API 支持密码鉴权，用 header token 也行，这里密码没存，给 token 就行
+            studentPassword: '__xst__'
+          };
+          // 直接调接口同时带 X-Student-Token，后端若有 header 优先 header
+          const r = await fetchWithRetry(
+            `/api/direct-messages?studentId=${encodeURIComponent(qs.studentId)}&studentName=${encodeURIComponent(qs.studentName)}&studentPassword=__unused__`,
+            { headers: this._getHeaders(false, true) },
+            '读取同学单聊消息'
+          );
+          const data = r.data || {};
+          if (data && data.mode === 'conversation' && Array.isArray(data.messages)) {
+            // 标记已读（如果需要）
+            if (markRead && data.messages.some(m => m.sender === 'admin' && !m.read)) {
+              try { await this.markDirectMessagesRead({ studentName: sess.student.nickname, studentPassword: '__unused__' }); } catch {}
+            }
+            directMessagesStore.mine.messages = data.messages;
+            return 0;
+          }
+          return 0;
+        }
+        return 0;
+      },
+      async getDirectMessages(opt = {}) {
+        const qs = [];
+        if (opt.studentId) qs.push(`studentId=${encodeURIComponent(opt.studentId)}`);
+        if (opt.studentName) qs.push(`studentName=${encodeURIComponent(opt.studentName)}`);
+        if (opt.studentPassword) qs.push(`studentPassword=${encodeURIComponent(opt.studentPassword)}`);
+        const url = '/api/direct-messages' + (qs.length ? `?${qs.join('&')}` : '');
+        const r = await fetchWithRetry(url, { headers: this._getHeaders(true) }, '读取单聊消息');
+        const data = r.data;
+        // 管理员返回列表模式：更新 conversations；返回对话模式：更新 active
+        if (data && data.mode === 'list') {
+          directMessagesStore.conversations = data.conversations || [];
+        } else if (data && data.mode === 'conversation') {
+          directMessagesStore.active = {
+            studentId: data.studentId,
+            studentName: data.studentName,
+            messages: data.messages || []
+          };
+        }
+        return data;
+      },
+      async markDirectReadByStudent(studentId) {
+        if (!adminToken) return null;
+        const r = await fetchWithRetry('/api/direct-messages/mark-read', {
+          method: 'POST',
+          headers: this._getHeaders(true),
+          body: JSON.stringify({ studentId })
+        }, '管理员标某会话已读');
+        // 刷新左侧未读红点
+        await this.getDirectMessages({});
+        // 刷新当前 active 的消息未读
+        if (studentId && directMessagesStore.active && String(directMessagesStore.active.studentId) === String(studentId)) {
+          await this.getDirectMessages({ studentId });
+        }
+        return r.data;
+      },
+      async sendDirectMessage(payload) {
+        // 同学端调用：payload 是 string 内容，按学生身份构造 body
+        const sess = studentSession.value;
+        if (!sess || !sess.student) throw new Error('请先登录同学身份');
+        const content = typeof payload === 'string' ? String(payload) : String(payload.content || '');
+        if (!content.trim()) throw new Error('内容不能为空');
+        const r = await fetchWithRetry('/api/direct-messages', {
+          method: 'POST',
+          headers: this._getHeaders(false, true),
+          body: JSON.stringify({
+            studentName: sess.student.nickname || '',
+            studentPassword: '__unused__',
+            content
+          })
+        }, '发送单聊消息');
+        if (r.data && r.data.ok) {
+          // 乐观更新
+          if (directMessagesStore.mine) {
+            directMessagesStore.mine.messages = [...(directMessagesStore.mine.messages || []), r.data.message];
+          }
+          return r.data;
+        }
+        throw new Error((r.data && r.data.error) || '发送失败');
+      },
+      async sendDirectMessageAsAdmin(studentId, content) {
+        if (!adminToken) throw new Error('请先登录管理员');
+        const r = await fetchWithRetry('/api/direct-messages', {
+          method: 'POST',
+          headers: this._getHeaders(true),
+          body: JSON.stringify({ studentId, content })
+        }, `管理员回复单聊 ${studentId}`);
+        if (r.data && r.data.ok) {
+          // 乐观更新当前 active 消息列表
+          if (directMessagesStore.active && String(directMessagesStore.active.studentId) === String(studentId)) {
+            directMessagesStore.active.messages = [...(directMessagesStore.active.messages || []), r.data.message];
+          }
+          return r.data;
+        }
+        throw new Error((r.data && r.data.error) || '发送失败');
+      },
+      async markDirectMessagesRead(opt = {}) {
+        const isAdminCall = !!(adminToken && (opt.studentId || Object.keys(opt).length === 0));
+        const r = await fetchWithRetry('/api/direct-messages/mark-read', {
+          method: 'POST',
+          headers: this._getHeaders(isAdminCall, !isAdminCall),
+          body: JSON.stringify(opt)
+        }, '标已读');
+        return r.data;
+      }
+    };
+
+    // 刷新社区列表（含管理员时返回的申请汇总）
+    const reloadCommunities = async () => {
+      try {
+        const data = await DataProvider.getCommunities();
+        communitiesStore.list = data.communities || [];
+        communitiesStore.pendingCreateReqs = (data.allCreateReqs || []).filter(r => r.status === 'pending');
+        communitiesStore.pendingJoinReqs = (data.allJoinReqs || []).filter(r => r.status === 'pending');
+        communitiesStore.allCreateReqs = data.allCreateReqs || [];
+        communitiesStore.allJoinReqs = data.allJoinReqs || [];
+      } catch (e) {
+        console.warn('社区列表加载失败：', e.message);
       }
     };
 
@@ -1103,8 +2159,20 @@
           await Promise.all([
             DataProvider.getStudents(),
             DataProvider.getMessages(),
-            DataProvider.getAnnouncements()
+            DataProvider.getAnnouncements(),
+            reloadCommunities()
           ]);
+          // 会话恢复：有 STUDENT_TOKEN 就校验
+          const token = sessionStorage.getItem('STUDENT_TOKEN');
+          if (token) {
+            try {
+              const stu = await DataProvider.verifyStudentSession(token);
+              if (!stu) sessionStorage.removeItem('STUDENT_TOKEN');
+            } catch (e) {
+              sessionStorage.removeItem('STUDENT_TOKEN');
+              console.warn('会话恢复失败：', e.message);
+            }
+          }
         } catch (e) {
           globalInitError.value = '初始化加载失败：' + e.message;
           console.error('Init error:', e);
@@ -1211,6 +2279,15 @@
             ⚠️ {{ initError }}
           </div>
 
+          <!-- 置顶公告横幅（有公告才显示） -->
+          <div v-if="pinnedBanner" class="announcement-banner" @click="$emit('openAdmin', 'announcement')">
+            <span class="banner-tag">📢 置顶公告</span>
+            <span class="banner-content">
+              <b v-if="pinnedBanner.title">【{{ pinnedBanner.title }}】</b>{{ pinnedBanner.content }}
+            </span>
+            <span class="banner-time">{{ pinnedBanner.created_at }}</span>
+          </div>
+
           <div class="top-bar">
             <div>
               <div class="top-title calligraphy">🗺️ 高中同学全国蹭饭图</div>
@@ -1223,6 +2300,43 @@
               </div>
             </div>
             <div class="top-actions">
+              <!-- 同学端身份信息（已登录） -->
+              <template v-if="studentSession && studentSession.student">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+                  <div class="info-card" style="padding:6px 12px;margin:0;box-shadow:none;display:flex;align-items:center;gap:8px;">
+                    <span style="font-size:13px;">👤</span>
+                    <span
+                      style="font-size:14px;font-weight:700;"
+                      :class="{
+                        'name-crimson': (parseInt(studentSession.student.titleLevel) || 0) === 4,
+                        'name-sky': (parseInt(studentSession.student.titleLevel) || 0) === 5
+                      }"
+                    >{{ studentSession.student.nickname }}</span>
+                    <template v-if="studentSession.student.title">
+                      <span class="inline-title-badge" :class="{
+                        'badge-gold': (parseInt(studentSession.student.titleLevel) || 0) === 1,
+                        'badge-silver': (parseInt(studentSession.student.titleLevel) || 0) === 2,
+                        'badge-bronze': (parseInt(studentSession.student.titleLevel) || 0) === 3,
+                        'badge-crimson': (parseInt(studentSession.student.titleLevel) || 0) === 4,
+                        'badge-sky': (parseInt(studentSession.student.titleLevel) || 0) === 5,
+                        'badge-normal': !(parseInt(studentSession.student.titleLevel) > 0)
+                      }">{{ studentSession.student.title }}</span>
+                    </template>
+                    <template v-if="myCommunity">
+                      <span class="msg-tag" :class="isMyCommunityOwner ? 'community-owner' : 'community'">
+                        {{ isMyCommunityOwner ? '👑 社长' : '🎯 成员' }}：{{ myCommunity.name }}
+                      </span>
+                    </template>
+                  </div>
+                  <button v-if="myCommunity" class="btn btn-sm btn-danger" @click="confirmLeaveCommunity" title="退出当前社区">🚪 退社</button>
+                  <button class="btn btn-sm btn-secondary" @click="openDirectChat" title="单聊管理员">💌 私信管理员</button>
+                  <button class="btn btn-sm btn-secondary" @click="studentLogout">✕ 退出登录</button>
+                </div>
+              </template>
+              <!-- 同学端：未登录 → 显示登录按钮 -->
+              <template v-else>
+                <button class="btn btn-primary" @click="showStudentLogin = true" style="background:linear-gradient(135deg,#0EA5E9,#0284C7);border-color:#0284C7;">🎓 同学登录</button>
+              </template>
               <button class="btn btn-secondary" @click="showLogin = true">🔧 管理</button>
             </div>
           </div>
@@ -1260,9 +2374,24 @@
                       v-for="s in uni.students"
                       :key="s.id"
                       class="student-name"
+                      :class="{
+                        'title-gold': (parseInt(s.titleLevel) || 0) === 1,
+                        'title-silver': (parseInt(s.titleLevel) || 0) === 2,
+                        'title-bronze': (parseInt(s.titleLevel) || 0) === 3,
+                        'title-crimson': (parseInt(s.titleLevel) || 0) === 4,
+                        'title-sky': (parseInt(s.titleLevel) || 0) === 5
+                      }"
                       @click="highlightStudent(s)"
-                      :title="s.major || '点击查看'"
+                      :title="s.title ? ('【' + s.title + '】' + (s.major || '')) : (s.major || '点击查看')"
                     >
+                      <span v-if="s.title" class="inline-title-badge" :class="{
+                        'badge-gold': (parseInt(s.titleLevel) || 0) === 1,
+                        'badge-silver': (parseInt(s.titleLevel) || 0) === 2,
+                        'badge-bronze': (parseInt(s.titleLevel) || 0) === 3,
+                        'badge-crimson': (parseInt(s.titleLevel) || 0) === 4,
+                        'badge-sky': (parseInt(s.titleLevel) || 0) === 5,
+                        'badge-normal': !(parseInt(s.titleLevel) > 0)
+                      }">{{ s.title }}</span>
                       {{ s.nickname }}
                     </span>
                   </div>
@@ -1286,6 +2415,47 @@
 
             <!-- 右侧信息 -->
             <div class="right-panel fade-in-up" style="animation-delay: 0.2s;">
+              <!-- 1. 公告栏：放在最顶部，最显眼（无论有没有公告都显示卡片，空时有快捷发布入口） -->
+              <div class="info-card notice-card">
+                <div class="info-card-title calligraphy" style="color:#C0392B;border-bottom:2px dashed #F5C842;">
+                  📢 最新公告栏
+                  <span v-if="isAdmin" class="message-count" style="cursor:pointer;color:var(--cinnabar);" @click="$emit('openAdmin', 'announcement')">
+                    {{ announcements.length > 0 ? '管理 →' : '发布首条 →' }}
+                  </span>
+                  <span v-else class="message-count">{{ announcements.length }}条</span>
+                </div>
+                <!-- 空状态：还没公告 -->
+                <div v-if="announcements.length === 0" style="padding:28px 12px;text-align:center;">
+                  <div style="font-size:48px;margin-bottom:10px;">📭</div>
+                  <div style="font-size:14px;color:#92400E;margin-bottom:6px;">暂无公告</div>
+                  <div v-if="isAdmin" style="font-size:13px;color:#B45309;">
+                    点右上角「发布首条」快速发布第一条公告！
+                  </div>
+                  <div v-else style="font-size:13px;color:#A16207;">
+                    管理员即将发布最新动态，敬请期待
+                  </div>
+                </div>
+                <div v-else style="display:flex;flex-direction:column;gap:12px;">
+                  <div
+                    v-for="(item, idx) in announcements"
+                    :key="item.id"
+                    class="announcement-item"
+                    :class="{ 'is-pinned': item.pinned }"
+                    :style="{ animationDelay: idx * 0.04 + 's' }"
+                  >
+                    <div class="announcement-head">
+                      <span class="announcement-title">
+                        <span v-if="item.pinned" class="pinned-badge">📌 置顶</span>
+                        <b>{{ item.title || '📣 公告' }}</b>
+                      </span>
+                      <span class="announcement-date">{{ item.created_at }}</span>
+                    </div>
+                    <div class="announcement-content" style="white-space:pre-wrap;">{{ item.content }}</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. 统计数据 -->
               <div class="info-card">
                 <div class="info-card-title calligraphy">📊 统计数据</div>
                 <div class="stat-item">
@@ -1306,97 +2476,213 @@
                 </div>
               </div>
 
-              <div class="info-card">
-                <div class="info-card-title calligraphy">🎨 图例说明</div>
-                <div style="display:flex;flex-direction:column;gap:10px;font-size:13px;">
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <span style="width:14px;height:14px;border-radius:50%;background:#C0392B;box-shadow:0 0 8px rgba(192,57,43,0.5);"></span>
-                    <span>🍜 正在找饭搭子</span>
-                  </div>
-                  <div style="display:flex;align-items:center;gap:10px;">
-                    <span style="width:14px;height:14px;border-radius:50%;background:#8B4513;box-shadow:0 0 8px rgba(139,69,19,0.3);"></span>
-                    <span>👤 已就位同学</span>
-                  </div>
-                </div>
-              </div>
-
-              <div class="info-card">
-                <div class="info-card-title calligraphy">💡 使用说明</div>
-                <div style="font-size:13px;color:#666;line-height:1.8;">
-                  <p>• 鼠标悬停地图圆点查看同学详情</p>
-                  <p>• 点击左侧姓名定位并高亮对应同学</p>
-                  <p>• 鼠标滚轮可缩放地图</p>
-                  <p>• 拖拽地图可移动视角</p>
-                </div>
-              </div>
-
-              <div class="info-card">
+              <!-- 3. 申请加入入口 -->
+              <div class="info-card apply-card">
                 <div class="info-card-title calligraphy">📝 我要加入</div>
                 <div style="font-size:13px;color:#666;line-height:1.8;margin-bottom:12px;">
-                  想要加入蹭饭图？<br>请联系班级管理员添加你的信息。
+                  入站点这里 <br> 等待站主审核
                 </div>
-                <button class="btn btn-primary" style="width:100%;" @click="showApply = true">
-                  📮 申请加入
+                <button class="btn btn-primary" style="width:100%;font-weight:600;" @click="showApply = true">
+                  🚀 立即申请加入
                 </button>
               </div>
 
-              <!-- 公告栏 -->
-              <div class="info-card" v-if="announcements.length > 0">
-                <div class="info-card-title calligraphy">
-                  📢 公告栏
-                  <span v-if="isAdmin" class="message-count" style="cursor:pointer;color:var(--cinnabar);" @click="$emit('openAdmin', 'announcement')">管理 →</span>
+              <!-- 3.5 社区板块：社区列表 + 申请入口 -->
+              <div class="info-card notice-card" style="background:linear-gradient(180deg,#FFFDF7 0%,#EFF6FF 100%);border-color:#BFDBFE;">
+                <div class="info-card-title calligraphy" style="color:#1E3A8A;border-bottom:2px dashed #93C5FD;">
+                  🏛️ 社区广场
+                  <span class="message-count">{{ communities.length }}个社区 · 加入一起玩</span>
                 </div>
-                <div style="display:flex;flex-direction:column;gap:12px;">
-                  <div
-                    v-for="(item, idx) in announcements"
-                    :key="item.id"
-                    class="announcement-item"
-                    :style="{ animationDelay: idx * 0.03 + 's' }"
+                <!-- 快捷按钮区 -->
+                <div style="display:flex;gap:8px;margin:10px 0 14px 0;flex-wrap:wrap;">
+                  <button
+                    class="btn btn-primary"
+                    @click="openCreateCommunity"
+                    :disabled="studentSession && studentSession.student && studentSession.student.communityId"
+                    :title="studentSession && studentSession.student && studentSession.student.communityId ? '你已在一个社区中，请先退社再新建' : '未登录将先弹出同学登录'"
+                    style="flex:1;min-width:45%;background:linear-gradient(135deg,#8B5CF6,#7C3AED);border-color:#6D28D9;"
                   >
-                    <div class="announcement-head">
-                      <div style="display:flex;align-items:center;gap:6px;">
-                        <span v-if="item.pinned" style="font-size:11px;padding:1px 6px;background:#FDE8A8;color:#8B4513;border-radius:8px;">📌 置顶</span>
-                        <span class="announcement-title">{{ item.title || '公告' }}</span>
+                    🏗️ 申请创建新社区
+                  </button>
+                  <button
+                    class="btn btn-secondary"
+                    style="flex:1;min-width:45%;"
+                    @click="() => { if (!studentSession) { showStudentLogin = true; } else if (communities.length === 0) { alert('目前还没有社区，来创建第一个吧！'); } else { openJoinCommunity(communities[0]); } }"
+                    :disabled="studentSession && studentSession.student && studentSession.student.communityId"
+                  >
+                    🎯 申请加入社区
+                  </button>
+                </div>
+                <!-- 空状态 -->
+                <div v-if="communities.length === 0" style="padding:24px 0;text-align:center;">
+                  <div style="font-size:40px;margin-bottom:8px;">🏘️</div>
+                  <div style="font-size:13px;color:#64748B;">还没有社区被创建</div>
+                  <div style="font-size:12px;color:#94A3B8;margin-top:4px;">登录后点「申请创建新社区」成为第一个社长吧！</div>
+                </div>
+                <!-- 社区列表 -->
+                <div v-else style="display:flex;flex-direction:column;gap:10px;">
+                  <div
+                    v-for="(c, idx) in communities"
+                    :key="c.id"
+                    class="community-card"
+                    :style="{ animationDelay: idx*0.03 + 's' }"
+                  >
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                      <div style="flex:1;">
+                        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                          <span style="font-weight:700;color:#0F172A;font-size:15px;">{{ c.name }}</span>
+                          <span v-if="studentSession && studentSession.student && studentSession.student.communityId === c.id" class="msg-tag community-owner" style="font-size:11px;">✅ 我所在</span>
+                          <span v-else-if="myCommunity && myCommunity.id !== c.id" class="msg-tag community" style="font-size:11px;background:#FEF3C7;color:#92400E;">其他社区</span>
+                        </div>
+                        <div v-if="c.intro" style="font-size:13px;color:#475569;margin-top:4px;line-height:1.6;">{{ c.intro }}</div>
+                        <div style="font-size:12px;color:#64748B;margin-top:6px;display:flex;gap:10px;flex-wrap:wrap;">
+                          <span>👑 社长：{{ c.ownerName || c.ownerId }}</span>
+                          <span>👥 成员：{{ c.memberCount || (c.memberIds && c.memberIds.length) || 0 }}</span>
+                        </div>
                       </div>
-                      <span class="announcement-time">{{ item.created_at }}</span>
+                      <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+                        <button
+                          class="btn btn-sm btn-primary"
+                          style="background:linear-gradient(135deg,#0EA5E9,#0284C7);border-color:#0284C7;"
+                          :disabled="!studentSession || (studentSession.student && !!studentSession.student.communityId)"
+                          @click="openJoinCommunity(c)"
+                        >
+                          🎯 加入
+                        </button>
+                      </div>
                     </div>
-                    <div class="announcement-content">{{ item.content }}</div>
                   </div>
                 </div>
               </div>
 
-              <div class="info-card message-card">
+              <!-- 聊天板（实名/匿名 可切换） -->
+              <div class="info-card message-card chat-card">
                 <div class="info-card-title calligraphy">
-                  💬 留言板
-                  <span class="message-count">{{ messages.length }}条</span>
+                  💬 同学聊天板
+                  <span class="message-count">{{ messages.length }}条 · 想说就说</span>
                 </div>
-                <div class="message-list" ref="messageListRef">
+                <div class="message-list chat-list" ref="messageListRef">
                   <div v-if="messages.length === 0" style="text-align:center;padding:30px 0;color:#999;font-size:13px;">
-                    暂无留言，来说点什么吧~
+                    还没人说话，抢个沙发吧~
                   </div>
-                  <div v-for="msg in messages" :key="msg.id" class="message-item">
-                    <div class="message-content">{{ msg.content }}</div>
-                    <div class="message-meta">
-                      <span class="message-time">匿名 · {{ msg.created_at }}</span>
-                      <button v-if="isAdmin" class="message-delete" @click="deleteMessage(msg)" title="删除留言">
-                        🗑️
-                      </button>
+                  <div
+                    v-for="(msg, idx) in messages"
+                    :key="msg.id"
+                    class="chat-bubble"
+                    :style="{ animationDelay: idx * 0.02 + 's' }"
+                  >
+                    <div class="chat-avatar" :class="{
+                      'chat-avatar--anon': msg.name === '匿名校友',
+                      'chat-avatar--me': false
+                    }">
+                      {{ (msg.name || '匿').slice(0, 1) }}
                     </div>
+                    <div class="chat-body">
+                      <div class="chat-name-row" style="flex-wrap:wrap;">
+                        <!-- 规则：匿名校友 → 灰标；含(社区) → 实名绿标 + 社区蓝标；否则 → 实名绿标 -->
+                        <template v-if="msg.name === '匿名校友'">
+                          <span class="msg-tag anonymous">🎭 匿名校友</span>
+                        </template>
+                        <template v-else-if="msg.name && msg.name.indexOf('(') > 0 && msg.name.lastIndexOf(')') > msg.name.indexOf('(')">
+                          <span class="msg-tag realname">✅ {{ msg.name.slice(0, msg.name.indexOf('(')) }}</span>
+                          <span class="msg-tag community">
+                            🏛️ {{ msg.name.slice(msg.name.indexOf('(')+1, msg.name.lastIndexOf(')')) }}
+                          </span>
+                        </template>
+                        <template v-else>
+                          <span class="msg-tag realname">✅ {{ msg.name }}</span>
+                        </template>
+                        <span class="message-time">{{ msg.created_at }}</span>
+                      </div>
+                      <div class="chat-content">{{ msg.content }}</div>
+                    </div>
+                    <button v-if="isAdmin" class="message-delete" @click="deleteMessage(msg)" title="删除留言">
+                      🗑️
+                    </button>
                   </div>
+                </div>
+                <!-- 发言身份指示 -->
+                <div v-if="studentSession && studentSession.student" style="padding:10px 12px;margin:4px 0 10px 0;background:#ECFDF5;border:1px dashed #6EE7B7;border-radius:8px;font-size:13px;color:#065F46;line-height:1.8;">
+                  <div style="font-weight:700;">✅ 已验证为【{{ studentSession.student.nickname }}】</div>
+                  <div v-if="myCommunity" style="margin-top:2px;">🏛️ 当前社区：{{ myCommunity.name }}（{{ isMyCommunityOwner ? '社长' : '成员' }}），留言将显示为：<b>{{ studentSession.student.nickname }}({{ myCommunity.name }})</b></div>
+                  <div v-else style="margin-top:2px;">🎯 暂未加入社区，留言将显示为：<b>{{ studentSession.student.nickname }}</b>（仅实名）</div>
+                </div>
+                <div v-else style="padding:10px 12px;margin:4px 0 10px 0;background:#F3F4F6;border:1px dashed #D1D5DB;border-radius:8px;font-size:13px;color:#4B5563;line-height:1.8;">
+                  <div style="font-weight:600;">🎭 当前为匿名模式</div>
+                  <div style="margin-top:2px;">点右上角「🎓 同学登录」并输入正确姓名+密码，即可实名制发言（加入社区后还会带上社区名称）。</div>
                 </div>
                 <div class="message-input-wrap">
+                  <div class="chat-sender-row" :style="{ display: (studentSession && studentSession.student) ? 'none' : 'flex' }">
+                    <input
+                      v-model="speakerName"
+                      type="text"
+                      class="chat-name-input"
+                      placeholder="👤 你的昵称（未登录时留空=匿名校友）"
+                      maxlength="12"
+                    />
+                  </div>
                   <textarea
                     v-model="newMessage"
-                    class="message-input"
-                    placeholder="说点什么吧（匿名发布）..."
+                    class="message-input chat-input"
+                    placeholder="说点什么吧，Ctrl+Enter 一键发送~"
                     maxlength="200"
                     @keyup.ctrl.enter="sendMessage"
                   ></textarea>
                   <div class="message-input-footer">
                     <span class="char-count">{{ newMessage.length }}/200</span>
                     <button class="btn btn-sm btn-primary" @click="sendMessage" :disabled="!newMessage.trim()">
-                      发送
+                      🚀 发送
                     </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 小贴士卡片：图例+使用说明 合并在最底部 -->
+              <div class="info-card tips-card">
+                <div class="info-card-title calligraphy">💡 小贴士</div>
+                <div style="display:flex;flex-direction:column;gap:14px;">
+                  <div>
+                    <div style="font-weight:600;margin-bottom:8px;color:#8B4513;">🎨 地图图例</div>
+                    <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+                      <div style="display:flex;align-items:center;gap:10px;">
+                        <span style="width:14px;height:14px;border-radius:50%;background:#C0392B;box-shadow:0 0 8px rgba(192,57,43,0.5);"></span>
+                        <span>🍜 正在找饭搭子</span>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:10px;">
+                        <span style="width:14px;height:14px;border-radius:50%;background:#8B4513;box-shadow:0 0 8px rgba(139,69,19,0.3);"></span>
+                        <span>👤 已就位同学</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-weight:600;margin-bottom:8px;color:#8B4513;">🏷️ 聊天标签说明</div>
+                    <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;">
+                      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <span class="msg-tag realname" style="display:inline-flex;">✅ 实名</span>
+                        <span>密码+姓名验证通过</span>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <span class="msg-tag community" style="display:inline-flex;">🏛️ 社区名</span>
+                        <span>该同学所在社区</span>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <span class="msg-tag anonymous" style="display:inline-flex;">🎭 匿名校友</span>
+                        <span>未登录或未通过验证</span>
+                      </div>
+                      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <span class="msg-tag community-owner" style="display:inline-flex;">👑 社长</span>
+                        <span>社区创建者（可转让）</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style="font-weight:600;margin-bottom:8px;color:#8B4513;">📖 操作指南</div>
+                    <div style="font-size:13px;color:#666;line-height:1.9;">
+                      <p>• 鼠标悬停地图圆点看同学信息</p>
+                      <p>• 点击左侧姓名定位并高亮</p>
+                      <p>• 滚轮缩放 / 拖拽移动地图</p>
+                      <p>• 点顶部「🎓 同学登录」→ 实名制发言 + 创建/加入社区</p>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1432,10 +2718,30 @@
           <transition name="modal">
             <div v-if="showDetail && selectedStudent" class="modal-mask" @click.self="showDetail = false">
               <div class="modal-content" style="max-width:420px;">
-                <div class="modal-title calligraphy">🧑 {{ selectedStudent.nickname }} 的档案
+                <div class="modal-title calligraphy">
+                  <span
+                    class="detail-student-name"
+                    :class="{
+                      'name-crimson': (parseInt(selectedStudent.titleLevel) || 0) === 4,
+                      'name-sky': (parseInt(selectedStudent.titleLevel) || 0) === 5
+                    }"
+                  >🧑 {{ selectedStudent.nickname }}</span> 的档案
                   <span v-if="selectedStudent.looking_for_food" class="status-badge status-approved" style="margin-left:8px;font-size:12px;">🍜 找饭搭子</span>
                 </div>
                 <div style="padding:8px 0 20px 0;font-size:14px;line-height:2.2;">
+                  <!-- 头衔大徽章（最显眼位置，按色号变色） -->
+                  <div v-if="selectedStudent.title" style="margin-bottom:16px;">
+                    <div class="title-detail-badge" :class="{
+                      'badge-gold': (parseInt(selectedStudent.titleLevel) || 0) === 1,
+                      'badge-silver': (parseInt(selectedStudent.titleLevel) || 0) === 2,
+                      'badge-bronze': (parseInt(selectedStudent.titleLevel) || 0) === 3,
+                      'badge-crimson': (parseInt(selectedStudent.titleLevel) || 0) === 4,
+                      'badge-sky': (parseInt(selectedStudent.titleLevel) || 0) === 5,
+                      'badge-normal': !(parseInt(selectedStudent.titleLevel) > 0)
+                    }">
+                      🏅 {{ selectedStudent.title }}
+                    </div>
+                  </div>
                   <div style="display:flex;padding:8px 0;border-bottom:1px dashed #eee;">
                     <span style="width:90px;color:#888;flex-shrink:0;">📍 所在地</span>
                     <span style="color:#2C2C2C;">{{ selectedStudent.province }} · {{ selectedStudent.city }}</span>
@@ -1463,7 +2769,7 @@
                       <span style="color:#1E40AF;user-select:all;">{{ selectedStudent.qq }}</span>
                     </div>
                   </div>
-                  <div v-else style="padding:12px 0;color:#999;text-align:center;">
+                  <div v-if="!selectedStudent.wechat && !selectedStudent.qq" style="padding:12px 0;color:#999;text-align:center;border-top:1px dashed #eee;">
                     该同学暂未填写联系方式
                   </div>
                 </div>
@@ -1527,6 +2833,155 @@
                 <div class="form-actions">
                   <button class="btn btn-secondary" @click="showApply = false">取消</button>
                   <button class="btn btn-primary" @click="submitApply">提交申请</button>
+                </div>
+              </div>
+            </div>
+          </transition>
+
+          <!-- ====== 同学端：登录弹窗 ====== -->
+          <transition name="modal">
+            <div v-if="showStudentLogin" class="modal-mask" @click.self="showStudentLogin = false">
+              <div class="modal-content" style="max-width:400px;">
+                <div class="modal-title calligraphy">🎓 同学登录（实名制）</div>
+                <div style="padding:6px 0 12px 0;font-size:13px;color:#888;">
+                  <p style="margin:4px 0;">✅ 输入正确姓名+密码，即可：</p>
+                  <ul style="padding-left:18px;margin:6px 0;line-height:1.8;">
+                    <li>留言板实名制发言（自动附带上社区名称）</li>
+                    <li>申请创建社区 / 申请加入社区 / 退出社区 / 转让社长</li>
+                    <li>私密联系管理员（仅管理员可见）</li>
+                  </ul>
+                  <p style="margin:6px 0;color:#92400E;">💡 初始密码请联系管理员获取，管理员可查看/重置每位同学密码。</p>
+                </div>
+                <div class="form-group">
+                  <label>同学姓名（与档案一致）</label>
+                  <input type="text" v-model="studentLoginForm.name" placeholder="例如：王小明" @keyup.enter="doStudentLogin">
+                </div>
+                <div class="form-group">
+                  <label>专属 6 位数字密码</label>
+                  <input type="password" v-model="studentLoginForm.password" placeholder="6 位纯数字" maxlength="10" @keyup.enter="doStudentLogin">
+                </div>
+                <div v-if="studentLoginError" style="color:#C0002A;font-size:13px;margin-top:6px;text-align:center;">❌ {{ studentLoginError }}</div>
+                <div class="form-actions">
+                  <button class="btn btn-secondary" @click="showStudentLogin = false">取消</button>
+                  <button class="btn btn-primary" @click="doStudentLogin" :disabled="studentLoginLoading">
+                    {{ studentLoginLoading ? '登录中...' : '✅ 登录' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </transition>
+
+          <!-- ====== 同学端：申请创建社区 ====== -->
+          <transition name="modal">
+            <div v-if="showCreateCommunity" class="modal-mask" @click.self="showCreateCommunity = false">
+              <div class="modal-content" style="max-width:460px;">
+                <div class="modal-title calligraphy">🏛️ 申请创建新社区</div>
+                <div style="padding:4px 0 10px 0;font-size:13px;color:#888;">
+                  创建者自动成为该社社长（后续可转让给社内其他成员）。申请提交后需管理员审批。
+                </div>
+                <div class="form-group">
+                  <label>社区名称（最多 16 字，不可重名）</label>
+                  <input type="text" v-model="createCommForm.name" maxlength="16" placeholder="例如：篮球社 / 考研互助社">
+                </div>
+                <div class="form-group">
+                  <label>社区简介（最多 200 字，选填）</label>
+                  <textarea v-model="createCommForm.intro" rows="3" maxlength="200" style="width:100%;padding:10px;border:1px solid var(--paper-dark);border-radius:6px;resize:vertical;" placeholder="一句话介绍社区，让其它同学一眼看懂"></textarea>
+                </div>
+                <div class="form-group">
+                  <label>🔒 再次验证您的 6 位密码</label>
+                  <input type="password" v-model="createCommForm.password" placeholder="提交创建申请需验证您的身份" maxlength="10">
+                </div>
+                <div v-if="createCommError" style="color:#C0002A;font-size:13px;margin-top:6px;text-align:center;">❌ {{ createCommError }}</div>
+                <div v-else-if="createCommSuccess" style="color:#065F46;font-size:13px;margin-top:6px;text-align:center;">✅ 申请已提交，请等待管理员审批！</div>
+                <div class="form-actions">
+                  <button class="btn btn-secondary" @click="showCreateCommunity = false">取消</button>
+                  <button class="btn btn-primary" @click="submitCreateCommunity" :disabled="createCommLoading">
+                    {{ createCommLoading ? '提交中...' : '📤 提交创建申请' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </transition>
+
+          <!-- ====== 同学端：申请加入社区 ====== -->
+          <transition name="modal">
+            <div v-if="showJoinCommunity" class="modal-mask" @click.self="showJoinCommunity = false">
+              <div class="modal-content" style="max-width:460px;">
+                <div class="modal-title calligraphy">🎯 申请加入社区</div>
+                <div v-if="joinCommTarget" style="margin-bottom:10px;padding:10px;background:#EFF6FF;border-radius:8px;border:1px dashed #60A5FA;">
+                  <div style="font-size:14px;font-weight:700;color:#1E40AF;">目标社区：{{ joinCommTarget.name }}</div>
+                  <div v-if="joinCommTarget.intro" style="font-size:13px;color:#1E40AF;margin-top:4px;">📖 {{ joinCommTarget.intro }}</div>
+                  <div style="font-size:12px;color:#64748B;margin-top:4px;">👑 社长：{{ joinCommTarget.ownerName || joinCommTarget.ownerId }} · 现有成员：{{ joinCommTarget.memberCount || 0 }} 人</div>
+                </div>
+                <div class="form-group">
+                  <label>想对社长说的一句话（选填，最多 100 字）</label>
+                  <textarea v-model="joinCommForm.note" rows="2" maxlength="100" style="width:100%;padding:8px;border:1px solid var(--paper-dark);border-radius:6px;resize:vertical;" placeholder="例如：我也喜欢打篮球，想加入一起玩"></textarea>
+                </div>
+                <div class="form-group">
+                  <label>🔒 您的 6 位密码（验证身份）</label>
+                  <input type="password" v-model="joinCommForm.password" maxlength="10" placeholder="提交加入申请需验证身份">
+                </div>
+                <div v-if="joinCommError" style="color:#C0002A;font-size:13px;margin-top:6px;text-align:center;">❌ {{ joinCommError }}</div>
+                <div v-else-if="joinCommSuccess" style="color:#065F46;font-size:13px;margin-top:6px;text-align:center;">✅ 申请已提交，请等待社长或管理员审批！</div>
+                <div class="form-actions">
+                  <button class="btn btn-secondary" @click="showJoinCommunity = false">取消</button>
+                  <button class="btn btn-primary" @click="submitJoinCommunity" :disabled="joinCommLoading">
+                    {{ joinCommLoading ? '提交中...' : '📤 提交加入申请' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </transition>
+
+          <!-- ====== 同学端：单聊管理员 ====== -->
+          <transition name="modal">
+            <div v-if="showDirectChat" class="modal-mask" @click.self="onCloseDirectChat">
+              <div class="modal-content" style="max-width:520px;width:96vw;">
+                <div class="modal-title calligraphy" style="display:flex;justify-content:space-between;align-items:center;">
+                  <span>💌 私信管理员（仅管理员可见）</span>
+                  <span style="font-size:12px;color:#888;font-weight:normal;">👤 {{ studentSession && studentSession.student ? studentSession.student.nickname : '' }}</span>
+                </div>
+                <!-- 聊天区 -->
+                <div class="message-list chat-list" ref="dmListRef" style="max-height:320px;margin-bottom:10px;background:#FFFDF8;border-radius:8px;padding:10px 12px;border:1px dashed #F5C842;">
+                  <div v-if="directMineMessages.length === 0" style="text-align:center;padding:30px 0;color:#999;font-size:13px;">
+                    还没有对话，说点什么吧~
+                  </div>
+                  <div
+                    v-for="(m, i) in directMineMessages"
+                    :key="m.id"
+                    class="chat-bubble"
+                    :class="m.sender === 'admin' ? 'chat-bubble--left' : 'chat-bubble--right'"
+                    :style="{ animationDelay: i*0.015 + 's' }"
+                  >
+                    <div class="chat-avatar" :class="m.sender === 'admin' ? 'chat-avatar--admin' : 'chat-avatar--me'">
+                      {{ m.sender === 'admin' ? '管' : '我' }}
+                    </div>
+                    <div class="chat-body">
+                      <div class="chat-name-row">
+                        <span style="font-weight:600;">{{ m.sender === 'admin' ? '管理员' : (studentSession && studentSession.student ? studentSession.student.nickname : '我') }}</span>
+                        <span style="color:#999;font-size:11px;margin-left:6px;">{{ m.created_at }}</span>
+                      </div>
+                      <div class="chat-content">{{ m.content }}</div>
+                    </div>
+                  </div>
+                </div>
+                <!-- 发送框 -->
+                <div style="display:flex;gap:8px;">
+                  <textarea
+                    v-model="dmInput"
+                    rows="2"
+                    maxlength="1000"
+                    @keyup.ctrl.enter="sendDirectMsg"
+                    placeholder="Ctrl+Enter 快捷发送，最多 1000 字..."
+                    style="flex:1;padding:8px 10px;border:1px solid var(--paper-dark);border-radius:6px;resize:vertical;font-family:inherit;"
+                  ></textarea>
+                  <button class="btn btn-primary" @click="sendDirectMsg" :disabled="dmSending || !dmInput.trim()" style="align-self:flex-end;">
+                    {{ dmSending ? '发送中...' : '📤' }}
+                  </button>
+                </div>
+                <div v-if="dmTrimmed > 0" style="font-size:12px;color:#B45309;margin-top:6px;text-align:right;">⚠️ 历史消息已自动清理旧 {{ dmTrimmed }} 条</div>
+                <div class="form-actions" style="margin-top:14px;">
+                  <button class="btn btn-secondary" @click="onCloseDirectChat">关闭</button>
                 </div>
               </div>
             </div>
@@ -1687,6 +3142,15 @@
                   const foodBadge = s.looking_for_food
                     ? `<span style="display:inline-block;padding:2px 8px;background:#D5F5E3;color:#1E8449;border-radius:10px;font-size:11px;margin-left:8px;">🍜 找饭搭子</span>`
                     : '';
+                  const titleBadge = (() => {
+                    if (!s.title) return '';
+                    const level = parseInt(s.titleLevel) || 0;
+                    let bgStyle = 'background:linear-gradient(135deg,#F5C842,#E67E22);color:#fff;';
+                    if (level === 1) bgStyle = 'background:linear-gradient(135deg,#FFD700,#FF8F00);color:#fff;';
+                    else if (level === 2) bgStyle = 'background:linear-gradient(135deg,#F5F5F5,#757575);color:#333;';
+                    else if (level === 3) bgStyle = 'background:linear-gradient(135deg,#DEB887,#8B4513);color:#fff;';
+                    return `<span style="display:inline-block;padding:2px 8px;${bgStyle}border-radius:10px;font-size:11px;margin-left:8px;font-weight:600;">🏅 ${s.title}</span>`;
+                  })();
                   // 联系方式（兼容旧数据）
                   const contactHtml = [];
                   if (s.wechat) contactHtml.push(`💬 微信：${s.wechat}`);
@@ -1698,6 +3162,7 @@
                     <div style="min-width:240px;">
                       <div style="font-size:18px;font-weight:600;margin-bottom:8px;color:#C0392B;">
                         🧑 ${s.nickname}
+                        ${titleBadge}
                         ${foodBadge}
                       </div>
                       <div style="border-top:1px solid #eee;padding-top:10px;font-size:13px;line-height:1.9;">
@@ -1834,9 +3299,13 @@
         };
 
         const newMessage = ref('');
+        const speakerName = ref('');
         const messageListRef = ref(null);
         const isAdmin = computed(() => DataProvider.isAdmin());
-        const messages = computed(() => [...messagesStore.list].reverse());
+        const messages = computed(() => [...messagesStore.list].reverse().map(m => ({
+          ...m,
+          name: m.name || '匿名校友'
+        })));
         const announcements = computed(() => {
           // 先按 pinned 排序（置顶的排前面），再按 id 倒序
           return [...announcementsStore.list].sort((a, b) => {
@@ -1844,12 +3313,14 @@
             return (b.id || 0) - (a.id || 0);
           });
         });
+        // 首页顶部横幅：置顶公告中最新的一条
+        const pinnedBanner = computed(() => announcements.value.find(a => a.pinned) || null);
 
         const sendMessage = async () => {
           const content = newMessage.value.trim();
           if (!content) return;
           try {
-            await DataProvider.addMessage(content);
+            await DataProvider.addMessage({ content, name: speakerName.value.trim() });
             newMessage.value = '';
             nextTick(() => {
               if (messageListRef.value) {
@@ -1870,14 +3341,211 @@
           }
         };
 
+        // ========== 同学端：登录与会话 ==========
+        const showStudentLogin = ref(false);
+        const studentLoginForm = reactive({ name: '', password: '' });
+        const studentLoginError = ref('');
+        const studentLoginLoading = ref(false);
+        const studentSession = computed(() => DataProvider.studentSession);
+
+        const doStudentLogin = async () => {
+          const name = studentLoginForm.name.trim();
+          const password = studentLoginForm.password.trim();
+          if (!name || !password) { studentLoginError.value = '姓名和密码都不能为空'; return; }
+          studentLoginLoading.value = true;
+          studentLoginError.value = '';
+          try {
+            const ok = await DataProvider.studentLogin(name, password);
+            if (ok) {
+              showStudentLogin.value = false;
+              Object.assign(studentLoginForm, { name: '', password: '' });
+              await nextTick();
+              try { await Promise.all([DataProvider.loadCommunities(), DataProvider.loadCommunityRequests(), DataProvider.loadDirectMessages()]); } catch (e) {}
+            } else {
+              studentLoginError.value = '姓名或密码不正确';
+            }
+          } catch (e) {
+            studentLoginError.value = e.message || '登录失败';
+          } finally {
+            studentLoginLoading.value = false;
+          }
+        };
+        const studentLogout = () => {
+          if (!confirm('确定退出同学登录？（会话为内存态，关标签页自动失效）')) return;
+          DataProvider.studentLogout();
+        };
+
+        // ========== 社区列表 / 我的社区 ==========
+        const communities = computed(() => DataProvider.communities);
+        const communityRequests = computed(() => DataProvider.communityRequests);
+        const myCommunity = computed(() => DataProvider.myCommunity);
+        const isMyCommunityOwner = computed(() => DataProvider.isMyCommunityOwner);
+
+        // 申请创建社区
+        const showCreateCommunity = ref(false);
+        const createCommForm = reactive({ name: '', intro: '', password: '' });
+        const createCommError = ref('');
+        const createCommSuccess = ref(false);
+        const createCommLoading = ref(false);
+        const openCreateCommunity = () => {
+          if (!studentSession.value) { showStudentLogin.value = true; return; }
+          if (studentSession.value.student && studentSession.value.student.communityId) {
+            alert('你已经在一个社区里了，请先退社再创建新社区');
+            return;
+          }
+          createCommForm.name = ''; createCommForm.intro = ''; createCommForm.password = '';
+          createCommError.value = ''; createCommSuccess.value = false;
+          showCreateCommunity.value = true;
+        };
+        const submitCreateCommunity = async () => {
+          const name = createCommForm.name.trim();
+          const intro = createCommForm.intro.trim();
+          const password = createCommForm.password.trim();
+          if (!name) { createCommError.value = '请输入社区名称'; createCommSuccess.value = false; return; }
+          if (!password) { createCommError.value = '请输入您的密码以验证身份'; createCommSuccess.value = false; return; }
+          createCommLoading.value = true;
+          createCommError.value = '';
+          createCommSuccess.value = false;
+          try {
+            await DataProvider.requestCommunityCreate({ name, intro, password });
+            createCommSuccess.value = true;
+            setTimeout(() => { showCreateCommunity.value = false; }, 1600);
+          } catch (e) {
+            createCommError.value = e.message || '提交失败';
+          } finally { createCommLoading.value = false; }
+        };
+
+        // 申请加入社区
+        const showJoinCommunity = ref(false);
+        const joinCommTarget = ref(null);
+        const joinCommForm = reactive({ note: '', password: '' });
+        const joinCommError = ref('');
+        const joinCommSuccess = ref(false);
+        const joinCommLoading = ref(false);
+        const openJoinCommunity = (comm) => {
+          if (!studentSession.value) { showStudentLogin.value = true; return; }
+          if (studentSession.value.student && studentSession.value.student.communityId) {
+            alert('你已经在一个社区里了，请先退社再加入新社区');
+            return;
+          }
+          joinCommTarget.value = comm;
+          joinCommForm.note = ''; joinCommForm.password = '';
+          joinCommError.value = ''; joinCommSuccess.value = false;
+          showJoinCommunity.value = true;
+        };
+        const submitJoinCommunity = async () => {
+          if (!joinCommTarget.value) return;
+          const password = joinCommForm.password.trim();
+          const note = joinCommForm.note.trim();
+          if (!password) { joinCommError.value = '请输入您的密码以验证身份'; joinCommSuccess.value = false; return; }
+          joinCommLoading.value = true;
+          joinCommError.value = '';
+          joinCommSuccess.value = false;
+          try {
+            await DataProvider.requestCommunityJoin({ communityId: joinCommTarget.value.id, password, note });
+            joinCommSuccess.value = true;
+            setTimeout(() => { showJoinCommunity.value = false; }, 1600);
+          } catch (e) {
+            joinCommError.value = e.message || '提交失败';
+          } finally { joinCommLoading.value = false; }
+        };
+
+        // 退社
+        const confirmLeaveCommunity = async () => {
+          if (!studentSession.value) return;
+          if (!myCommunity.value) { alert('你目前不在任何社区'); return; }
+          const msg = isMyCommunityOwner.value
+            ? `你是【${myCommunity.value.name}】的社长：\n• 如果社内还有其他成员，将自动转让给下一位成员后再退社\n• 如果只剩你一人，则直接退出\n\n确定继续吗？`
+            : `确定退出【${myCommunity.value.name}】吗？`;
+          if (!confirm(msg)) return;
+          const pwd = prompt(`退社需密码二次确认\n请输入【${studentSession.value.student.nickname || '你'}】的 6 位登录密码：`, '');
+          if (pwd === null) return;
+          try {
+            await DataProvider.leaveCommunity(pwd);
+            alert('✅ 退社成功！');
+          } catch (e) {
+            alert('❌ 退社失败：' + e.message);
+          }
+        };
+
+        // ========== 同学端：私信管理员 ==========
+        const showDirectChat = ref(false);
+        const directMineMessages = computed(() => DataProvider.directMineMessages);
+        const dmListRef = ref(null);
+        const dmInput = ref('');
+        const dmSending = ref(false);
+        const dmTrimmed = ref(0);
+        let dmPollTimer = null;
+        let dmUnreadTimer = null;
+
+        const scrollToBottom = () => {
+          nextTick(() => {
+            const el = dmListRef.value;
+            if (el) el.scrollTop = el.scrollHeight;
+          });
+        };
+        const loadDmAndMarkRead = async (markRead = true) => {
+          try {
+            const beforeCount = directMineMessages.value.length;
+            const trimmed = await DataProvider.loadDirectMessages(markRead);
+            const afterCount = directMineMessages.value.length;
+            if (afterCount > beforeCount) scrollToBottom();
+            if (trimmed && trimmed > 0) dmTrimmed.value = (dmTrimmed.value || 0) + trimmed;
+          } catch (e) { /* 忽略 */ }
+        };
+        const sendDirectMsg = async () => {
+          const content = dmInput.value.trim();
+          if (!content) return;
+          dmSending.value = true;
+          try {
+            await DataProvider.sendDirectMessage(content);
+            dmInput.value = '';
+            scrollToBottom();
+          } catch (e) {
+            alert('❌ 发送失败：' + e.message);
+          } finally { dmSending.value = false; }
+        };
+        const openDirectChat = async () => {
+          if (!studentSession.value) { showStudentLogin.value = true; return; }
+          dmTrimmed.value = 0;
+          showDirectChat.value = true;
+          await loadDmAndMarkRead(true);
+          scrollToBottom();
+          if (dmPollTimer) clearInterval(dmPollTimer);
+          dmPollTimer = setInterval(() => { loadDmAndMarkRead(true); }, 5000);
+        };
+        const onCloseDirectChat = () => {
+          showDirectChat.value = false;
+          if (dmPollTimer) { clearInterval(dmPollTimer); dmPollTimer = null; }
+        };
+
+        // ========== 留言板：发言时带上会话token，实名/匿名由后端决定 ==========
+        // 重写 sendMessage：调用时注入 x-student-token（通过 DataProvider 内部 hook）
+        const _origSendMessage = sendMessage;
+
         watch(showLogin, (val) => {
           if (val) nextTick(() => pwdInput.value && pwdInput.value.focus());
         });
 
-        onMounted(() => { setTimeout(() => initMap(), 100); });
+        onMounted(async () => {
+          setTimeout(() => initMap(), 100);
+          // 页面打开时，尝试按已有的会话态刷新一次
+          if (DataProvider.studentSession) {
+            try { await Promise.all([DataProvider.loadCommunities(), DataProvider.loadCommunityRequests(), DataProvider.loadDirectMessages(false)]); } catch (e) {}
+          }
+          // 未读红点刷新（即便没打开聊天，也让顶部数字可见）
+          if (dmUnreadTimer) clearInterval(dmUnreadTimer);
+          dmUnreadTimer = setInterval(() => {
+            if (DataProvider.studentSession && !showDirectChat.value) {
+              DataProvider.loadDirectMessages(false).catch(() => {});
+            }
+          }, 10000);
+        });
         onUnmounted(() => {
           window.removeEventListener('resize', handleResize);
           if (chartInstance) { chartInstance.dispose(); chartInstance = null; }
+          if (dmPollTimer) { clearInterval(dmPollTimer); dmPollTimer = null; }
+          if (dmUnreadTimer) { clearInterval(dmUnreadTimer); dmUnreadTimer = null; }
         });
 
         return {
@@ -1890,8 +3558,15 @@
           filteredStudents, groupedByProvince,
           totalCount, provinceCount, universityCount, foodCount,
           highlightStudent, doLogin, submitApply,
-          newMessage, messageListRef, isAdmin, messages, announcements,
-          sendMessage, deleteMessage
+          newMessage, speakerName, messageListRef, isAdmin, messages, announcements, pinnedBanner,
+          sendMessage, deleteMessage,
+          // 同学端新增
+          showStudentLogin, studentLoginForm, studentLoginError, studentLoginLoading, studentSession, doStudentLogin, studentLogout,
+          communities, communityRequests, myCommunity, isMyCommunityOwner,
+          showCreateCommunity, createCommForm, createCommError, createCommSuccess, createCommLoading, openCreateCommunity, submitCreateCommunity,
+          showJoinCommunity, joinCommTarget, joinCommForm, joinCommError, joinCommSuccess, joinCommLoading, openJoinCommunity, submitJoinCommunity,
+          confirmLeaveCommunity,
+          showDirectChat, directMineMessages, dmListRef, dmInput, dmSending, dmTrimmed, sendDirectMsg, openDirectChat, onCloseDirectChat
         };
       }
     };
@@ -1922,8 +3597,8 @@
               </div>
             </div>
 
-            <!-- 同学档案操作区 -->
-            <div v-if="activeTab !== 'announcement'">
+            <!-- 同学档案操作区：pending / all / food 三个 Tab 共用 -->
+            <div v-if="activeTab === 'pending' || activeTab === 'all' || activeTab === 'food'">
               <div class="add-btn-wrap">
                 <button v-if="activeTab !== 'pending'" class="btn btn-primary" @click="openAddModal">➕ 添加同学档案</button>
               </div>
@@ -1949,6 +3624,7 @@
                 >
                   <div class="col-name">
                     <strong>{{ item.nickname }}</strong>
+                    <span v-if="item.title" class="mini-title-badge" :title="item.title">🏅 {{ item.title }}</span>
                   </div>
                   <div class="col-province">{{ item.province }} · {{ item.city }}</div>
                   <div class="col-school">{{ item.university }}</div>
@@ -1971,18 +3647,326 @@
               </div>
             </div>
 
+            <!-- 密码管理 Tab -->
+            <div v-else-if="activeTab === 'password'" class="admin-tab-panel">
+              <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:16px;">
+                <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                  <input type="text" v-model="pwdKeyword" placeholder="🔍 搜索姓名/大学..." style="padding:8px 12px;border:1px solid var(--paper-dark);border-radius:6px;min-width:220px;">
+                  <div style="display:flex;gap:8px;align-items:center;font-size:13px;color:#64748B;">
+                    <span>📊 统计：共 <b style="color:#0F172A;">{{ pwdStats.total }}</b> 人</span>
+                    <span style="color:#059669;">· 已设置密码 <b>{{ pwdStats.withPwd }}</b> 人</span>
+                    <span v-if="pwdStats.missing > 0" style="color:#C0002A;">· 缺密码 <b>{{ pwdStats.missing }}</b> 人</span>
+                  </div>
+                </div>
+                <button class="btn btn-primary" @click="batchFillPasswords" :disabled="pwdStats.missing === 0" style="background:linear-gradient(135deg,#059669,#047857);border-color:#065F46;">
+                  🗝️ 批量补全密码（{{ pwdStats.missing }} 人缺失）
+                </button>
+              </div>
+              <div style="font-size:13px;color:#92400E;padding:10px 14px;background:#FFFBEB;border:1px dashed #F59E0B;border-radius:8px;margin-bottom:14px;">
+                📌 密码为每位同学独立随机生成的 6 位数字，<b>请务必通过私下方式告知本人</b>，不要在公开场合泄露。管理员可点「👁️ 显示密码」查看任意同学的当前密码，也可单独重置。
+              </div>
+              <div v-if="filteredStudentsWithPwd.length === 0" style="padding:60px;text-align:center;color:#999;">
+                <div style="font-size:48px;margin-bottom:12px;">🔐</div>
+                <div>暂无匹配的同学</div>
+              </div>
+              <div class="student-table">
+                <div class="table-header">
+                  <div class="col-name">姓名</div>
+                  <div class="col-school">大学 / 专业</div>
+                  <div class="col-major" style="flex:0 0 180px;">🔑 密码（6 位数字）</div>
+                  <div class="col-actions">操作</div>
+                </div>
+                <div
+                  v-for="(s, idx) in filteredStudentsWithPwd"
+                  :key="s.id"
+                  class="table-row fade-in-up"
+                  :style="{ animationDelay: idx*0.02 + 's' }"
+                >
+                  <div class="col-name">
+                    <strong :class="{ 'is-crimson': (parseInt(s.titleLevel) || 0) === 4 }">{{ s.nickname }}</strong>
+                    <span v-if="s.title" class="mini-title-badge" :title="s.title">🏅 {{ s.title }}</span>
+                  </div>
+                  <div class="col-school">
+                    <div>{{ s.university || '—' }}</div>
+                    <div style="color:#999;font-size:12px;">{{ s.major || '' }}</div>
+                  </div>
+                  <div class="col-major" style="flex:0 0 180px;">
+                    <template v-if="!s.hasPassword">
+                      <span style="color:#C0002A;font-weight:600;">❌ 未设置</span>
+                    </template>
+                    <template v-else>
+                      <span :class="revealPwd[s.id] ? 'pwd-plain' : 'pwd-masked'" title="6 位数字密码">
+                        {{ revealPwd[s.id] ? s.password : '******' }}
+                      </span>
+                    </template>
+                  </div>
+                  <div class="col-actions">
+                    <button v-if="s.hasPassword" class="btn btn-sm btn-secondary" @click="toggleRevealPwd(s.id)">
+                      {{ revealPwd[s.id] ? '🙈 隐藏' : '👁️ 显示' }}
+                    </button>
+                    <button v-if="s.hasPassword" class="btn btn-sm btn-secondary" @click="copyPwd(s)">📋 复制</button>
+                    <button class="btn btn-sm btn-primary" @click="resetOnePwd(s)" style="background:linear-gradient(135deg,#D97706,#B45309);border-color:#92400E;">
+                      🔄 {{ s.hasPassword ? '重置密码' : '生成密码' }}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 创建社审批 Tab -->
+            <div v-else-if="activeTab === 'community-create'" class="admin-tab-panel">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+                <div style="font-size:14px;color:#1F2937;">
+                  待审批：<b style="color:#C0002A;">{{ createReqsPending.length }}</b> 份 · 累计申请：<b>{{ createReqs.length }}</b> 份
+                </div>
+                <button class="btn btn-secondary" @click="() => { DataProvider.loadCommunityRequests().catch(() => {}); }">🔄 刷新列表</button>
+              </div>
+              <div v-if="createReqs.length === 0" style="padding:60px;text-align:center;color:#999;">
+                <div style="font-size:48px;margin-bottom:12px;">📭</div>
+                <div>暂无创建社区的申请</div>
+              </div>
+              <div class="student-table">
+                <div class="table-header">
+                  <div class="col-name">社区 / 申请人</div>
+                  <div class="col-school">简介</div>
+                  <div class="col-status">状态</div>
+                  <div class="col-actions">操作</div>
+                </div>
+                <div
+                  v-for="(r, idx) in createReqs"
+                  :key="r.id"
+                  class="table-row fade-in-up"
+                  :style="{ animationDelay: idx*0.03 + 's' }"
+                >
+                  <div class="col-name">
+                    <div style="font-weight:700;color:#1E3A8A;font-size:15px;">🏛️ {{ r.name }}</div>
+                    <div style="font-size:12px;color:#64748B;margin-top:4px;">
+                      申请人：<b>{{ r.creatorStudentName || r.creatorStudentId }}</b>
+                      <span v-if="r.created_at" style="margin-left:10px;">· {{ r.created_at }}</span>
+                    </div>
+                  </div>
+                  <div class="col-school">
+                    <div style="white-space:pre-wrap;">{{ r.intro || '（未填写简介）' }}</div>
+                  </div>
+                  <div class="col-status">
+                    <span v-if="r.status === 'pending'" class="status-badge status-pending">⏳ 待审批</span>
+                    <span v-else-if="r.status === 'approved'" class="status-badge status-approved">✅ 已通过</span>
+                    <span v-else-if="r.status === 'rejected'" class="status-badge status-rejected">❌ 已拒绝</span>
+                    <span v-else class="status-badge">{{ r.status || '未知' }}</span>
+                    <div v-if="r.rejectReason" style="font-size:12px;color:#991B1B;margin-top:4px;">原因：{{ r.rejectReason }}</div>
+                  </div>
+                  <div class="col-actions">
+                    <template v-if="r.status === 'pending'">
+                      <button class="btn btn-sm btn-primary" @click="approveCreateReq(r)">✅ 通过</button>
+                      <button class="btn btn-sm btn-danger" @click="rejectCreateReq(r)">❌ 拒绝</button>
+                    </template>
+                    <template v-else>
+                      <span style="color:#9CA3AF;font-size:12px;">— 已处理 —</span>
+                    </template>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 加入社审批 Tab：管理员看全部，社长看自己社区 -->
+            <div v-else-if="activeTab === 'community-join'" class="admin-tab-panel">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+                <div style="font-size:14px;color:#1F2937;">
+                  <template v-if="myCommunityForAdmin">
+                    👑 我是社长：【{{ myCommunityForAdmin.name }}】· 只显示我社区的加入申请
+                  </template>
+                  <template v-else>
+                    管理员视图：查看全部社区的加入申请
+                  </template>
+                </div>
+                <button class="btn btn-secondary" @click="() => { Promise.all([DataProvider.loadCommunities(), DataProvider.loadCommunityRequests()]).catch(() => {}); }">🔄 刷新</button>
+              </div>
+              <div v-if="joinReqsForAdminOrOwner.length === 0" style="padding:60px;text-align:center;color:#999;">
+                <div style="font-size:48px;margin-bottom:12px;">📭</div>
+                <div>暂无社区加入申请</div>
+              </div>
+              <div class="student-table">
+                <div class="table-header">
+                  <div class="col-name">同学 / 社区</div>
+                  <div class="col-school">附言</div>
+                  <div class="col-status">状态</div>
+                  <div class="col-actions">操作</div>
+                </div>
+                <div
+                  v-for="(r, idx) in joinReqsForAdminOrOwner"
+                  :key="r.id"
+                  class="table-row fade-in-up"
+                  :style="{ animationDelay: idx*0.03 + 's' }"
+                >
+                  <div class="col-name">
+                    <div style="font-weight:700;">👤 {{ r.studentName || r.studentId }}</div>
+                    <div style="font-size:12px;color:#1E3A8A;margin-top:4px;">🏛️ 目标社区：{{ r.communityName || r.communityId }}</div>
+                    <div style="font-size:11px;color:#94A3B8;margin-top:2px;">
+                      {{ r.created_at || '' }}
+                    </div>
+                  </div>
+                  <div class="col-school">
+                    <div style="white-space:pre-wrap;">{{ r.note || '（未写附言）' }}</div>
+                  </div>
+                  <div class="col-status">
+                    <span v-if="r.status === 'pending'" class="status-badge status-pending">⏳ 待审批</span>
+                    <span v-else-if="r.status === 'approved'" class="status-badge status-approved">✅ 已通过</span>
+                    <span v-else-if="r.status === 'rejected'" class="status-badge status-rejected">❌ 已拒绝</span>
+                    <span v-else class="status-badge">{{ r.status || '未知' }}</span>
+                  </div>
+                  <div class="col-actions">
+                    <template v-if="r.status === 'pending'">
+                      <button class="btn btn-sm btn-primary" @click="approveJoinReq(r)">✅ 通过</button>
+                      <button class="btn btn-sm btn-danger" @click="rejectJoinReq(r)">❌ 拒绝</button>
+                    </template>
+                    <template v-else>
+                      <span style="color:#9CA3AF;font-size:12px;">— 已处理 —</span>
+                    </template>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 社区管理 Tab -->
+            <div v-else-if="activeTab === 'community-manage'" class="admin-tab-panel">
+              <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+                <div style="font-size:14px;color:#1F2937;">共 <b style="color:#1E3A8A;">{{ communityListForManage.length }}</b> 个社区</div>
+                <button class="btn btn-secondary" @click="() => { DataProvider.loadCommunities().catch(() => {}); }">🔄 刷新</button>
+              </div>
+              <div v-if="communityListForManage.length === 0" style="padding:60px;text-align:center;color:#999;">
+                <div style="font-size:48px;margin-bottom:12px;">🏘️</div>
+                <div>还没有社区被创建</div>
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;">
+                <div
+                  v-for="(c, idx) in communityListForManage"
+                  :key="c.id"
+                  class="community-card"
+                  :style="{ animationDelay: idx*0.02 + 's' }"
+                >
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">
+                    <div style="flex:1;">
+                      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                        <span style="font-size:16px;font-weight:700;color:#0F172A;">🏛️ {{ c.name }}</span>
+                      </div>
+                      <div v-if="c.intro" style="margin-top:6px;color:#475569;font-size:13px;line-height:1.6;">{{ c.intro }}</div>
+                      <div style="margin-top:10px;font-size:12px;color:#64748B;display:flex;flex-direction:column;gap:4px;">
+                        <div>👑 社长：<b>{{ c.ownerName || c.ownerId }}</b></div>
+                        <div>👥 成员数：<b>{{ c.memberCount || (c.memberIds && c.memberIds.length) || 0 }}</b></div>
+                        <div v-if="c.created_at">🕒 创建于：{{ c.created_at }}</div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style="margin-top:12px;padding-top:10px;border-top:1px dashed #D1D5DB;display:flex;gap:8px;flex-wrap:wrap;">
+                    <button class="btn btn-sm btn-secondary" @click="openMembersModal(c)">👥 社员 ({{ c.memberCount || (c.memberIds && c.memberIds.length) || 0 }})</button>
+                    <button class="btn btn-sm btn-danger" @click="deleteCommunity(c)">🗑️ 删除社区</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 单聊收件箱 Tab -->
+            <div v-else-if="activeTab === 'direct-messages'" class="admin-tab-panel">
+              <div style="display:flex;gap:14px;min-height:460px;">
+                <!-- 左侧：会话列表 -->
+                <div style="flex:0 0 260px;border:1px solid var(--paper-dark);border-radius:10px;background:#FAFAF6;overflow:hidden;display:flex;flex-direction:column;">
+                  <div style="padding:10px 14px;background:linear-gradient(135deg,#FFFBF0,#FFF6E0);border-bottom:1px solid var(--paper-dark);display:flex;justify-content:space-between;align-items:center;">
+                    <div style="font-weight:700;color:#92400E;">📬 同学私信箱
+                      <span v-if="dmUnreadTotal > 0" style="margin-left:6px;padding:2px 8px;background:#C0002A;color:#fff;border-radius:10px;font-size:11px;font-weight:600;">未读 {{ dmUnreadTotal }}</span>
+                    </div>
+                    <button class="btn btn-sm btn-secondary" @click="dmLoadConversations()" title="刷新">🔄</button>
+                  </div>
+                  <div style="flex:1;overflow-y:auto;">
+                    <div v-if="dmConversations.length === 0" style="padding:40px 10px;text-align:center;color:#999;font-size:13px;">
+                      <div style="font-size:36px;margin-bottom:6px;">📭</div>
+                      <div>暂无私聊消息</div>
+                    </div>
+                    <div
+                      v-for="conv in dmConversations"
+                      :key="conv.studentId"
+                      @click="dmSelectStudent(conv.studentId)"
+                      :class="['dm-conv-item', { active: conv.studentId === dmActiveStudentId }]"
+                      style="padding:10px 14px;border-bottom:1px solid #EEE7DA;cursor:pointer;"
+                    >
+                      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+                        <div style="font-weight:600;color:#1F2937;">👤 {{ conv.studentName || conv.studentId }}</div>
+                        <span v-if="conv.unread > 0" style="padding:2px 8px;background:#C0002A;color:#fff;border-radius:10px;font-size:11px;font-weight:600;">{{ conv.unread }}</span>
+                      </div>
+                      <div style="font-size:12px;color:#64748B;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                        {{ conv.lastPreview || '（无内容）' }}
+                      </div>
+                      <div style="font-size:11px;color:#94A3B8;margin-top:2px;">{{ conv.lastTime || '' }} · {{ conv.total || 0 }} 条</div>
+                    </div>
+                  </div>
+                </div>
+                <!-- 右侧：消息区域 -->
+                <div style="flex:1;border:1px solid var(--paper-dark);border-radius:10px;background:#FFFDF8;display:flex;flex-direction:column;overflow:hidden;">
+                  <template v-if="!dmActiveConversation">
+                    <div style="margin:auto;text-align:center;color:#999;">
+                      <div style="font-size:48px;margin-bottom:10px;">💬</div>
+                      <div>请从左侧选择一位同学开始对话</div>
+                    </div>
+                  </template>
+                  <template v-else>
+                    <div style="padding:10px 14px;background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border-bottom:1px solid #BFDBFE;display:flex;justify-content:space-between;align-items:center;">
+                      <div style="font-weight:700;color:#1E3A8A;">👤 {{ dmActiveConversation.studentName || dmActiveConversation.studentId }} 的对话</div>
+                      <div style="font-size:12px;color:#64748B;">共 {{ dmActiveConversation.total || 0 }} 条消息</div>
+                    </div>
+                    <div class="message-list chat-list" ref="dmListRefAdmin" style="flex:1;padding:10px 14px;overflow-y:auto;background:#FFFDF8;">
+                      <div
+                        v-for="(m, i) in (dmActiveConversation.messages || [])"
+                        :key="m.id"
+                        class="chat-bubble"
+                        :class="m.sender === 'student' ? 'chat-bubble--left' : 'chat-bubble--right'"
+                        :style="{ animationDelay: i*0.015 + 's' }"
+                      >
+                        <div class="chat-avatar" :class="m.sender === 'admin' ? 'chat-avatar--admin' : 'chat-avatar--me'">
+                          {{ m.sender === 'admin' ? '管' : (dmActiveConversation.studentName || dmActiveConversation.studentId).slice(0,1) }}
+                        </div>
+                        <div class="chat-body">
+                          <div class="chat-name-row">
+                            <span style="font-weight:600;">{{ m.sender === 'admin' ? '管理员' : (dmActiveConversation.studentName || dmActiveConversation.studentId) }}</span>
+                            <span style="color:#999;font-size:11px;margin-left:6px;">{{ m.created_at }}</span>
+                          </div>
+                          <div class="chat-content" style="white-space:pre-wrap;">{{ m.content }}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div style="padding:10px 14px;background:#FFFBEB;border-top:1px solid #F5C842;">
+                      <div style="display:flex;gap:8px;">
+                        <textarea
+                          v-model="dmAdminSendText"
+                          rows="2"
+                          maxlength="2000"
+                          @keyup.ctrl.enter="dmAdminSend"
+                          placeholder="Ctrl+Enter 快捷回复，最多 2000 字..."
+                          style="flex:1;padding:8px 10px;border:1px solid var(--paper-dark);border-radius:6px;resize:vertical;font-family:inherit;"
+                        ></textarea>
+                        <button class="btn btn-primary" @click="dmAdminSend" :disabled="dmAdminSending || !dmAdminSendText.trim()" style="align-self:flex-end;">
+                          {{ dmAdminSending ? '发送中...' : '📤 回复' }}
+                        </button>
+                      </div>
+                    </div>
+                  </template>
+                </div>
+              </div>
+            </div>
+
             <!-- 公告管理区 -->
-            <div v-else>
+            <div v-else-if="activeTab === 'announcement'">
               <div class="add-btn-wrap">
                 <button class="btn btn-primary" @click="showAnnounceForm = !showAnnounceForm">
-                  {{ showAnnounceForm ? '收起表单' : '📢 发布新公告' }}
+                  {{ showAnnounceForm ? '收起表单' : (isEditAnnouncement ? '📝 编辑公告中（点击取消）' : '📢 发布新公告') }}
                 </button>
               </div>
 
-              <!-- 发布表单 -->
+              <!-- 发布/编辑共用表单 -->
               <transition name="modal">
-                <div v-if="showAnnounceForm" class="info-card" style="margin-bottom:24px;">
-                  <div class="info-card-title calligraphy">✍️ 发布公告</div>
+                <div v-if="showAnnounceForm" class="info-card" style="margin-bottom:24px;border:2px solid #F5C842;background:linear-gradient(180deg,#FFFBF0,#FFF6E0);">
+                  <div class="info-card-title calligraphy" :style="{'color':'#B45309','border-bottom':'2px dashed #F5C842'}">
+                    {{ isEditAnnouncement ? '📝 编辑公告' : '✍️ 发布公告' }}
+                    <span v-if="isEditAnnouncement" class="message-count" style="color:#92400E;">正在修改 id:{{ editAnnouncementId }}</span>
+                  </div>
                   <div class="form-group">
                     <label>标题</label>
                     <input type="text" v-model="announceForm.title" placeholder="例如：2026暑假聚会通知">
@@ -1998,8 +3982,10 @@
                     </label>
                   </div>
                   <div class="form-actions">
-                    <button class="btn btn-secondary" @click="resetAnnounceForm">重置</button>
-                    <button class="btn btn-primary" @click="publishAnnouncement">📤 发布</button>
+                    <button class="btn btn-secondary" @click="resetAnnounceForm">{{ isEditAnnouncement ? '取消编辑' : '重置' }}</button>
+                    <button class="btn btn-primary" @click="publishAnnouncement">
+                      {{ isEditAnnouncement ? '✅ 保存修改' : '📤 发布' }}
+                    </button>
                   </div>
                 </div>
               </transition>
@@ -2014,15 +4000,18 @@
                   v-for="(item, idx) in sortedAnnouncements"
                   :key="item.id"
                   class="announcement-item"
+                  :class="{ 'is-pinned': item.pinned }"
                   :style="{ animationDelay: idx * 0.03 + 's' }"
                 >
                   <div class="announcement-head">
                     <div style="display:flex;align-items:center;gap:8px;">
                       <span v-if="item.pinned" style="font-size:11px;padding:2px 8px;background:#FDE8A8;color:#8B4513;border-radius:8px;font-weight:600;">📌 置顶</span>
                       <span class="announcement-title" style="font-size:16px;">{{ item.title || '公告' }}</span>
+                      <span v-if="item.updated_at" style="font-size:11px;color:#A16207;">（已编辑 {{ item.updated_at }}）</span>
                     </div>
                     <div style="display:flex;align-items:center;gap:8px;">
                       <span class="announcement-time">{{ item.created_at }}</span>
+                      <button class="btn btn-sm btn-secondary" @click="openEditAnnouncement(item)">✏️ 编辑</button>
                       <button class="btn btn-sm btn-danger" @click="removeAnnouncement(item)">删除</button>
                     </div>
                   </div>
@@ -2079,6 +4068,30 @@
                   </div>
                 </div>
                 <div class="form-group">
+                  <label>🏅 头衔（如：班长、学霸、文艺委员、篮球小王子）</label>
+                  <input type="text" v-model="form.title" maxlength="12" placeholder="选填，最多12字，会在同学名字旁显示徽章">
+                </div>
+                <div class="form-group">
+                  <label>🎨 头衔色号（同学名录姓名框填充色 + 徽章颜色）</label>
+                  <select v-model="form.titleLevel" class="form-select">
+                    <option :value="0">⚪ 正常色（无等级）</option>
+                    <option :value="1">🥇 金色（一等荣誉）</option>
+                    <option :value="2">🥈 亮银（二等荣誉，提亮银光）</option>
+                    <option :value="3">🥉 铜色（三等荣誉）</option>
+                    <option :value="4">🔴 赤红字体（仅改字体颜色为赤红耀眼）</option>
+                    <option :value="5">💠 天蓝耀眼（渐变发光姓名框+流光）</option>
+                  </select>
+                  <div style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap;">
+                    <div style="padding:4px 10px;background:linear-gradient(135deg,#FFD700,#FFA000);color:#5A3A00;border-radius:6px;font-size:12px;font-weight:600;border:1px solid #FFC107;">金 预览</div>
+                    <div style="padding:4px 10px;background:linear-gradient(135deg,#FFFFFF,#D9E2EC,#C5D3E3);color:#1F2937;border-radius:6px;font-size:12px;font-weight:600;border:1px solid #94A3B8;box-shadow:0 2px 6px rgba(148,163,184,0.35);">亮银 预览</div>
+                    <div style="padding:4px 10px;background:linear-gradient(135deg,#CD7F32,#A0522D);color:#FFF8EC;border-radius:6px;font-size:12px;font-weight:600;border:1px solid #A0522D;">铜 预览</div>
+                    <div style="padding:4px 10px;background:rgba(255,245,247,0.7);color:#C0002A;border-radius:6px;font-size:12px;font-weight:700;border:1px dashed rgba(192,0,42,0.45);text-shadow:0 0 6px rgba(192,0,42,0.55);">赤红字体 预览</div>
+                    <div style="padding:4px 10px;background:linear-gradient(135deg,#E0F2FE,#38BDF8,#0EA5E9);color:#082F49;border-radius:6px;font-size:12px;font-weight:700;border:1px solid #0284C7;box-shadow:0 0 8px rgba(56,189,248,0.55);">天蓝耀眼 预览</div>
+                    <div style="padding:4px 10px;background:#F8F8F6;color:#333;border-radius:6px;font-size:12px;border:1px solid #eee;">正常 预览</div>
+                  </div>
+                  </div>
+                </div>
+                <div class="form-group">
                   <label>
                     <input type="checkbox" v-model="form.looking_for_food" style="margin-right:6px;accent-color:var(--cinnabar);">
                     🍜 正在寻找饭搭子
@@ -2091,6 +4104,73 @@
               </div>
             </div>
           </transition>
+
+          <!-- 社员管理弹窗（含社长转让） -->
+          <transition name="modal">
+            <div v-if="showMembersModal && memberModalComm" class="modal-mask" @click.self="showMembersModal = false">
+              <div class="modal-content" style="max-width:620px;width:96vw;">
+                <div class="modal-title calligraphy" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                  <span>👥 【{{ memberModalComm.name }}】社员列表</span>
+                  <span style="font-size:12px;color:#64748B;font-weight:normal;">
+                    共 {{ memberModalComm.members.length }} 人 ·
+                    <template v-if="memberModalComm.isOwner">
+                      <span style="color:#B45309;font-weight:600;">你是社长（可转让身份给任意社员）</span>
+                    </template>
+                    <template v-else>
+                      <span>仅社长可转让身份；管理员可将社员移出社区</span>
+                    </template>
+                  </span>
+                </div>
+                <div v-if="!memberModalComm.members || memberModalComm.members.length === 0" style="padding:40px;text-align:center;color:#999;">
+                  <div style="font-size:36px;margin-bottom:6px;">🙈</div>
+                  <div>暂无社员</div>
+                </div>
+                <div v-else style="display:flex;flex-direction:column;gap:8px;max-height:50vh;overflow-y:auto;">
+                  <div
+                    v-for="(m, idx) in memberModalComm.members"
+                    :key="m.id"
+                    class="table-row fade-in-up"
+                    :style="{ animationDelay: idx*0.02 + 's'; padding: '10px 14px'; border: '1px solid var(--paper-dark); border-radius: 10px;' }"
+                  >
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+                      <div style="flex:1;">
+                        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                          <span
+                            class="student-name"
+                            style="padding:2px 10px;"
+                            :class="{
+                              'title-gold': (parseInt(m.titleLevel) || 0) === 1,
+                              'title-silver': (parseInt(m.titleLevel) || 0) === 2,
+                              'title-bronze': (parseInt(m.titleLevel) || 0) === 3,
+                              'title-crimson': (parseInt(m.titleLevel) || 0) === 4,
+                              'title-sky': (parseInt(m.titleLevel) || 0) === 5
+                            }"
+                          >
+                            <strong>{{ m.nickname }}</strong>
+                          </span>
+                          <span v-if="m.isOwner" class="msg-tag community-owner" style="font-size:11px;">👑 社长</span>
+                        </div>
+                      </div>
+                      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <template v-if="memberModalComm.isOwner && !m.isOwner">
+                          <button class="btn btn-sm btn-primary" @click="transferOwner(m.id)" style="background:linear-gradient(135deg,#F59E0B,#D97706);border-color:#B45309;">
+                            👑 转让社长给 TA
+                          </button>
+                        </template>
+                        <!-- 仅管理员能移出社员（前端无法判断管理员身份，此按钮始终显示，后端会校验） -->
+                        <button v-if="!m.isOwner" class="btn btn-sm btn-danger" @click="adminKickMember(m.id, m.nickname)" title="管理员可将该社员移出社区">
+                          🚪 移出社区
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-actions" style="margin-top:16px;">
+                  <button class="btn btn-secondary" @click="showMembersModal = false">关闭</button>
+                </div>
+              </div>
+            </div>
+          </transition>
         </div>
       `,
       setup(props, { emit }) {
@@ -2098,6 +4178,11 @@
           { key: 'pending', label: '待审核' },
           { key: 'all', label: '全部档案' },
           { key: 'food', label: '找饭搭子' },
+          { key: 'password', label: '🔑 密码管理' },
+          { key: 'community-create', label: '🏛️ 创建社审批' },
+          { key: 'community-join', label: '🎯 加入社审批' },
+          { key: 'community-manage', label: '🏘️ 社区管理' },
+          { key: 'direct-messages', label: '💌 单聊收件箱' },
           { key: 'announcement', label: '公告管理' }
         ];
         const activeTab = ref('pending');
@@ -2105,10 +4190,227 @@
         const isEdit = ref(false);
         const editId = ref(null);
         const showAnnounceForm = ref(false);
+        const isEditAnnouncement = ref(false);
+        const editAnnouncementId = ref(null);
+        // ========= 密码管理 Tab =========
+        const pwdKeyword = ref('');
+        const filteredStudentsWithPwd = computed(() => {
+          const kw = pwdKeyword.value.trim();
+          let list = studentsStore.list || [];
+          if (kw) list = list.filter(s => (s.nickname || '').includes(kw) || (s.university || '').includes(kw));
+          return list.map(s => ({
+            ...s,
+            hasPassword: !!(s.password && String(s.password).length >= 4)
+          }));
+        });
+        const pwdStats = computed(() => {
+          const all = studentsStore.list || [];
+          const withPwd = all.filter(s => !!(s.password && String(s.password).length >= 4)).length;
+          return { total: all.length, withPwd, missing: all.length - withPwd };
+        });
+        const revealPwd = reactive({}); // id -> true 表示显示明文
+        const toggleRevealPwd = (id) => { revealPwd[id] = !revealPwd[id]; };
+        const resetOnePwd = async (s) => {
+          if (!confirm(`确定重置【${s.nickname}】的密码为新的 6 位随机数吗？`)) return;
+          try {
+            const r = await DataProvider.resetPassword(s.id);
+            if (r && r.password) {
+              alert(`✅ 已重置，新密码为：\n\n${r.password}\n\n（请私下告知该同学）`);
+            } else {
+              alert('✅ 密码已重置，请刷新列表查看');
+            }
+          } catch (e) { alert('❌ 重置失败：' + e.message); }
+        };
+        const batchFillPasswords = async () => {
+          const missing = pwdStats.value.missing;
+          if (missing === 0) { alert('所有同学都已经有密码啦 🎉'); return; }
+          if (!confirm(`将为【${missing}】位未设置密码的同学生成随机 6 位数字密码并保存。\n生成后将立即生效，请务必在完成后查看每位同学的密码并告知。\n\n是否继续？`)) return;
+          try {
+            const r = await DataProvider.batchFillPasswords();
+            const filled = (r && typeof r.filled === 'number') ? r.filled : missing;
+            alert(`✅ 已为 ${filled} 位同学批量生成密码！\n请前往「密码管理」Tab 查看并通过线下方式告知每位同学。`);
+          } catch (e) { alert('❌ 批量补密码失败：' + e.message); }
+        };
+        const copyPwd = async (s) => {
+          try {
+            const text = `${s.nickname} 的登录密码：${s.password}`;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              await navigator.clipboard.writeText(text);
+              alert('✅ 已复制到剪贴板');
+            } else {
+              prompt('请手动复制：', text);
+            }
+          } catch (e) { alert('复制失败，请手动复制'); }
+        };
+
+        // ========= 创建社审批 Tab =========
+        const createReqs = computed(() => (communityRequestsStore.value && communityRequestsStore.value.create) || []);
+        const createReqsPending = computed(() => createReqs.value.filter(r => r.status === 'pending'));
+        const approveCreateReq = async (req) => {
+          if (!confirm(`通过创建社区申请：\n\n社区名：${req.name}\n申请人：${req.creatorStudentName || req.creatorStudentId}\n\n确定继续？`)) return;
+          try {
+            await DataProvider.approveCommunityCreate(req.id);
+            alert('✅ 社区已创建成功！');
+          } catch (e) { alert('❌ 审批失败：' + e.message); }
+        };
+        const rejectCreateReq = async (req) => {
+          if (!confirm(`拒绝社区【${req.name}】的创建申请？`)) return;
+          try {
+            await DataProvider.rejectCommunityCreate(req.id);
+            alert('已拒绝');
+          } catch (e) { alert('❌ 操作失败：' + e.message); }
+        };
+
+        // ========= 加入社审批 Tab（含社长可见的自己社区的审批） =========
+        const joinReqs = computed(() => (communityRequestsStore.value && communityRequestsStore.value.join) || []);
+        const joinReqsForAdminOrOwner = computed(() => {
+          // 管理员：看全部 pending/历史；社长：看自己社区的
+          const sess = DataProvider.studentSession;
+          const isOwner = sess && sess.student && myCommunityForAdmin.value && myCommunityForAdmin.value.ownerId === sess.student.id;
+          const myCommId = myCommunityForAdmin.value && myCommunityForAdmin.value.id;
+          const list = joinReqs.value;
+          if (isOwner && myCommId) return list.filter(r => r.communityId === myCommId);
+          return list; // 管理员看全部
+        });
+        const myCommunityForAdmin = computed(() => {
+          const sess = DataProvider.studentSession;
+          if (!sess || !sess.student || !sess.student.communityId) return null;
+          return (communitiesStore.value || []).find(c => c.id === sess.student.communityId) || null;
+        });
+        const approveJoinReq = async (req) => {
+          if (!confirm(`通过加入申请？\n\n同学：${req.studentName || req.studentId}\n社区：${req.communityName || req.communityId}`)) return;
+          try {
+            await DataProvider.approveCommunityJoin(req.id);
+            alert('✅ 已通过，同学已成功加入社区！');
+          } catch (e) { alert('❌ 审批失败：' + e.message); }
+        };
+        const rejectJoinReq = async (req) => {
+          if (!confirm(`拒绝该加入申请？`)) return;
+          try {
+            await DataProvider.rejectCommunityJoin(req.id);
+            alert('已拒绝');
+          } catch (e) { alert('❌ 操作失败：' + e.message); }
+        };
+
+        // ========= 社员管理弹窗（管理员/社长都可进入，转让仅社长） =========
+        const showMembersModal = ref(false);
+        const memberModalComm = ref(null); // { id, name, ownerId, memberIds, members: [{id, nickname, isOwner, titleLevel}] }
+        const openMembersModal = async (comm) => {
+          try {
+            const members = (communitiesStore.value || []).find(c => c.id === comm.id);
+            const memberIds = members ? (members.memberIds || []) : [];
+            const sess = DataProvider.studentSession;
+            const ownerId = members ? members.ownerId : null;
+            const isOwner = !!(sess && sess.student && sess.student.id === ownerId);
+            // 拼成员信息
+            const resolved = memberIds.map(mid => {
+              const s = (studentsStore.list || []).find(x => x.id === mid);
+              return {
+                id: mid,
+                nickname: s ? s.nickname : mid,
+                titleLevel: s ? (parseInt(s.titleLevel) || 0) : 0,
+                isOwner: mid === ownerId
+              };
+            });
+            memberModalComm.value = {
+              id: comm.id,
+              name: members ? members.name : comm.name,
+              ownerId,
+              isOwner,
+              members: resolved
+            };
+            showMembersModal.value = true;
+          } catch (e) {
+            alert('❌ 打开社员列表失败：' + e.message);
+          }
+        };
+        const transferOwner = async (newOwnerId) => {
+          if (!memberModalComm.value) return;
+          if (!memberModalComm.value.isOwner) { alert('仅社长可转让社长身份'); return; }
+          const newOwner = memberModalComm.value.members.find(m => m.id === newOwnerId);
+          if (!newOwner) return;
+          if (!confirm(`确定将【${memberModalComm.value.name}】的社长身份\n转让给【${newOwner.nickname}】吗？\n\n转让后你仍是普通社员，可随时退社。`)) return;
+          try {
+            await DataProvider.transferCommunityOwner(memberModalComm.value.id, newOwnerId);
+            alert('✅ 社长已转让！');
+            // 刷新列表后重新打开
+            const commId = memberModalComm.value.id;
+            showMembersModal.value = false;
+            await nextTick();
+            const c = (communitiesStore.value || []).find(x => x.id === commId);
+            if (c) await openMembersModal(c);
+          } catch (e) { alert('❌ 转让失败：' + e.message); }
+        };
+        const adminKickMember = async (studentId, studentName) => {
+          if (!memberModalComm.value) return;
+          if (!confirm(`将【${studentName || studentId}】从【${memberModalComm.value.name}】中移出？（此操作仅管理员可用）`)) return;
+          try {
+            await DataProvider.adminRemoveMember(memberModalComm.value.id, studentId);
+            alert('✅ 已移出');
+            // 重新打开
+            const commId = memberModalComm.value.id;
+            showMembersModal.value = false;
+            await nextTick();
+            const c = (communitiesStore.value || []).find(x => x.id === commId);
+            if (c) await openMembersModal(c);
+          } catch (e) { alert('❌ 操作失败：' + e.message); }
+        };
+
+        // ========= 社区管理 Tab =========
+        const communityListForManage = computed(() => communitiesStore.value || []);
+        const deleteCommunity = async (comm) => {
+          if (!confirm(`⚠️ 管理员删除社区将直接解散【${comm.name}】！\n所有社区成员都会被移出，且不可恢复。\n\n确定继续吗？`)) return;
+          try {
+            await DataProvider.adminDeleteCommunity(comm.id);
+            alert('✅ 社区已删除');
+          } catch (e) { alert('❌ 删除失败：' + e.message); }
+        };
+
+        // ========= 单聊收件箱（管理员） =========
+        const dmConversations = computed(() => (directMessagesStore && directMessagesStore.conversations) || []);
+        const dmActiveStudentId = ref(null);
+        const dmAdminSendText = ref('');
+        const dmAdminSending = ref(false);
+        const dmListRefAdmin = ref(null);
+        let dmAdminPollTimer = null;
+        const dmLoadConversations = async () => {
+          try { await DataProvider.loadDirectMessages(false); } catch (e) {}
+        };
+        const dmSelectStudent = async (studentId) => {
+          dmActiveStudentId.value = studentId;
+          dmAdminSendText.value = '';
+          try { await DataProvider.markDirectReadByStudent(studentId); } catch (e) {}
+          nextTick(() => {
+            const el = dmListRefAdmin.value;
+            if (el) el.scrollTop = el.scrollHeight;
+          });
+        };
+        const dmActiveConversation = computed(() => {
+          if (!dmActiveStudentId.value) return null;
+          return dmConversations.value.find(c => c.studentId === dmActiveStudentId.value) || null;
+        });
+        const dmUnreadTotal = computed(() => {
+          return dmConversations.value.reduce((sum, c) => sum + (c.unread || 0), 0);
+        });
+        const dmAdminSend = async () => {
+          const content = dmAdminSendText.value.trim();
+          if (!content || !dmActiveStudentId.value) return;
+          dmAdminSending.value = true;
+          try {
+            await DataProvider.sendDirectMessageAsAdmin(dmActiveStudentId.value, content);
+            dmAdminSendText.value = '';
+            nextTick(() => {
+              const el = dmListRefAdmin.value;
+              if (el) el.scrollTop = el.scrollHeight;
+            });
+          } catch (e) {
+            alert('❌ 发送失败：' + e.message);
+          } finally { dmAdminSending.value = false; }
+        };
 
         const form = reactive({
           nickname: '', province: '', city: '', university: '',
-          major: '', hobbiesText: '', wechat: '', qq: '', looking_for_food: false
+          major: '', hobbiesText: '', wechat: '', qq: '', title: '', titleLevel: 0, looking_for_food: false
         });
 
         const announceForm = reactive({
@@ -2137,7 +4439,7 @@
         const resetForm = () => {
           Object.assign(form, {
             nickname: '', province: '', city: '', university: '',
-            major: '', hobbiesText: '', wechat: '', qq: '', looking_for_food: false
+            major: '', hobbiesText: '', wechat: '', qq: '', title: '', titleLevel: 0, looking_for_food: false
           });
           isEdit.value = false;
           editId.value = null;
@@ -2145,6 +4447,19 @@
 
         const resetAnnounceForm = () => {
           Object.assign(announceForm, { title: '', content: '', pinned: false });
+          isEditAnnouncement.value = false;
+          editAnnouncementId.value = null;
+        };
+
+        const openEditAnnouncement = (item) => {
+          isEditAnnouncement.value = true;
+          editAnnouncementId.value = item.id;
+          Object.assign(announceForm, {
+            title: item.title || '',
+            content: item.content || '',
+            pinned: !!item.pinned
+          });
+          showAnnounceForm.value = true;
         };
 
         const publishAnnouncement = async () => {
@@ -2153,16 +4468,25 @@
             return;
           }
           try {
-            await DataProvider.addAnnouncement({
-              title: announceForm.title,
-              content: announceForm.content,
-              pinned: announceForm.pinned
-            });
-            alert('✅ 公告已发布');
+            if (isEditAnnouncement.value && editAnnouncementId.value) {
+              await DataProvider.updateAnnouncement(editAnnouncementId.value, {
+                title: announceForm.title,
+                content: announceForm.content,
+                pinned: announceForm.pinned
+              });
+              alert('✅ 公告已更新');
+            } else {
+              await DataProvider.addAnnouncement({
+                title: announceForm.title,
+                content: announceForm.content,
+                pinned: announceForm.pinned
+              });
+              alert('✅ 公告已发布');
+            }
             resetAnnounceForm();
             showAnnounceForm.value = false;
           } catch (e) {
-            alert('❌ 发布失败：' + e.message);
+            alert('❌ 操作失败：' + e.message);
           }
         };
 
@@ -2190,6 +4514,8 @@
             hobbiesText: (item.hobbies || []).join(', '),
             wechat: item.wechat || '',
             qq: item.qq || '',
+            title: item.title || '',
+            titleLevel: (parseInt(item.titleLevel) || 0),
             looking_for_food: item.looking_for_food
           });
           showModal.value = true;
@@ -2216,6 +4542,11 @@
             hobbies,
             wechat: form.wechat || '',
             qq: form.qq || '',
+            title: (form.title || '').trim(),
+            // 头衔色号等级：0=无 1=金 2=银 3=铜
+            titleLevel: (form.titleLevel !== undefined && form.titleLevel !== null)
+              ? (parseInt(form.titleLevel) || 0)
+              : 0,
             looking_for_food: form.looking_for_food,
             longitude: center[0] + (Math.random() - 0.5) * 0.4,
             latitude: center[1] + (Math.random() - 0.5) * 0.4
@@ -2258,6 +4589,10 @@
               hobbies: item.hobbies || [],
               wechat: item.wechat || '',
               qq: item.qq || '',
+              title: item.title || '',
+              titleLevel: (item.titleLevel !== undefined && item.titleLevel !== null)
+                ? (parseInt(item.titleLevel) || 0)
+                : 0,
               looking_for_food: item.looking_for_food,
               longitude: center[0] + (Math.random() - 0.5) * 0.4,
               latitude: center[1] + (Math.random() - 0.5) * 0.4
@@ -2285,19 +4620,62 @@
         };
         const goMain = () => emit('navigate', 'home');
 
-        onMounted(() => {
+        onMounted(async () => {
           DataProvider.getPending();
           DataProvider.getAnnouncements();
+          // 管理员页加载社区+审批+单聊数据
+          try {
+            await Promise.all([
+              DataProvider.loadCommunities(),
+              DataProvider.loadCommunityRequests(),
+              DataProvider.loadDirectMessages(false)
+            ]);
+          } catch (e) {}
+          // 单聊轮询
+          if (dmAdminPollTimer) clearInterval(dmAdminPollTimer);
+          dmAdminPollTimer = setInterval(() => {
+            if (activeTab.value === 'direct-messages') {
+              DataProvider.loadDirectMessages(false).catch(() => {});
+              if (dmActiveStudentId.value) {
+                // 已选中会话 → 自动滚动到底
+                nextTick(() => {
+                  const el = dmListRefAdmin.value;
+                  if (el) el.scrollTop = el.scrollHeight;
+                });
+              }
+            }
+          }, 6000);
+        });
+        onUnmounted(() => {
+          if (dmAdminPollTimer) { clearInterval(dmAdminPollTimer); dmAdminPollTimer = null; }
+        });
+
+        watch(activeTab, (val) => {
+          if (val === 'direct-messages') {
+            DataProvider.loadDirectMessages(false).catch(() => {});
+          }
+          if (val === 'community-create' || val === 'community-join' || val === 'community-manage') {
+            Promise.all([DataProvider.loadCommunities(), DataProvider.loadCommunityRequests()]).catch(() => {});
+          }
         });
 
         return {
           tabs, activeTab, showModal, isEdit, form,
           showAnnounceForm, announceForm, sortedAnnouncements,
+          isEditAnnouncement, editAnnouncementId,
           PROVINCE_LIST, filteredList, pendingCount,
           openAddModal, openEditModal, closeModal, saveStudent, deleteStudent,
           approveApplication, rejectApplication,
-          resetAnnounceForm, publishAnnouncement, removeAnnouncement,
-          logout, goMain
+          openEditAnnouncement, resetAnnounceForm, publishAnnouncement, removeAnnouncement,
+          logout, goMain,
+          // 新增
+          pwdKeyword, filteredStudentsWithPwd, pwdStats, revealPwd, toggleRevealPwd, resetOnePwd, batchFillPasswords, copyPwd,
+          createReqs, createReqsPending, approveCreateReq, rejectCreateReq,
+          joinReqs, joinReqsForAdminOrOwner, myCommunityForAdmin, approveJoinReq, rejectJoinReq,
+          showMembersModal, memberModalComm, openMembersModal, transferOwner, adminKickMember,
+          communityListForManage, deleteCommunity,
+          dmConversations, dmActiveStudentId, dmAdminSendText, dmAdminSending, dmListRefAdmin,
+          dmLoadConversations, dmSelectStudent, dmActiveConversation, dmUnreadTotal, dmAdminSend
         };
       }
     };

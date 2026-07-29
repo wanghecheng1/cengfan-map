@@ -8,7 +8,7 @@ exports.handler = async (event) => {
         statusCode: 200,
         headers: {
           'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Headers': 'Content-Type',
+          'Access-Control-Allow-Headers': 'Content-Type, X-Admin-Token, X-Student-Token',
           'Access-Control-Allow-Methods': 'POST, OPTIONS'
         },
         body: ''
