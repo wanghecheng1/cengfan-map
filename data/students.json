@@ -116,5 +116,19 @@
     "longitude": 117.13609572671307,
     "latitude": 31.65665028513925,
     "id": 1785293343953
+  },
+  {
+    "nickname": "张钦峰",
+    "province": "湖北",
+    "city": "武汉",
+    "university": "华中科技大学",
+    "major": "",
+    "hobbies": [],
+    "wechat": "",
+    "qq": "",
+    "looking_for_food": true,
+    "longitude": 114.44531831530723,
+    "latitude": 30.79044138818839,
+    "id": 1785293351041
   }
 ]
