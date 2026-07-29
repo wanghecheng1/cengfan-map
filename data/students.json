@@ -1,1 +1,16 @@
-[]
+[
+  {
+    "nickname": "刘宇豪",
+    "province": "天津",
+    "city": "天津",
+    "university": "南开",
+    "major": "",
+    "hobbies": [],
+    "wechat": "",
+    "qq": "",
+    "looking_for_food": true,
+    "longitude": 117.07472077951718,
+    "latitude": 39.04657245922039,
+    "id": 1785292588144
+  }
+]
