@@ -174,5 +174,18 @@
     "wechat": "g18116123369",
     "qq": "3071399103",
     "looking_for_food": true
+  },
+  {
+    "id": 1785337583324,
+    "created_at": "2026-07-29 23:06",
+    "nickname": "赵一鸣",
+    "province": "山东",
+    "city": "青岛",
+    "university": "山东大学",
+    "major": "计算机",
+    "hobbies": [],
+    "wechat": "",
+    "qq": "",
+    "looking_for_food": false
   }
 ]
