@@ -509,5 +509,20 @@
     "looking_for_food": false,
     "longitude": 118.9502373350725,
     "latitude": 32.036697418544776
+  },
+  {
+    "id": 1785300348201,
+    "created_at": "2026-07-29 12:45",
+    "nickname": "高晨轩",
+    "province": "北京",
+    "city": "北京市",
+    "university": "北京科技大学",
+    "major": "",
+    "hobbies": [],
+    "wechat": "",
+    "qq": "",
+    "looking_for_food": false,
+    "longitude": 116.349037749811,
+    "latitude": 39.91921405965011
   }
 ]
