@@ -377,5 +377,21 @@
     "longitude": 112.76568266853438,
     "latitude": 28.044685580772295,
     "id": 1785295550386
+  },
+  {
+    "nickname": "熊浩涵",
+    "province": "江苏",
+    "city": "南通市",
+    "university": "南通大学",
+    "major": "自动化",
+    "hobbies": [
+      "篮球"
+    ],
+    "wechat": "xionghaohan1115",
+    "qq": "2273814509",
+    "looking_for_food": true,
+    "longitude": 118.95596794647773,
+    "latitude": 32.19506876243191,
+    "id": 1785295556861
   }
 ]
