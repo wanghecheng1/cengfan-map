@@ -1,27 +1,15 @@
 [
   {
-    "id": 1,
-    "nickname": "小明",
-    "province": "北京",
-    "city": "北京",
-    "university": "北京大学",
-    "major": "计算机科学",
-    "hobbies": ["篮球", "编程", "美食"],
-    "wechat": "",
-    "qq": "",
-    "looking_for_food": true,
-    "longitude": 116.4,
-    "latitude": 39.9,
-    "created_at": "2024-01-15"
-  },
-  {
     "id": 2,
     "nickname": "小红",
     "province": "上海",
     "city": "上海",
     "university": "复旦大学",
     "major": "金融学",
-    "hobbies": ["摄影", "旅行"],
+    "hobbies": [
+      "摄影",
+      "旅行"
+    ],
     "wechat": "",
     "qq": "",
     "looking_for_food": false,
@@ -36,7 +24,11 @@
     "city": "广州",
     "university": "中山大学",
     "major": "医学",
-    "hobbies": ["足球", "美食", "电影"],
+    "hobbies": [
+      "足球",
+      "美食",
+      "电影"
+    ],
     "wechat": "",
     "qq": "",
     "looking_for_food": true,
@@ -51,7 +43,10 @@
     "city": "成都",
     "university": "四川大学",
     "major": "土木工程",
-    "hobbies": ["火锅", "游戏"],
+    "hobbies": [
+      "火锅",
+      "游戏"
+    ],
     "wechat": "",
     "qq": "",
     "looking_for_food": true,
@@ -66,7 +61,10 @@
     "city": "杭州",
     "university": "浙江大学",
     "major": "外语",
-    "hobbies": ["阅读", "绘画"],
+    "hobbies": [
+      "阅读",
+      "绘画"
+    ],
     "wechat": "",
     "qq": "",
     "looking_for_food": false,
