@@ -125,24 +125,6 @@
     "looking_for_food": false
   },
   {
-    "id": 1785324316507,
-    "created_at": "2026-07-29 19:25",
-    "nickname": "马赫",
-    "province": "甘肃",
-    "city": "兰州市",
-    "university": "兰州大学",
-    "major": "",
-    "hobbies": [
-      "唱",
-      "跳",
-      "rap",
-      "篮球"
-    ],
-    "wechat": "",
-    "qq": "",
-    "looking_for_food": true
-  },
-  {
     "id": 1785324317551,
     "created_at": "2026-07-29 19:25",
     "nickname": "马赫",
