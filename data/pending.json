@@ -86,5 +86,21 @@
     "qq": "",
     "looking_for_food": false,
     "id": 1785294968391
+  },
+  {
+    "nickname": "陈秋臣",
+    "province": "山东",
+    "city": "济南",
+    "university": "山东大学",
+    "major": "材料科学与工程",
+    "hobbies": [
+      "篮球",
+      "美食",
+      "旅行"
+    ],
+    "wechat": "15051047647",
+    "qq": "1129752468",
+    "looking_for_food": true,
+    "id": 1785295006684
   }
 ]
