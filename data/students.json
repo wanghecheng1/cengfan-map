@@ -61,9 +61,12 @@
     "wechat": "",
     "qq": "",
     "looking_for_food": false,
-    "longitude": 118.87700808385036,
-    "latitude": 32.12609573359524,
-    "id": 1785293011521
+    "longitude": 118.735359323358,
+    "latitude": 31.882616236381992,
+    "id": 1785293011521,
+    "title": "该电",
+    "titleLevel": 0,
+    "created_at": "2026-07-29 18:23"
   },
   {
     "nickname": "倪星瑞",
