@@ -296,5 +296,21 @@
     "longitude": 118.89934071328383,
     "latitude": 32.08449501487248,
     "id": 1785294732180
+  },
+  {
+    "nickname": "刘浩宇",
+    "province": "江苏",
+    "city": "宿迁市",
+    "university": "泗阳大学",
+    "major": "物化生",
+    "hobbies": [
+      "篮球唱跳rap"
+    ],
+    "wechat": "",
+    "qq": "",
+    "looking_for_food": false,
+    "longitude": 118.71432942038649,
+    "latitude": 32.225802553368204,
+    "id": 1785294905352
   }
 ]
