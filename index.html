@@ -7,15 +7,15 @@
   <script src="https://cdn.staticfile.org/vue/3.4.21/vue.global.min.js"></script>
   <script src="https://cdn.staticfile.org/echarts/5.5.0/echarts.min.js"></script>
   <script>
-    // ========== 兜底：CDN 加载失败检测（10 秒未加载 Vue 则显示报错指引）==========
+    // ========== 兜底1：CDN 加载失败检测（10 秒未加载 Vue 则显示报错指引）==========
     window.__cdnCheckTimer = setTimeout(function () {
       if (typeof Vue === 'undefined') {
         var app = document.getElementById('app');
         if (app) {
           app.innerHTML =
             '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px;">' +
-            '<div style="max-width:520px;padding:32px 28px;background:#fff;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,0.1);border-top:4px solid #C0392B;">' +
-            '<h2 style="color:#C0392B;margin-bottom:16px;font-size:20px;">⚠️ 页面资源加载失败</h2>' +
+            '<div style="max-width:560px;padding:32px 28px;background:#fff;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,0.1);border-top:4px solid #C0392B;">' +
+            '<h2 style="color:#C0392B;margin-bottom:16px;font-size:20px;">⚠️ 前端资源加载失败 (Vue CDN)</h2>' +
             '<p style="line-height:1.9;color:#333;margin-bottom:10px;">主要原因：网络无法访问前端 CDN（国内网络环境常见问题）。</p>' +
             '<div style="background:#FDF2E9;padding:14px 18px;border-radius:8px;margin-bottom:16px;">' +
             '<p style="color:#8B4513;font-weight:600;margin-bottom:8px;">解决方法（按顺序试）：</p>' +
@@ -31,10 +31,51 @@
         }
       }
     }, 10000);
+
+    // ========== 兜底2：全局致命错误显示（避免任何白屏看不到报错）==========
+    window.__showFatalError = function (title, detail) {
+      try {
+        clearTimeout(window.__cdnCheckTimer);
+        var detailStr = '';
+        try { detailStr = (detail && detail.stack) ? detail.stack : String(detail || ''); } catch (e) { detailStr = String(detail); }
+        var box = document.getElementById('__fatal_error_box__');
+        if (!box) {
+          box = document.createElement('div');
+          box.id = '__fatal_error_box__';
+          box.style.cssText = 'position:fixed;z-index:99999999;top:0;left:0;right:0;max-height:80vh;overflow:auto;background:#fff8e1;border-bottom:5px solid #C0392B;padding:20px 24px;font-family:Consolas,\'Courier New\',monospace;font-size:13px;line-height:1.7;color:#222;box-shadow:0 10px 40px rgba(0,0,0,0.2);';
+          document.body.insertBefore(box, document.body.firstChild);
+        }
+        box.innerHTML =
+          '<div style="font-size:18px;font-weight:700;color:#C0392B;margin-bottom:10px;">❌ ' + title + '</div>' +
+          '<div style="color:#7a1a0a;white-space:pre-wrap;word-break:break-all;">' +
+          '<div style="margin-bottom:8px;padding:6px 10px;background:#fff;border:1px solid #C0392B;border-radius:6px;">报错详情：' + detailStr.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' +
+          '<div style="color:#555;margin-top:12px;">请把上面红色框里的报错内容（全部）截图发给开发者排错即可。<br>临时处理：按 <b>Ctrl + F5</b> 强制刷新，或切换网络重试。</div>' +
+          '</div>';
+      } catch (e) { console.error('ShowFatalError 自身也出错了:', e); }
+    };
+
+    // 捕获：JS 语法错误 / 运行时错误
+    window.addEventListener('error', function (e) {
+      var msg = (e.error && e.error.message) ? e.error.message : e.message;
+      var info = msg + ' ( ' + (e.filename || '?') + ':' + (e.lineno || '?') + ':' + (e.colno || '?') + ')';
+      window.__showFatalError('JS 运行错误', info + '\n' + ((e.error && e.error.stack) || ''));
+    }, true);
+
+    // 捕获：未处理的 Promise reject（API 抛错没写 .catch）
+    window.addEventListener('unhandledrejection', function (e) {
+      var reason = e.reason;
+      var detail = (reason && reason.stack) ? reason.stack : (reason ? reason.message || String(reason) : String(e));
+      window.__showFatalError('未捕获的 Promise 异步错误 (unhandledrejection)', detail);
+    });
+
     // 正常挂载后清除检测
     window.addEventListener('load', function () {
       if (typeof Vue !== 'undefined' && window.__cdnCheckTimer) {
         clearTimeout(window.__cdnCheckTimer);
+      }
+      // echarts 加载检测
+      if (typeof echarts === 'undefined') {
+        console.warn('ECharts CDN 未加载，地图功能将不可用，但其他功能正常');
       }
     });
   </script>
@@ -4298,7 +4339,7 @@
         const myCommunityForAdmin = computed(() => {
           const sess = DataProvider.studentSession;
           if (!sess || !sess.student || !sess.student.communityId) return null;
-          return (communitiesStore.value || []).find(c => c.id === sess.student.communityId) || null;
+          return (communitiesStore.list || []).find(c => c.id === sess.student.communityId) || null;
         });
         const approveJoinReq = async (req) => {
           if (!confirm(`通过加入申请？\n\n同学：${req.studentName || req.studentId}\n社区：${req.communityName || req.communityId}`)) return;
@@ -4320,7 +4361,7 @@
         const memberModalComm = ref(null); // { id, name, ownerId, memberIds, members: [{id, nickname, isOwner, titleLevel}] }
         const openMembersModal = async (comm) => {
           try {
-            const members = (communitiesStore.value || []).find(c => c.id === comm.id);
+            const members = (communitiesStore.list || []).find(c => c.id === comm.id);
             const memberIds = members ? (members.memberIds || []) : [];
             const sess = DataProvider.studentSession;
             const ownerId = members ? members.ownerId : null;
@@ -4360,7 +4401,7 @@
             const commId = memberModalComm.value.id;
             showMembersModal.value = false;
             await nextTick();
-            const c = (communitiesStore.value || []).find(x => x.id === commId);
+            const c = (communitiesStore.list || []).find(x => x.id === commId);
             if (c) await openMembersModal(c);
           } catch (e) { alert('❌ 转让失败：' + e.message); }
         };
@@ -4374,13 +4415,13 @@
             const commId = memberModalComm.value.id;
             showMembersModal.value = false;
             await nextTick();
-            const c = (communitiesStore.value || []).find(x => x.id === commId);
+            const c = (communitiesStore.list || []).find(x => x.id === commId);
             if (c) await openMembersModal(c);
           } catch (e) { alert('❌ 操作失败：' + e.message); }
         };
 
         // ========= 社区管理 Tab =========
-        const communityListForManage = computed(() => communitiesStore.value || []);
+        const communityListForManage = computed(() => communitiesStore.list || []);
         const deleteCommunity = async (comm) => {
           if (!confirm(`⚠️ 管理员删除社区将直接解散【${comm.name}】！\n所有社区成员都会被移出，且不可恢复。\n\n确定继续吗？`)) return;
           try {
@@ -4441,23 +4482,26 @@
         });
 
         const sortedAnnouncements = computed(() => {
-          return [...announcementsStore.list].sort((a, b) => {
+          const raw = (announcementsStore && announcementsStore.list) ? announcementsStore.list : [];
+          return Array.isArray(raw) ? [...raw].sort((a, b) => {
             if (!!b.pinned !== !!a.pinned) return (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0);
             return (b.id || 0) - (a.id || 0);
-          });
+          }) : [];
         });
 
         const filteredList = computed(() => {
+          const studentsList = Array.isArray(studentsStore.list) ? studentsStore.list : [];
+          const pendingList = Array.isArray(pendingApplications.list) ? pendingApplications.list : [];
           if (activeTab.value === 'food') {
-            return studentsStore.list.filter(s => s.looking_for_food);
+            return studentsList.filter(s => s && s.looking_for_food);
           }
           if (activeTab.value === 'pending') {
-            return pendingApplications.list;
+            return pendingList;
           }
-          return studentsStore.list;
+          return studentsList;
         });
 
-        const pendingCount = computed(() => pendingApplications.list.length);
+        const pendingCount = computed(() => (Array.isArray(pendingApplications.list) ? pendingApplications.list.length : 0));
 
         const resetForm = () => {
           Object.assign(form, {
@@ -4704,7 +4748,7 @@
     };
 
     // ========== 根应用 ==========
-    createApp({
+    const app = createApp({
       setup() {
         const currentPage = ref('entry');
 
@@ -4722,7 +4766,23 @@
 
         return { currentPage, currentPageComponent, navigateTo };
       }
-    }).mount('#app');
+    });
+
+    // ========== 兜底3：Vue 应用级错误捕获（组件 render/setup/computed/watch 内部错误，最容易白屏）==========
+    app.config.errorHandler = function (err, vm, info) {
+      console.error('[Vue errorHandler] info=', info, 'err=', err);
+      var stack = (err && err.stack) ? err.stack : String(err || '');
+      window.__showFatalError('Vue 组件内部错误 (' + info + ')', stack);
+    };
+    app.config.warnHandler = function (msg, vm, trace) {
+      console.warn('[Vue warnHandler]', msg, trace);
+      // 常见警告：模板用了未 return 的变量 (_ctx.xxx is not defined) —— 这些会导致白屏
+      if (/_ctx\.\w+ is not defined|Property "\w+" was accessed during render/i.test(String(msg || ''))) {
+        window.__showFatalError('Vue 模板变量未定义（setup 漏 return）', msg + '\n组件位置：' + (trace || ''));
+      }
+    };
+
+    app.mount('#app');
   </script>
 </body>
 </html>
