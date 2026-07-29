@@ -808,29 +808,8 @@
     // 管理员 token（登录成功后保存）
     let adminToken = localStorage.getItem('admin_token') || '';
 
-    // 数据提供者：优先云端 API，失败降级 localStorage
+    // 数据提供者：始终优先云端 API，失败自动降级 localStorage
     const DataProvider = {
-      _useCloud: null,
-
-      async _isCloudAvailable() {
-        if (this._useCloud !== null) return this._useCloud;
-        try {
-          // 用 GET 实际请求检测，而不是 OPTIONS（OPTIONS 在配置错误时也会返回 200）
-          const res = await fetch('/api/messages');
-          if (res.ok) {
-            const data = await res.json();
-            // 确认返回的是有效数组数据
-            this._useCloud = Array.isArray(data);
-          } else {
-            this._useCloud = false;
-          }
-        } catch (e) {
-          this._useCloud = false;
-        }
-        console.log('[DataProvider] 云端检测结果:', this._useCloud);
-        return this._useCloud;
-      },
-
       _getHeaders(needAuth = false) {
         const headers = { 'Content-Type': 'application/json' };
         if (needAuth && adminToken) {
@@ -839,32 +818,22 @@
         return headers;
       },
 
-      // 云端操作失败时，标记为不可用，后续全部走本地
-      _markCloudFailed() {
-        this._useCloud = false;
-        console.warn('[DataProvider] 云端不可用，已切换为本地模式');
-      },
-
       // ===== 学生档案 =====
       async getStudents() {
-        const cloudOk = await this._isCloudAvailable();
-        if (cloudOk) {
-          try {
-            const res = await fetch('/api/students');
-            if (res.ok) {
-              const data = await res.json();
+        try {
+          const res = await fetch('/api/students');
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) {
               studentsStore.list = data;
               if (data.length > 0) {
                 idCounter = Math.max(...data.map(s => s.id), 0) + 1;
               }
               return data;
-            } else {
-              this._markCloudFailed();
             }
-          } catch (e) {
-            console.warn('云端获取学生失败，使用本地:', e);
-            this._markCloudFailed();
           }
+        } catch (e) {
+          console.warn('云端获取学生失败，使用本地:', e);
         }
         const local = localStorage.getItem('cengfan_students');
         if (local) {
@@ -877,13 +846,12 @@
       },
 
       async addStudent(student) {
-        const cloudOk = await this._isCloudAvailable();
         const newItem = {
           id: nextId(),
           ...student,
           created_at: new Date().toLocaleDateString('zh-CN')
         };
-        if (cloudOk && adminToken) {
+        if (adminToken) {
           try {
             const res = await fetch('/api/students', {
               method: 'POST',
@@ -894,12 +862,9 @@
               const saved = await res.json();
               studentsStore.list.push(saved);
               return saved;
-            } else {
-              this._markCloudFailed();
             }
           } catch (e) {
             console.warn('云端添加失败，使用本地:', e);
-            this._markCloudFailed();
           }
         }
         studentsStore.list.push(newItem);
@@ -908,8 +873,7 @@
       },
 
       async updateStudent(id, updates) {
-        const cloudOk = await this._isCloudAvailable();
-        if (cloudOk && adminToken) {
+        if (adminToken) {
           try {
             const res = await fetch(`/api/students/${id}`, {
               method: 'PUT',
@@ -921,12 +885,9 @@
               const idx = studentsStore.list.findIndex(s => s.id == id);
               if (idx > -1) studentsStore.list[idx] = saved;
               return saved;
-            } else {
-              this._markCloudFailed();
             }
           } catch (e) {
             console.warn('云端更新失败:', e);
-            this._markCloudFailed();
           }
         }
         const idx = studentsStore.list.findIndex(s => s.id == id);
@@ -938,8 +899,7 @@
       },
 
       async deleteStudent(id) {
-        const cloudOk = await this._isCloudAvailable();
-        if (cloudOk && adminToken) {
+        if (adminToken) {
           try {
             const res = await fetch(`/api/students/${id}`, {
               method: 'DELETE',
@@ -949,12 +909,9 @@
               const idx = studentsStore.list.findIndex(s => s.id == id);
               if (idx > -1) studentsStore.list.splice(idx, 1);
               return true;
-            } else {
-              this._markCloudFailed();
             }
           } catch (e) {
             console.warn('云端删除失败:', e);
-            this._markCloudFailed();
           }
         }
         const idx = studentsStore.list.findIndex(s => s.id == id);
@@ -967,25 +924,23 @@
 
       // ===== 待审核申请 =====
       async getPending() {
-        const cloudOk = await this._isCloudAvailable();
-        if (cloudOk && adminToken) {
+        if (adminToken) {
           try {
             const res = await fetch('/api/pending', {
               headers: this._getHeaders(true)
             });
             if (res.ok) {
               const data = await res.json();
-              pendingApplications.list = data;
-              if (data.length > 0) {
-                appIdCounter = Math.max(...data.map(s => s.id), 0) + 1;
+              if (Array.isArray(data)) {
+                pendingApplications.list = data;
+                if (data.length > 0) {
+                  appIdCounter = Math.max(...data.map(s => s.id), 0) + 1;
+                }
+                return data;
               }
-              return data;
-            } else {
-              this._markCloudFailed();
             }
           } catch (e) {
             console.warn('云端获取待审核失败:', e);
-            this._markCloudFailed();
           }
         }
         const local = localStorage.getItem('cengfan_pending');
@@ -999,30 +954,24 @@
       },
 
       async addPending(app) {
-        const cloudOk = await this._isCloudAvailable();
         const newItem = {
           id: nextAppId(),
           ...app,
           created_at: new Date().toLocaleDateString('zh-CN')
         };
-        if (cloudOk) {
-          try {
-            const res = await fetch('/api/pending', {
-              method: 'POST',
-              headers: this._getHeaders(false),
-              body: JSON.stringify(app)
-            });
-            if (res.ok) {
-              const saved = await res.json();
-              pendingApplications.list.push(saved);
-              return saved;
-            } else {
-              this._markCloudFailed();
-            }
-          } catch (e) {
-            console.warn('云端提交申请失败，使用本地:', e);
-            this._markCloudFailed();
+        try {
+          const res = await fetch('/api/pending', {
+            method: 'POST',
+            headers: this._getHeaders(false),
+            body: JSON.stringify(app)
+          });
+          if (res.ok) {
+            const saved = await res.json();
+            pendingApplications.list.push(saved);
+            return saved;
           }
+        } catch (e) {
+          console.warn('云端提交申请失败，使用本地:', e);
         }
         pendingApplications.list.push(newItem);
         localStorage.setItem('cengfan_pending', JSON.stringify(pendingApplications.list));
@@ -1030,8 +979,7 @@
       },
 
       async removePending(id) {
-        const cloudOk = await this._isCloudAvailable();
-        if (cloudOk && adminToken) {
+        if (adminToken) {
           try {
             const res = await fetch(`/api/pending/${id}`, {
               method: 'DELETE',
@@ -1041,12 +989,9 @@
               const idx = pendingApplications.list.findIndex(s => s.id == id);
               if (idx > -1) pendingApplications.list.splice(idx, 1);
               return true;
-            } else {
-              this._markCloudFailed();
             }
           } catch (e) {
             console.warn('云端删除待审核失败:', e);
-            this._markCloudFailed();
           }
         }
         const idx = pendingApplications.list.findIndex(s => s.id == id);
@@ -1059,24 +1004,20 @@
 
       // ===== 留言 =====
       async getMessages() {
-        const cloudOk = await this._isCloudAvailable();
-        if (cloudOk) {
-          try {
-            const res = await fetch('/api/messages');
-            if (res.ok) {
-              const data = await res.json();
+        try {
+          const res = await fetch('/api/messages');
+          if (res.ok) {
+            const data = await res.json();
+            if (Array.isArray(data)) {
               messagesStore.list = data;
               if (data.length > 0) {
                 msgIdCounter = Math.max(...data.map(m => m.id), 0) + 1;
               }
               return data;
-            } else {
-              this._markCloudFailed();
             }
-          } catch (e) {
-            console.warn('云端获取留言失败，使用本地:', e);
-            this._markCloudFailed();
           }
+        } catch (e) {
+          console.warn('云端获取留言失败，使用本地:', e);
         }
         const local = localStorage.getItem('cengfan_messages');
         if (local) {
@@ -1089,7 +1030,6 @@
       },
 
       async addMessage(content) {
-        const cloudOk = await this._isCloudAvailable();
         const now = new Date();
         const timeStr = now.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
         const newItem = {
@@ -1097,24 +1037,19 @@
           content,
           created_at: timeStr
         };
-        if (cloudOk) {
-          try {
-            const res = await fetch('/api/messages', {
-              method: 'POST',
-              headers: this._getHeaders(false),
-              body: JSON.stringify({ content })
-            });
-            if (res.ok) {
-              const saved = await res.json();
-              messagesStore.list.push(saved);
-              return saved;
-            } else {
-              this._markCloudFailed();
-            }
-          } catch (e) {
-            console.warn('云端留言失败，使用本地:', e);
-            this._markCloudFailed();
+        try {
+          const res = await fetch('/api/messages', {
+            method: 'POST',
+            headers: this._getHeaders(false),
+            body: JSON.stringify({ content })
+          });
+          if (res.ok) {
+            const saved = await res.json();
+            messagesStore.list.push(saved);
+            return saved;
           }
+        } catch (e) {
+          console.warn('云端留言失败，使用本地:', e);
         }
         messagesStore.list.push(newItem);
         localStorage.setItem('cengfan_messages', JSON.stringify(messagesStore.list));
@@ -1122,8 +1057,7 @@
       },
 
       async deleteMessage(id) {
-        const cloudOk = await this._isCloudAvailable();
-        if (cloudOk && adminToken) {
+        if (adminToken) {
           try {
             const res = await fetch(`/api/messages/${id}`, {
               method: 'DELETE',
@@ -1133,12 +1067,9 @@
               const idx = messagesStore.list.findIndex(m => m.id == id);
               if (idx > -1) messagesStore.list.splice(idx, 1);
               return true;
-            } else {
-              this._markCloudFailed();
             }
           } catch (e) {
             console.warn('云端删除留言失败:', e);
-            this._markCloudFailed();
           }
         }
         const idx = messagesStore.list.findIndex(m => m.id == id);
@@ -1151,28 +1082,24 @@
 
       // ===== 管理员登录 =====
       async adminLogin(password) {
-        const cloudOk = await this._isCloudAvailable();
-        if (cloudOk) {
-          try {
-            const res = await fetch('/api/admin-login', {
-              method: 'POST',
-              headers: this._getHeaders(false),
-              body: JSON.stringify({ password })
-            });
-            if (res.ok) {
-              const data = await res.json();
-              if (data.success) {
-                adminToken = data.token;
-                localStorage.setItem('admin_token', adminToken);
-                localStorage.setItem('admin_authed', '1');
-                return true;
-              }
+        try {
+          const res = await fetch('/api/admin-login', {
+            method: 'POST',
+            headers: this._getHeaders(false),
+            body: JSON.stringify({ password })
+          });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.success) {
+              adminToken = data.token;
+              localStorage.setItem('admin_token', adminToken);
+              localStorage.setItem('admin_authed', '1');
+              return true;
             }
-            return false;
-          } catch (e) {
-            console.warn('云端登录失败，尝试本地:', e);
-            this._markCloudFailed();
           }
+          return false;
+        } catch (e) {
+          console.warn('云端登录失败，尝试本地:', e);
         }
         if (password === 'I_LV_WHC') {
           adminToken = 'local-admin';
