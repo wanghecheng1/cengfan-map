@@ -435,5 +435,19 @@
     "longitude": 117.2778551104271,
     "latitude": 39.2555532456543,
     "id": 1785296708731
+  },
+  {
+    "nickname": "马丁良",
+    "province": "江苏",
+    "city": "常州市",
+    "university": "南京航空航天大学",
+    "major": "",
+    "hobbies": [],
+    "wechat": "",
+    "qq": "",
+    "looking_for_food": false,
+    "longitude": 118.72016986425568,
+    "latitude": 32.24935463175312,
+    "id": 1785298529060
   }
 ]
