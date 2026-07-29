@@ -496,8 +496,10 @@
     "wechat": "",
     "qq": "",
     "looking_for_food": false,
-    "longitude": 123.46222049956658,
-    "latitude": 41.79172673055541
+    "longitude": 123.2455575753404,
+    "latitude": 41.7298999509419,
+    "title": "奶油",
+    "titleLevel": 0
   },
   {
     "id": 1785300199789,
