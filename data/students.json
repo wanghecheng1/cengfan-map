@@ -208,5 +208,19 @@
     "longitude": 118.83149861263944,
     "latitude": 32.08245438438751,
     "id": 1785293669490
+  },
+  {
+    "nickname": "庄玉轩",
+    "province": "江苏",
+    "city": "南京",
+    "university": "南京师范大学",
+    "major": "",
+    "hobbies": [],
+    "wechat": "",
+    "qq": "",
+    "looking_for_food": false,
+    "longitude": 118.81759514435188,
+    "latitude": 31.98647725381815,
+    "id": 1785293808536
   }
 ]
