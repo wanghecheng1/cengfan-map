@@ -815,11 +815,19 @@
       async _isCloudAvailable() {
         if (this._useCloud !== null) return this._useCloud;
         try {
-          const res = await fetch('/api/students', { method: 'OPTIONS' });
-          this._useCloud = res.ok;
+          // 用 GET 实际请求检测，而不是 OPTIONS（OPTIONS 在配置错误时也会返回 200）
+          const res = await fetch('/api/messages');
+          if (res.ok) {
+            const data = await res.json();
+            // 确认返回的是有效数组数据
+            this._useCloud = Array.isArray(data);
+          } else {
+            this._useCloud = false;
+          }
         } catch (e) {
           this._useCloud = false;
         }
+        console.log('[DataProvider] 云端检测结果:', this._useCloud);
         return this._useCloud;
       },
 
