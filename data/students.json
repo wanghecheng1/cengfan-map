@@ -328,5 +328,19 @@
     "longitude": 114.33396113617667,
     "latitude": 37.94301438082055,
     "id": 1785294911879
+  },
+  {
+    "nickname": "臧雨秋",
+    "province": "陕西",
+    "city": "西安",
+    "university": "仙交大学",
+    "major": "",
+    "hobbies": [],
+    "wechat": "",
+    "qq": "",
+    "looking_for_food": false,
+    "longitude": 109.10104129413453,
+    "latitude": 34.48988529771405,
+    "id": 1785295495385
   }
 ]
