@@ -198,5 +198,18 @@
     "wechat": "",
     "qq": "",
     "looking_for_food": true
+  },
+  {
+    "id": 1785306810944,
+    "created_at": "2026-07-29 14:33",
+    "nickname": "黄宇",
+    "province": "山东",
+    "city": "威海市",
+    "university": "山东大学",
+    "major": "",
+    "hobbies": [],
+    "wechat": "",
+    "qq": "",
+    "looking_for_food": false
   }
 ]
