@@ -941,5 +941,24 @@
     "looking_for_food": true,
     "longitude": 103.64635848721585,
     "latitude": 35.959426441790825
+  },
+  {
+    "id": 1785327335562,
+    "created_at": "2026-07-29 20:15",
+    "nickname": "葛雅洁",
+    "province": "北京",
+    "city": "北京市",
+    "university": "中央民族大学",
+    "major": "历史学",
+    "hobbies": [
+      "玩"
+    ],
+    "wechat": "g18116123369",
+    "qq": "3071399103",
+    "title": "",
+    "titleLevel": 0,
+    "looking_for_food": true,
+    "longitude": 116.21727676430385,
+    "latitude": 39.93972147618786
   }
 ]
