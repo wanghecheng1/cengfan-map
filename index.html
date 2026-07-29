@@ -4,10 +4,42 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>高中同学全国蹭饭图</title>
-  <script src="https://cdn.jsdelivr.net/npm/vue@3.4.21/dist/vue.global.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script src="https://cdn.staticfile.org/vue/3.4.21/vue.global.min.js"></script>
+  <script src="https://cdn.staticfile.org/echarts/5.5.0/echarts.min.js"></script>
+  <script>
+    // ========== 兜底：CDN 加载失败检测（10 秒未加载 Vue 则显示报错指引）==========
+    window.__cdnCheckTimer = setTimeout(function () {
+      if (typeof Vue === 'undefined') {
+        var app = document.getElementById('app');
+        if (app) {
+          app.innerHTML =
+            '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:40px;">' +
+            '<div style="max-width:520px;padding:32px 28px;background:#fff;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,0.1);border-top:4px solid #C0392B;">' +
+            '<h2 style="color:#C0392B;margin-bottom:16px;font-size:20px;">⚠️ 页面资源加载失败</h2>' +
+            '<p style="line-height:1.9;color:#333;margin-bottom:10px;">主要原因：网络无法访问前端 CDN（国内网络环境常见问题）。</p>' +
+            '<div style="background:#FDF2E9;padding:14px 18px;border-radius:8px;margin-bottom:16px;">' +
+            '<p style="color:#8B4513;font-weight:600;margin-bottom:8px;">解决方法（按顺序试）：</p>' +
+            '<ol style="padding-left:22px;color:#8B4513;line-height:2;">' +
+            '<li>按 <b>Ctrl + F5</b> 或 <b>Cmd + Shift + R</b> 强制刷新浏览器</li>' +
+            '<li>切换网络：关闭 Wi-Fi 用手机热点，或者换一个 Wi-Fi</li>' +
+            '<li>关闭 VPN/代理软件后重试</li>' +
+            '<li>如果是校园网/公司内网，可能屏蔽了静态资源 CDN，请联系管理员</li>' +
+            '</ol>' +
+            '</div>' +
+            '<p style="color:#888;font-size:13px;">详细错误可按 F12 打开开发者工具 → Console 面板查看红色报错</p>' +
+            '</div></div>';
+        }
+      }
+    }, 10000);
+    // 正常挂载后清除检测
+    window.addEventListener('load', function () {
+      if (typeof Vue !== 'undefined' && window.__cdnCheckTimer) {
+        clearTimeout(window.__cdnCheckTimer);
+      }
+    });
+  </script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;600;700&display=swap');
+    @import url('https://fonts.loli.net/css2?family=Ma+Shan+Zheng&family=ZCOOL+XiaoWei&family=Noto+Serif+SC:wght@400;600;700&display=swap');
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -1337,7 +1369,7 @@
     const { createApp, ref, computed, onMounted, onUnmounted, nextTick, watch, reactive } = Vue;
 
     // ========== 配置 ==========
-    const ADMIN_PASSWORD = 'I_LV_WHC';
+    // 注意：管理员密码仅在后端（admin-login.js 环境变量 ADMIN_PASSWORD）校验，前端无任何明文密码
 
     // 省份坐标
     const PROVINCE_DATA = {
@@ -1718,15 +1750,7 @@
           }
           return false;
         } catch (e) {
-          // 兜底本地密码
-          console.warn('[Cloud] 云端登录失败，使用本地密码校验');
-          const ADMIN_PASSWORD = 'I_LV_WHC';
-          if (password === ADMIN_PASSWORD) {
-            adminToken = 'local-admin';
-            localStorage.setItem('admin_token', adminToken);
-            localStorage.setItem('admin_authed', '1');
-            return true;
-          }
+          console.error('[Admin] 云端管理员登录校验失败，请确认：\n1. Netlify 环境变量 ADMIN_PASSWORD 是否已配置\n2. admin-login Function 是否正常部署（Deploys 页面查看日志）\n错误详情：', e && e.message);
           return false;
         }
       },
@@ -2240,7 +2264,6 @@
       props: [],
       emits: ['navigate'],
       setup(props, { emit }) {
-        const ADMIN_PASSWORD = 'I_LV_WHC';
         const showAdminLogin = ref(false);
         const adminPwd = ref('');
         const pwdError = ref(false);
