@@ -238,5 +238,19 @@
     "longitude": 118.5995228099187,
     "latitude": 32.18908668363931,
     "id": 1785294055937
+  },
+  {
+    "nickname": "祖儿",
+    "province": "北京",
+    "city": "北京",
+    "university": "奶龙大学",
+    "major": "",
+    "hobbies": [],
+    "wechat": "",
+    "qq": "",
+    "looking_for_food": false,
+    "longitude": 116.60471054300156,
+    "latitude": 39.963285625862945,
+    "id": 1785294061188
   }
 ]
