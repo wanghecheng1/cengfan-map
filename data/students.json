@@ -393,5 +393,19 @@
     "longitude": 118.95596794647773,
     "latitude": 32.19506876243191,
     "id": 1785295556861
+  },
+  {
+    "nickname": "钱淼",
+    "province": "天津",
+    "city": "天津市",
+    "university": "南开大学",
+    "major": "",
+    "hobbies": [],
+    "wechat": "",
+    "qq": "3438965817",
+    "looking_for_food": true,
+    "longitude": 117.31987445967212,
+    "latitude": 39.165956091420604,
+    "id": 1785295620009
   }
 ]
