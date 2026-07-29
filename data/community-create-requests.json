@@ -1,1 +1,14 @@
-[]
+[
+  {
+    "id": "cr_1785338387335_356",
+    "creatorStudentId": 1785293148527,
+    "creatorName": "周鹏宇",
+    "communityName": "奶龙一族",
+    "communityIntro": "我们是相亲相爱的奶家人",
+    "status": "pending",
+    "created_at": "2026-07-29 23:19",
+    "reviewed_by": null,
+    "reviewed_at": null,
+    "rejectReason": ""
+  }
+]
