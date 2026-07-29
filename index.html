@@ -798,6 +798,12 @@
     const studentsStore = reactive({ list: [] });
     const pendingApplications = reactive({ list: [] });
     const messagesStore = reactive({ list: [] });
+    // 云端连接状态：'checking' | 'cloud' | 'error'
+    const cloudStatus = ref('checking');
+    const cloudError = ref('');
+    const MAX_RETRY = 3;
+    const RETRY_DELAY = 800;
+
     let idCounter = 1;
     let appIdCounter = 1;
     let msgIdCounter = 1;
@@ -808,7 +814,40 @@
     // 管理员 token（登录成功后保存）
     let adminToken = localStorage.getItem('admin_token') || '';
 
-    // 数据提供者：始终优先云端 API，失败自动降级 localStorage
+    // ====== 带重试的 fetch（核心！）======
+    // 绝不降级为本地存储，失败就重试，再失败就抛出错误给用户
+    const fetchWithRetry = async (url, options = {}, describe = '请求') => {
+      let lastErr = null;
+      for (let i = 1; i <= MAX_RETRY; i++) {
+        try {
+          console.log(`[Cloud] 第 ${i}/${MAX_RETRY} 次尝试: ${describe}`);
+          const res = await fetch(url, options);
+          if (res.ok) {
+            const text = await res.text();
+            let data;
+            try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+            return { ok: true, status: res.status, data };
+          }
+          const errText = await res.text().catch(() => '');
+          let errMsg = `HTTP ${res.status}`;
+          try {
+            const errJson = JSON.parse(errText);
+            if (errJson.error) errMsg += ': ' + errJson.error;
+          } catch {}
+          lastErr = new Error(errMsg);
+          console.warn(`[Cloud] ${describe} 第 ${i} 次失败: ${errMsg}`);
+        } catch (e) {
+          lastErr = e;
+          console.warn(`[Cloud] ${describe} 第 ${i} 次网络异常: ${e.message}`);
+        }
+        if (i < MAX_RETRY) {
+          await new Promise(r => setTimeout(r, RETRY_DELAY * i));
+        }
+      }
+      throw lastErr;
+    };
+
+    // 数据提供者：**仅云端模式**，3次重试，绝不降级本地
     const DataProvider = {
       _getHeaders(needAuth = false) {
         const headers = { 'Content-Type': 'application/json' };
@@ -818,296 +857,166 @@
         return headers;
       },
 
+      getCloudStatus() { return { status: cloudStatus.value, error: cloudError.value }; },
+
+      // 启动时检测云端是否可用
+      async checkCloud() {
+        cloudStatus.value = 'checking';
+        cloudError.value = '';
+        try {
+          const r = await fetchWithRetry('/api/messages', {}, '云端可用性检测');
+          if (Array.isArray(r.data)) {
+            cloudStatus.value = 'cloud';
+            console.log('[Cloud] ✅ 云端连接成功，所有数据将实时共享');
+            return true;
+          }
+          throw new Error('返回数据格式错误');
+        } catch (e) {
+          cloudStatus.value = 'error';
+          cloudError.value = e.message;
+          console.error('[Cloud] ❌ 云端连接失败:', e.message);
+          return false;
+        }
+      },
+
       // ===== 学生档案 =====
       async getStudents() {
-        try {
-          const res = await fetch('/api/students');
-          if (res.ok) {
-            const data = await res.json();
-            if (Array.isArray(data)) {
-              studentsStore.list = data;
-              if (data.length > 0) {
-                idCounter = Math.max(...data.map(s => s.id), 0) + 1;
-              }
-              return data;
-            }
-          }
-        } catch (e) {
-          console.warn('云端获取学生失败，使用本地:', e);
+        const r = await fetchWithRetry('/api/students', {}, '获取学生档案');
+        if (Array.isArray(r.data)) {
+          studentsStore.list = r.data;
+          if (r.data.length > 0) idCounter = Math.max(...r.data.map(s => s.id), 0) + 1;
+          return r.data;
         }
-        const local = localStorage.getItem('cengfan_students');
-        if (local) {
-          const parsed = JSON.parse(local);
-          studentsStore.list = parsed;
-          idCounter = Math.max(...parsed.map(s => s.id), 0) + 1;
-          return parsed;
-        }
-        return [];
+        throw new Error('学生数据格式错误');
       },
 
       async addStudent(student) {
-        const newItem = {
-          id: nextId(),
-          ...student,
-          created_at: new Date().toLocaleDateString('zh-CN')
-        };
-        if (adminToken) {
-          try {
-            const res = await fetch('/api/students', {
-              method: 'POST',
-              headers: this._getHeaders(true),
-              body: JSON.stringify(student)
-            });
-            if (res.ok) {
-              const saved = await res.json();
-              studentsStore.list.push(saved);
-              return saved;
-            }
-          } catch (e) {
-            console.warn('云端添加失败，使用本地:', e);
-          }
-        }
-        studentsStore.list.push(newItem);
-        localStorage.setItem('cengfan_students', JSON.stringify(studentsStore.list));
-        return newItem;
+        if (!adminToken) throw new Error('请先登录管理员账号');
+        const r = await fetchWithRetry('/api/students', {
+          method: 'POST',
+          headers: this._getHeaders(true),
+          body: JSON.stringify(student)
+        }, `添加学生:${student.nickname}`);
+        studentsStore.list.push(r.data);
+        return r.data;
       },
 
       async updateStudent(id, updates) {
-        if (adminToken) {
-          try {
-            const res = await fetch(`/api/students/${id}`, {
-              method: 'PUT',
-              headers: this._getHeaders(true),
-              body: JSON.stringify(updates)
-            });
-            if (res.ok) {
-              const saved = await res.json();
-              const idx = studentsStore.list.findIndex(s => s.id == id);
-              if (idx > -1) studentsStore.list[idx] = saved;
-              return saved;
-            }
-          } catch (e) {
-            console.warn('云端更新失败:', e);
-          }
-        }
+        if (!adminToken) throw new Error('请先登录管理员账号');
+        const r = await fetchWithRetry(`/api/students/${id}`, {
+          method: 'PUT',
+          headers: this._getHeaders(true),
+          body: JSON.stringify(updates)
+        }, `更新学生 id:${id}`);
         const idx = studentsStore.list.findIndex(s => s.id == id);
-        if (idx > -1) {
-          studentsStore.list[idx] = { ...studentsStore.list[idx], ...updates };
-          localStorage.setItem('cengfan_students', JSON.stringify(studentsStore.list));
-        }
-        return studentsStore.list[idx];
+        if (idx > -1) studentsStore.list[idx] = r.data;
+        return r.data;
       },
 
       async deleteStudent(id) {
-        if (adminToken) {
-          try {
-            const res = await fetch(`/api/students/${id}`, {
-              method: 'DELETE',
-              headers: this._getHeaders(true)
-            });
-            if (res.ok) {
-              const idx = studentsStore.list.findIndex(s => s.id == id);
-              if (idx > -1) studentsStore.list.splice(idx, 1);
-              return true;
-            }
-          } catch (e) {
-            console.warn('云端删除失败:', e);
-          }
-        }
+        if (!adminToken) throw new Error('请先登录管理员账号');
+        await fetchWithRetry(`/api/students/${id}`, {
+          method: 'DELETE',
+          headers: this._getHeaders(true)
+        }, `删除学生 id:${id}`);
         const idx = studentsStore.list.findIndex(s => s.id == id);
-        if (idx > -1) {
-          studentsStore.list.splice(idx, 1);
-          localStorage.setItem('cengfan_students', JSON.stringify(studentsStore.list));
-        }
+        if (idx > -1) studentsStore.list.splice(idx, 1);
         return true;
       },
 
       // ===== 待审核申请 =====
       async getPending() {
-        if (adminToken) {
-          try {
-            const res = await fetch('/api/pending', {
-              headers: this._getHeaders(true)
-            });
-            if (res.ok) {
-              const data = await res.json();
-              if (Array.isArray(data)) {
-                pendingApplications.list = data;
-                if (data.length > 0) {
-                  appIdCounter = Math.max(...data.map(s => s.id), 0) + 1;
-                }
-                return data;
-              }
-            }
-          } catch (e) {
-            console.warn('云端获取待审核失败:', e);
-          }
+        if (!adminToken) throw new Error('请先登录管理员账号');
+        const r = await fetchWithRetry('/api/pending', {
+          headers: this._getHeaders(true)
+        }, '获取待审核申请');
+        if (Array.isArray(r.data)) {
+          pendingApplications.list = r.data;
+          if (r.data.length > 0) appIdCounter = Math.max(...r.data.map(s => s.id), 0) + 1;
+          return r.data;
         }
-        const local = localStorage.getItem('cengfan_pending');
-        if (local) {
-          const parsed = JSON.parse(local);
-          pendingApplications.list = parsed;
-          appIdCounter = Math.max(...parsed.map(s => s.id), 0) + 1;
-          return parsed;
-        }
-        return [];
+        throw new Error('待审核数据格式错误');
       },
 
       async addPending(app) {
-        const newItem = {
-          id: nextAppId(),
-          ...app,
-          created_at: new Date().toLocaleDateString('zh-CN')
-        };
-        try {
-          const res = await fetch('/api/pending', {
-            method: 'POST',
-            headers: this._getHeaders(false),
-            body: JSON.stringify(app)
-          });
-          if (res.ok) {
-            const saved = await res.json();
-            pendingApplications.list.push(saved);
-            return saved;
-          }
-        } catch (e) {
-          console.warn('云端提交申请失败，使用本地:', e);
-        }
-        pendingApplications.list.push(newItem);
-        localStorage.setItem('cengfan_pending', JSON.stringify(pendingApplications.list));
-        return newItem;
+        const r = await fetchWithRetry('/api/pending', {
+          method: 'POST',
+          headers: this._getHeaders(false),
+          body: JSON.stringify(app)
+        }, `提交申请:${app.nickname}`);
+        pendingApplications.list.push(r.data);
+        return r.data;
       },
 
       async removePending(id) {
-        if (adminToken) {
-          try {
-            const res = await fetch(`/api/pending/${id}`, {
-              method: 'DELETE',
-              headers: this._getHeaders(true)
-            });
-            if (res.ok) {
-              const idx = pendingApplications.list.findIndex(s => s.id == id);
-              if (idx > -1) pendingApplications.list.splice(idx, 1);
-              return true;
-            }
-          } catch (e) {
-            console.warn('云端删除待审核失败:', e);
-          }
-        }
+        if (!adminToken) throw new Error('请先登录管理员账号');
+        await fetchWithRetry(`/api/pending/${id}`, {
+          method: 'DELETE',
+          headers: this._getHeaders(true)
+        }, `删除待审核 id:${id}`);
         const idx = pendingApplications.list.findIndex(s => s.id == id);
-        if (idx > -1) {
-          pendingApplications.list.splice(idx, 1);
-          localStorage.setItem('cengfan_pending', JSON.stringify(pendingApplications.list));
-        }
+        if (idx > -1) pendingApplications.list.splice(idx, 1);
         return true;
       },
 
       // ===== 留言 =====
       async getMessages() {
-        try {
-          const res = await fetch('/api/messages');
-          if (res.ok) {
-            const data = await res.json();
-            if (Array.isArray(data)) {
-              messagesStore.list = data;
-              if (data.length > 0) {
-                msgIdCounter = Math.max(...data.map(m => m.id), 0) + 1;
-              }
-              return data;
-            }
-          }
-        } catch (e) {
-          console.warn('云端获取留言失败，使用本地:', e);
+        const r = await fetchWithRetry('/api/messages', {}, '获取留言');
+        if (Array.isArray(r.data)) {
+          messagesStore.list = r.data;
+          if (r.data.length > 0) msgIdCounter = Math.max(...r.data.map(m => m.id), 0) + 1;
+          return r.data;
         }
-        const local = localStorage.getItem('cengfan_messages');
-        if (local) {
-          const parsed = JSON.parse(local);
-          messagesStore.list = parsed;
-          msgIdCounter = Math.max(...parsed.map(m => m.id), 0) + 1;
-          return parsed;
-        }
-        return [];
+        throw new Error('留言数据格式错误');
       },
 
       async addMessage(content) {
-        const now = new Date();
-        const timeStr = now.toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-        const newItem = {
-          id: nextMsgId(),
-          content,
-          created_at: timeStr
-        };
-        try {
-          const res = await fetch('/api/messages', {
-            method: 'POST',
-            headers: this._getHeaders(false),
-            body: JSON.stringify({ content })
-          });
-          if (res.ok) {
-            const saved = await res.json();
-            messagesStore.list.push(saved);
-            return saved;
-          }
-        } catch (e) {
-          console.warn('云端留言失败，使用本地:', e);
-        }
-        messagesStore.list.push(newItem);
-        localStorage.setItem('cengfan_messages', JSON.stringify(messagesStore.list));
-        return newItem;
+        const r = await fetchWithRetry('/api/messages', {
+          method: 'POST',
+          headers: this._getHeaders(false),
+          body: JSON.stringify({ content })
+        }, '发送留言');
+        messagesStore.list.push(r.data);
+        return r.data;
       },
 
       async deleteMessage(id) {
-        if (adminToken) {
-          try {
-            const res = await fetch(`/api/messages/${id}`, {
-              method: 'DELETE',
-              headers: this._getHeaders(true)
-            });
-            if (res.ok) {
-              const idx = messagesStore.list.findIndex(m => m.id == id);
-              if (idx > -1) messagesStore.list.splice(idx, 1);
-              return true;
-            }
-          } catch (e) {
-            console.warn('云端删除留言失败:', e);
-          }
-        }
+        if (!adminToken) throw new Error('请先登录管理员账号');
+        await fetchWithRetry(`/api/messages/${id}`, {
+          method: 'DELETE',
+          headers: this._getHeaders(true)
+        }, `删除留言 id:${id}`);
         const idx = messagesStore.list.findIndex(m => m.id == id);
-        if (idx > -1) {
-          messagesStore.list.splice(idx, 1);
-          localStorage.setItem('cengfan_messages', JSON.stringify(messagesStore.list));
-        }
+        if (idx > -1) messagesStore.list.splice(idx, 1);
         return true;
       },
 
       // ===== 管理员登录 =====
       async adminLogin(password) {
         try {
-          const res = await fetch('/api/admin-login', {
+          const r = await fetchWithRetry('/api/admin-login', {
             method: 'POST',
             headers: this._getHeaders(false),
             body: JSON.stringify({ password })
-          });
-          if (res.ok) {
-            const data = await res.json();
-            if (data.success) {
-              adminToken = data.token;
-              localStorage.setItem('admin_token', adminToken);
-              localStorage.setItem('admin_authed', '1');
-              return true;
-            }
+          }, '管理员登录');
+          if (r.data && r.data.success) {
+            adminToken = r.data.token;
+            localStorage.setItem('admin_token', adminToken);
+            localStorage.setItem('admin_authed', '1');
+            return true;
           }
           return false;
         } catch (e) {
-          console.warn('云端登录失败，尝试本地:', e);
+          // 云端登录失败时，允许本地密码兜底（防止部署出错锁死管理员）
+          console.warn('[Cloud] 云端登录失败，使用本地密码校验');
+          if (password === 'I_LV_WHC') {
+            adminToken = 'local-admin';
+            localStorage.setItem('admin_token', adminToken);
+            localStorage.setItem('admin_authed', '1');
+            return true;
+          }
+          return false;
         }
-        if (password === 'I_LV_WHC') {
-          adminToken = 'local-admin';
-          localStorage.setItem('admin_token', adminToken);
-          localStorage.setItem('admin_authed', '1');
-          return true;
-        }
-        return false;
       },
 
       adminLogout() {
@@ -1121,12 +1030,23 @@
       }
     };
 
-    // 初始化加载数据
+    // 初始化：先检测云端，再加载数据
+    const globalInitError = ref('');
     const initData = async () => {
-      await Promise.all([
-        DataProvider.getStudents(),
-        DataProvider.getMessages()
-      ]);
+      const cloudOk = await DataProvider.checkCloud();
+      if (cloudOk) {
+        try {
+          await Promise.all([
+            DataProvider.getStudents(),
+            DataProvider.getMessages()
+          ]);
+        } catch (e) {
+          globalInitError.value = '初始化加载失败：' + e.message;
+          console.error('Init error:', e);
+        }
+      } else {
+        globalInitError.value = '云端连接失败：' + (cloudError.value || '未知错误') + '，请检查部署配置';
+      }
     };
     initData();
 
@@ -1221,10 +1141,21 @@
     const MainPage = {
       template: `
         <div class="main-page">
+          <!-- 顶部错误提示横幅 -->
+          <div v-if="initError" style="background:#E74C3C;color:#fff;padding:10px 20px;text-align:center;font-size:14px;">
+            ⚠️ {{ initError }}
+          </div>
+
           <div class="top-bar">
             <div>
               <div class="top-title calligraphy">🗺️ 高中同学全国蹭饭图</div>
-              <div class="top-subtitle xiaowei">看看他们都在哪</div>
+              <div class="top-subtitle xiaowei" style="display:flex;align-items:center;gap:12px;">
+                看看他们都在哪
+                <!-- 云端状态指示 -->
+                <span style="font-size:12px;padding:2px 8px;border-radius:10px;" :style="statusStyle">
+                  {{ statusText }}
+                </span>
+              </div>
             </div>
             <div class="top-actions">
               <button class="btn btn-secondary" @click="showLogin = true">🔧 管理</button>
@@ -1479,6 +1410,23 @@
         const pwdShake = ref(false);
         const pwdInput = ref(null);
 
+        // 云端状态展示
+        const initError = computed(() => globalInitError.value);
+        const statusText = computed(() => {
+          const s = cloudStatus.value;
+          if (s === 'checking') return '🔄 正在连接云端...';
+          if (s === 'cloud') return '☁️ 云端已连接 · 数据实时共享';
+          if (s === 'error') return '❌ 云端连接失败';
+          return '';
+        });
+        const statusStyle = computed(() => {
+          const s = cloudStatus.value;
+          if (s === 'checking') return { background: '#FFF3CD', color: '#856404' };
+          if (s === 'cloud') return { background: '#D4EDDA', color: '#155724' };
+          if (s === 'error') return { background: '#F8D7DA', color: '#721C24' };
+          return {};
+        });
+
         const applyForm = reactive({
           nickname: '', province: '', city: '', university: '',
           major: '', hobbiesText: '', wechat: '', qq: '', looking_for_food: false
@@ -1717,20 +1665,24 @@
           const hobbies = applyForm.hobbiesText
             ? applyForm.hobbiesText.split(/[,，、]/).map(h => h.trim()).filter(Boolean)
             : [];
-          await DataProvider.addPending({
-            nickname: applyForm.nickname.trim(),
-            province: applyForm.province,
-            city: applyForm.city.trim(),
-            university: applyForm.university.trim(),
-            major: applyForm.major.trim(),
-            hobbies,
-            wechat: applyForm.wechat.trim(),
-            qq: applyForm.qq.trim(),
-            looking_for_food: applyForm.looking_for_food
-          });
-          alert('✅ 申请已提交！请等待管理员审核通过。');
-          showApply.value = false;
-          Object.assign(applyForm, { nickname: '', province: '', city: '', university: '', major: '', hobbiesText: '', wechat: '', qq: '', looking_for_food: false });
+          try {
+            await DataProvider.addPending({
+              nickname: applyForm.nickname.trim(),
+              province: applyForm.province,
+              city: applyForm.city.trim(),
+              university: applyForm.university.trim(),
+              major: applyForm.major.trim(),
+              hobbies,
+              wechat: applyForm.wechat.trim(),
+              qq: applyForm.qq.trim(),
+              looking_for_food: applyForm.looking_for_food
+            });
+            alert('✅ 申请已提交！请等待管理员审核通过。');
+            showApply.value = false;
+            Object.assign(applyForm, { nickname: '', province: '', city: '', university: '', major: '', hobbiesText: '', wechat: '', qq: '', looking_for_food: false });
+          } catch (e) {
+            alert('❌ 申请提交失败：' + e.message + '\n请检查云端连接是否正常。');
+          }
         };
 
         const newMessage = ref('');
@@ -1741,18 +1693,26 @@
         const sendMessage = async () => {
           const content = newMessage.value.trim();
           if (!content) return;
-          await DataProvider.addMessage(content);
-          newMessage.value = '';
-          nextTick(() => {
-            if (messageListRef.value) {
-              messageListRef.value.scrollTop = 0;
-            }
-          });
+          try {
+            await DataProvider.addMessage(content);
+            newMessage.value = '';
+            nextTick(() => {
+              if (messageListRef.value) {
+                messageListRef.value.scrollTop = 0;
+              }
+            });
+          } catch (e) {
+            alert('❌ 留言发送失败：' + e.message);
+          }
         };
 
         const deleteMessage = async (msg) => {
           if (!confirm('确定删除这条留言吗？')) return;
-          await DataProvider.deleteMessage(msg.id);
+          try {
+            await DataProvider.deleteMessage(msg.id);
+          } catch (e) {
+            alert('❌ 删除失败：' + e.message);
+          }
         };
 
         watch(showLogin, (val) => {
@@ -1768,6 +1728,7 @@
         return {
           mapRef, mapLoading,
           keyword, showLogin, showApply, password, pwdError, pwdShake, pwdInput,
+          initError, statusText, statusStyle,
           applyForm,
           PROVINCE_LIST,
           studentsStore,
