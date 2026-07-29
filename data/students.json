@@ -222,5 +222,21 @@
     "longitude": 118.81759514435188,
     "latitude": 31.98647725381815,
     "id": 1785293808536
+  },
+  {
+    "nickname": "海育民",
+    "province": "江苏",
+    "city": "南京市",
+    "university": "南京酱料大学",
+    "major": "临床",
+    "hobbies": [
+      "唱跳rap篮球"
+    ],
+    "wechat": "19844380985",
+    "qq": "",
+    "looking_for_food": true,
+    "longitude": 118.5995228099187,
+    "latitude": 32.18908668363931,
+    "id": 1785294055937
   }
 ]
