@@ -196,5 +196,22 @@
     "wechat": "",
     "qq": "",
     "looking_for_food": false
+  },
+  {
+    "id": 1785315595352,
+    "created_at": "2026-07-29 16:59",
+    "nickname": "亚马尔",
+    "province": "香港",
+    "city": "香港",
+    "university": "亚玛西亚青训营",
+    "major": "",
+    "hobbies": [
+      "世界杯冠军",
+      "欧洲杯冠军",
+      "西甲冠军"
+    ],
+    "wechat": "",
+    "qq": "",
+    "looking_for_food": true
   }
 ]
