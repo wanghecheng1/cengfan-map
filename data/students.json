@@ -720,5 +720,22 @@
     "looking_for_food": false,
     "longitude": 117.16742791300369,
     "latitude": 36.78369416717612
+  },
+  {
+    "id": 1785314743397,
+    "created_at": "2026-07-29 16:45",
+    "nickname": "白宇",
+    "province": "陕西",
+    "city": "西安市",
+    "university": "中国人民解放军空军军医大学",
+    "major": "",
+    "hobbies": [],
+    "wechat": "",
+    "qq": "",
+    "title": "",
+    "titleLevel": 0,
+    "looking_for_food": false,
+    "longitude": 109.08167439074163,
+    "latitude": 34.52001320052996
   }
 ]
