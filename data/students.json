@@ -1,23 +1,5 @@
 [
   {
-    "id": 4,
-    "nickname": "小华",
-    "province": "四川",
-    "city": "成都",
-    "university": "四川大学",
-    "major": "土木工程",
-    "hobbies": [
-      "火锅",
-      "游戏"
-    ],
-    "wechat": "",
-    "qq": "",
-    "looking_for_food": true,
-    "longitude": 104.1,
-    "latitude": 30.7,
-    "created_at": "2024-04-05"
-  },
-  {
     "id": 5,
     "nickname": "晓燕",
     "province": "浙江",
