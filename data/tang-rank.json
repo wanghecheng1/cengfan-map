@@ -1,5 +1,19 @@
 {
-  "dailyVotes": {},
-  "totalVotes": {},
-  "votes": []
+  "dailyVotes": {
+    "2026/7/30": {
+      "1785296708731": 1
+    }
+  },
+  "totalVotes": {
+    "1785293148527": 1
+  },
+  "votes": [
+    {
+      "id": 1,
+      "voterId": 1785296708731,
+      "candidateId": 1785293148527,
+      "date": "2026/7/30",
+      "createdAt": 1785385660168
+    }
+  ]
 }
