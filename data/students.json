@@ -572,12 +572,12 @@
     "title": "管理员",
     "titleLevel": 5,
     "created_at": "2026-07-29 14:55",
-    "password": "91789178",
+    "password": "123456",
     "communityId": "c_1785339389565_234",
     "communityName": "奶龙一族",
     "role": "admin",
     "adminFrame": true,
-    "passwordChangedAt": "2026-07-30 13:07"
+    "passwordChangedAt": null
   },
   {
     "nickname": "马丁良",
