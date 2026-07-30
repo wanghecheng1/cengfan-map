@@ -575,8 +575,8 @@
     "password": "123456",
     "communityId": "c_1785339389565_234",
     "communityName": "奶龙一族",
-    "role": "student",
-    "adminFrame": false,
+    "role": "admin",
+    "adminFrame": true,
     "passwordChangedAt": null
   },
   {
