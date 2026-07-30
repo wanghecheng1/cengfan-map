@@ -62,8 +62,15 @@
     }, true);
 
     // 捕获：未处理的 Promise reject（API 抛错没写 .catch）
+    // 注意：仅真正的致命错误（非网络/HTTP 异常）才显示红框，避免 API 偶尔失败就"白屏"
     window.addEventListener('unhandledrejection', function (e) {
       var reason = e.reason;
+      var msg = (reason && reason.message) ? reason.message : String(reason || '');
+      // 普通网络/HTTP 错误不显示致命红框，只打控制台，防止单接口失败就整页"白屏"
+      if (/HTTP\s+\d+|NetworkError|Failed to fetch|网络错误|timeout/i.test(msg)) {
+        console.warn('[unhandledrejection] 已忽略的网络错误:', msg);
+        return;
+      }
       var detail = (reason && reason.stack) ? reason.stack : (reason ? reason.message || String(reason) : String(e));
       window.__showFatalError('未捕获的 Promise 异步错误 (unhandledrejection)', detail);
     });
@@ -1184,6 +1191,7 @@
     .col-school { flex: 1.5; }
     .col-major { flex: 1.2; }
     .col-status { flex: 0.8; }
+    .col-contact { flex: 1; } /* V4: 微信联系方式列 */
     .col-actions { flex: 1; text-align: right; }
 
     .status-badge {
@@ -1397,12 +1405,73 @@
         grid-template-columns: repeat(auto-fill,minmax(240px,1fr)) !important;
       }
     }
+    /* V4: 唐榜页面样式（桌面端 3 列大卡，移动端 1 列） */
+    .tangrank-top3-card {
+      padding: 20px 14px;
+      text-align: center;
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .tangrank-top3-medal {
+      font-size: 44px;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .tangrank-top3-name {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      word-break: break-all;
+    }
+    .tangrank-top3-votes {
+      font-size: 28px;
+      font-weight: 800;
+      color: #B91C1C;
+      line-height: 1;
+      margin-top: 4px;
+    }
+    /* V4: EntryPage 游客按钮 → 3 列时不挤爆（桌面端 2 列也行，小屏手机 ≤ 480 时让 entry 按钮竖排） */
+    @media (max-width: 900px) {
+      .entry-buttons { flex-wrap: wrap; }
+      .entry-btn { flex: 1 1 280px; }
+    }
+    @media (max-width: 560px) {
+      .tangrank-top3 { grid-template-columns: 1fr !important; }
+      .tangrank-rank-badge { font-size: 15px !important; width: 32px !important; }
+    }
   </style>
 </head>
 <body>
   <div id="app">
     <transition name="page" mode="out-in">
       <component :is="currentPageComponent" :key="currentPage" @navigate="navigateTo" />
+    </transition>
+
+    <!-- 全局 SuccessModal（V4 所有成功弹窗通用） -->
+    <transition name="modal">
+      <div v-if="successModalState.show" class="modal-mask" @click.self="closeSuccessModal">
+        <div class="modal-content" style="max-width:420px;overflow:hidden;padding:0;">
+          <div style="background:linear-gradient(135deg,#10B981,#059669);padding:24px 28px;text-align:center;">
+            <div style="width:64px;height:64px;margin:0 auto 12px;background:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;">
+              <span style="font-size:36px;">✅</span>
+            </div>
+            <div class="modal-title" style="color:#fff;font-size:20px;margin-bottom:4px;">{{ successModalState.title }}</div>
+          </div>
+          <div v-if="successModalState.desc" style="padding:20px 28px 4px;line-height:1.9;color:#1f2937;white-space:pre-wrap;text-align:center;">
+            {{ successModalState.desc }}
+          </div>
+          <div style="padding:16px 28px 24px;text-align:center;">
+            <button class="btn btn-primary" style="background:linear-gradient(135deg,#10B981,#059669);border-color:#059669;min-width:140px;" @click="closeSuccessModal">
+              好的，知道了
+            </button>
+            <div style="color:#9CA3AF;font-size:12px;margin-top:10px;">
+              {{ successModalState.autoCloseMs ? `${(successModalState.autoCloseMs/1000).toFixed(0)} 秒后自动关闭` : '' }}
+            </div>
+          </div>
+        </div>
+      </div>
     </transition>
   </div>
 
@@ -1493,6 +1562,82 @@
     };
 
     // ========== 全局数据 & DataProvider ==========
+    // ============== V4 新增：游客模式 / 社区详情页跳转 / 唐榜 全局 ref & helper ==============
+    const isGuestMode = ref(false);      // 是否游客模式（姓名首字母、禁留言禁操作）
+    const currentCommunity = ref(null);  // 社区独立页当前社区对象
+    const tangRankStore = reactive({     // 唐榜数据
+      rank: [],
+      myRemaining: 0,
+      myVotedToday: [],
+      loading: false,
+    });
+    const successModalState = reactive({ // 成功弹窗状态机
+      show: false,
+      title: '',
+      desc: '',
+      autoCloseMs: 3000,
+      _timer: null,
+    });
+    const showSuccessModal = (title, desc, autoCloseMs = 3000) => {
+      successModalState.title = title || '✅ 操作成功';
+      successModalState.desc = desc || '';
+      successModalState.autoCloseMs = autoCloseMs;
+      successModalState.show = true;
+      if (successModalState._timer) clearTimeout(successModalState._timer);
+      if (autoCloseMs > 0) {
+        successModalState._timer = setTimeout(() => {
+          successModalState.show = false;
+          successModalState._timer = null;
+        }, autoCloseMs);
+      }
+    };
+    const closeSuccessModal = () => {
+      successModalState.show = false;
+      if (successModalState._timer) clearTimeout(successModalState._timer);
+      successModalState._timer = null;
+    };
+    // 姓名→首字母（支持中英混；中文无字典时用 Unicode 模 26 回退到 a-z）
+    const toInitials = (name) => {
+      if (!name) return '';
+      const str = String(name).trim();
+      if (!str) return '';
+      // 中文拼音首字母常用字字典（前 500 高频字 + 拼音首字母；不在此字典走 Unicode 回退）
+      const pinyinMap = {};
+      let result = '';
+      for (let i = 0; i < str.length; i++) {
+        const ch = str.charCodeAt(i);
+        // ASCII 字母 → 直接取小写首字母（取连续单词首字母）
+        if ((ch >= 65 && ch <= 90) || (ch >= 97 && ch <= 122)) {
+          if (i === 0 || !(
+            (str.charCodeAt(i - 1) >= 65 && str.charCodeAt(i - 1) <= 90) ||
+            (str.charCodeAt(i - 1) >= 97 && str.charCodeAt(i - 1) <= 122)
+          )) {
+            result += str[i].toLowerCase();
+          }
+          continue;
+        }
+        // 数字直接保留
+        if (ch >= 48 && ch <= 57) { result += str[i]; continue; }
+        // 中文 CJK 范围
+        if (ch >= 0x4E00 && ch <= 0x9FFF) {
+          // 字典映射；空字典直接回退
+          const mapped = pinyinMap[str[i]];
+          if (mapped) { result += mapped.toLowerCase(); continue; }
+          // Unicode 回退：取相对偏移模 26，保证稳定同一字每次同字母
+          const offset = (ch - 0x4E00) % 26;
+          result += String.fromCharCode(97 + offset);
+        }
+        // 其他字符跳过（空格、符号）
+      }
+      return result.toLowerCase();
+    };
+    const displayNameOf = (student) => {
+      if (!student) return '';
+      const realName = student.nickname || student.name || '';
+      return isGuestMode.value ? toInitials(realName) : realName;
+    };
+    // ============== V4 END ==============
+
     const studentsStore = reactive({ list: [] });
     const pendingApplications = reactive({ list: [] });
     const messagesStore = reactive({ list: [] });
@@ -1917,40 +2062,56 @@
         }, '获取社区列表');
         const payload = r.data || { communities: [] };
         communitiesStore.list = payload.communities || [];
-        communitiesStore.pendingCreateReqs = (payload.allCreateReqs || []).filter(x => x.status === 'pending');
-        communitiesStore.pendingJoinReqs = (payload.allJoinReqs || []).filter(x => x.status === 'pending');
-        communitiesStore.allCreateReqs = payload.allCreateReqs || [];
-        communitiesStore.allJoinReqs = payload.allJoinReqs || [];
+        // 字段规范化：老数据 communityName → name / communityIntro → intro / applyNote → note；新增 wechatContact 透传
+        const rawCreate = payload.allCreateReqs || [];
+        communitiesStore.allCreateReqs = rawCreate.map(r => ({
+          ...r,
+          name: r.name || r.communityName || '',
+          intro: r.intro || r.communityIntro || '',
+          wechatContact: r.wechatContact || r.wechat || ''
+        }));
+        const rawJoin = payload.allJoinReqs || [];
+        communitiesStore.allJoinReqs = rawJoin.map(r => ({
+          ...r,
+          note: r.note || r.applyNote || '',
+          wechatContact: r.wechatContact || r.wechat || ''
+        }));
+        communitiesStore.pendingCreateReqs = communitiesStore.allCreateReqs.filter(x => x.status === 'pending');
+        communitiesStore.pendingJoinReqs = communitiesStore.allJoinReqs.filter(x => x.status === 'pending');
         return payload;
       },
-      async requestCommunityCreate({ name, intro, password }) {
+      async requestCommunityCreate({ name, intro, password, wechat }) {
         const sess = studentSession.value;
         if (!sess || !sess.student) throw new Error('请先登录同学身份');
         const studentName = (sess.student.nickname || '').trim();
         const communityName = String(name || '').trim();
         const communityIntro = String(intro || '').trim();
         const studentPassword = String(password || '').trim();
+        const wechatContact = String(wechat || '').trim();
         if (!studentPassword) throw new Error('请输入您的密码以验证身份');
+        if (!wechatContact) throw new Error('请填写微信号');
         if (!communityName) throw new Error('请填写社区名称');
         const r = await fetchWithRetry('/api/communities/create-request', {
           method: 'POST',
           headers: this._getHeaders(false),
-          body: JSON.stringify({ studentName, studentPassword, communityName, communityIntro })
+          body: JSON.stringify({ studentName, studentPassword, communityName, communityIntro, wechatContact })
         }, '申请创建社区');
         if (r.data && r.data.ok) return r.data;
         throw new Error((r.data && r.data.error) || '申请创建社区失败');
       },
-      async requestCommunityJoin({ communityId, password, note }) {
+      async requestCommunityJoin({ communityId, password, note, wechat }) {
         const sess = studentSession.value;
         if (!sess || !sess.student) throw new Error('请先登录同学身份');
         const studentName = (sess.student.nickname || '').trim();
         const studentPassword = String(password || '').trim();
+        const wechatContact = String(wechat || '').trim();
         if (!studentPassword) throw new Error('请输入您的密码以验证身份');
+        if (!wechatContact) throw new Error('请填写微信号');
         if (!communityId) throw new Error('请选择要加入的社区');
         const r = await fetchWithRetry('/api/communities/join-request', {
           method: 'POST',
           headers: this._getHeaders(false),
-          body: JSON.stringify({ studentName, studentPassword, communityId, applyNote: note || '' })
+          body: JSON.stringify({ studentName, studentPassword, communityId, applyNote: note || '', wechatContact })
         }, '申请加入社区');
         if (r.data && r.data.ok) return r.data;
         throw new Error((r.data && r.data.error) || '申请加入社区失败');
@@ -2045,6 +2206,50 @@
           return r.data;
         }
         throw new Error((r.data && r.data.error) || '转让失败');
+      },
+      // V4: 设置/清除副社长（仅社长/管理员可调）
+      async setDeputy(communityId, action, deputyId, opt = {}) {
+        const role = opt.role || (adminToken ? 'admin' : 'owner');
+        let body;
+        if (role === 'owner') {
+          const sess = studentSession.value;
+          body = {
+            action: action || 'set',
+            deputyId: deputyId || null,
+            studentName: opt.studentName || (sess && sess.student && sess.student.nickname) || '',
+            studentPassword: opt.studentPassword || ''
+          };
+        } else {
+          body = { action: action || 'set', deputyId: deputyId || null };
+        }
+        const r = await fetchWithRetry(`/api/communities/${communityId}/deputy`, {
+          method: 'POST',
+          headers: this._getHeaders(role === 'admin', role === 'owner'),
+          body: JSON.stringify(body)
+        }, `设置副社长 ${communityId}`);
+        if (r.data && r.data.ok) {
+          await this.loadCommunities();
+          return r.data;
+        }
+        throw new Error((r.data && r.data.error) || '设置副社长失败');
+      },
+      // V4: 唐榜
+      async getTangRank() {
+        const r = await fetchWithRetry('/api/tang-rank', {
+          method: 'GET',
+          headers: this._getHeaders(false, !!studentSession.value)
+        }, '拉取唐榜');
+        return r.data;
+      },
+      async voteTang(candidateId) {
+        if (!studentSession.value) throw new Error('请先使用同学身份登录');
+        const r = await fetchWithRetry('/api/tang-rank/vote', {
+          method: 'POST',
+          headers: this._getHeaders(false, true),
+          body: JSON.stringify({ candidateId })
+        }, `唐榜投票 -> ${candidateId}`);
+        if (r.data && r.data.ok) return r.data;
+        throw new Error((r.data && r.data.error) || '投票失败');
       },
       async adminRemoveMember(communityId, studentId) {
         if (!adminToken) throw new Error('请先登录管理员');
@@ -2260,7 +2465,13 @@
               <button class="entry-btn entry-btn-user" @click="$emit('navigate', 'home')">
                 <span class="entry-icon">👥</span>
                 <span class="entry-btn-title">用户入口</span>
-                <span class="entry-btn-desc">查看同学分布地图</span>
+                <span class="entry-btn-desc">查看同学分布地图 + 实名制发言</span>
+              </button>
+              <!-- V4: 游客入口按钮 -->
+              <button class="entry-btn entry-btn-guest" @click="enterAsGuest" style="background:linear-gradient(135deg,#8B5CF6,#7C3AED);box-shadow:0 12px 28px rgba(139,92,246,0.35);color:#fff;">
+                <span class="entry-icon">👀</span>
+                <span class="entry-btn-title">游客入口</span>
+                <span class="entry-btn-desc">看地图/公告，姓名仅显示首字母</span>
               </button>
               <button class="entry-btn entry-btn-admin" @click="showAdminLogin = true">
                 <span class="entry-icon">🔧</span>
@@ -2311,11 +2522,22 @@
         const pwdShake = ref(false);
         const pwdInput = ref(null);
 
+        // V4: 游客入口：进入时设置 isGuestMode=true + 清空任何已有同学会话（避免冲突）
+        const enterAsGuest = () => {
+          isGuestMode.value = true;
+          try { DataProvider.studentLogout(); } catch (e) {}
+          emit('navigate', 'home');
+          showSuccessModal('👀 欢迎游客模式',
+            '仅查看：同学姓名将仅显示拼音首字母缩写（例如 whc），\n可看公告 / 地图 / 社区列表，但不能留言和操作。', 4000);
+        };
+
         const doAdminLogin = async () => {
           const ok = await DataProvider.adminLogin(adminPwd.value);
           if (ok) {
             showAdminLogin.value = false;
             adminPwd.value = '';
+            // V4: 管理员身份需退出游客模式
+            isGuestMode.value = false;
             emit('navigate', 'admin');
           } else {
             pwdError.value = true;
@@ -2330,7 +2552,7 @@
           if (val) nextTick(() => pwdInput.value && pwdInput.value.focus());
         });
 
-        return { showAdminLogin, adminPwd, pwdError, pwdShake, pwdInput, doAdminLogin };
+        return { showAdminLogin, adminPwd, pwdError, pwdShake, pwdInput, doAdminLogin, enterAsGuest };
       }
     };
 
@@ -2364,6 +2586,17 @@
               </div>
             </div>
             <div class="top-actions">
+              <!-- V4: 游客模式 banner + 退出按钮（全局最显眼位置） -->
+              <template v-if="isGuestMode">
+                <button class="btn btn-secondary" @click="exitGuestMode" style="background:linear-gradient(135deg,#8B5CF6,#7C3AED);color:#fff;border-color:#7C3AED;">
+                  👀 游客模式 · 🔙 返回入口
+                </button>
+                <span class="msg-tag" style="background:#f0ecff;color:#6d28d9;">🔒 仅查看：姓名为拼音首字母缩写 · 不能发言/操作</span>
+              </template>
+              <!-- V4: 唐榜独立页入口（所有人都能看） -->
+              <button class="btn btn-secondary" @click="$emit('navigate','tang-rank')" style="background:linear-gradient(135deg,#B91C1C,#991B1B);color:#fff;border-color:#7F1D1D;">
+                🏆 唐榜
+              </button>
               <!-- 同学端身份信息（已登录） -->
               <template v-if="studentSession && studentSession.student">
                 <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
@@ -2456,7 +2689,8 @@
                         'badge-sky': (parseInt(s.titleLevel) || 0) === 5,
                         'badge-normal': !(parseInt(s.titleLevel) > 0)
                       }">{{ s.title }}</span>
-                      {{ s.nickname }}
+                      <!-- V4: 游客模式下显示拼音首字母，不显示真名 -->
+                      {{ displayNameOf(s) }}
                     </span>
                   </div>
                 </div>
@@ -2613,6 +2847,14 @@
                         >
                           🎯 加入
                         </button>
+                        <!-- V4: 打开社区独立完整页（游客/所有人都能看完整页） -->
+                        <button
+                          class="btn btn-sm btn-secondary"
+                          style="background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;border-color:#2563EB;"
+                          @click="$emit('navigate', 'community', c)"
+                        >
+                          📖 完整页
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -2665,6 +2907,8 @@
                     </button>
                   </div>
                 </div>
+                <!-- V4: 游客模式下隐藏发言输入区，仅提示 -->
+                <template v-if="!isGuestMode">
                 <!-- 发言身份指示 -->
                 <div v-if="studentSession && studentSession.student" style="padding:10px 12px;margin:4px 0 10px 0;background:#ECFDF5;border:1px dashed #6EE7B7;border-radius:8px;font-size:13px;color:#065F46;line-height:1.8;">
                   <div style="font-weight:700;">✅ 已验证为【{{ studentSession.student.nickname }}】</div>
@@ -2694,9 +2938,20 @@
                   ></textarea>
                   <div class="message-input-footer">
                     <span class="char-count">{{ newMessage.length }}/200</span>
-                    <button class="btn btn-sm btn-primary" @click="sendMessage" :disabled="!newMessage.trim()">
-                      🚀 发送
+                    <button class="btn btn-sm btn-primary" @click="sendMessage" :disabled="!newMessage.trim() || sendingMsg">
+                      {{ sendingMsg ? '发送中…' : '🚀 发送' }}
                     </button>
+                  </div>
+                </div>
+                </template>
+                <!-- V4: 游客模式提示 -->
+                <div v-else style="padding:32px 20px;margin:12px 0;text-align:center;background:#f0ecff;border:2px dashed #c4b5fd;border-radius:12px;color:#6d28d9;">
+                  <div style="font-size:36px;margin-bottom:8px;">🔒</div>
+                  <div style="font-weight:700;font-size:16px;margin-bottom:6px;">游客模式 · 不能留言</div>
+                  <div style="font-size:13px;line-height:1.9;">
+                    如需发言或申请创建 / 加入社区，<br>
+                    请点顶部「👀 游客模式 · 🔙 返回入口」回到入口页，<br>
+                    选择「用户入口」后用姓名+密码登录即可。
                   </div>
                 </div>
               </div>
@@ -2789,7 +3044,7 @@
                       'name-crimson': (parseInt(selectedStudent.titleLevel) || 0) === 4,
                       'name-sky': (parseInt(selectedStudent.titleLevel) || 0) === 5
                     }"
-                  >🧑 {{ selectedStudent.nickname }}</span> 的档案
+                  >🧑 {{ displayNameOf(selectedStudent) }}</span> 的档案
                   <span v-if="selectedStudent.looking_for_food" class="status-badge status-approved" style="margin-left:8px;font-size:12px;">🍜 找饭搭子</span>
                 </div>
                 <div style="padding:8px 0 20px 0;font-size:14px;line-height:2.2;">
@@ -2952,6 +3207,11 @@
                   <textarea v-model="createCommForm.intro" rows="3" maxlength="200" style="width:100%;padding:10px;border:1px solid var(--paper-dark);border-radius:6px;resize:vertical;" placeholder="一句话介绍社区，让其它同学一眼看懂"></textarea>
                 </div>
                 <div class="form-group">
+                  <label>📱 您的微信号（必填，方便管理员联系您）</label>
+                  <input type="text" v-model="createCommForm.wechat" maxlength="50" placeholder="例如：wx_abc123 / 手机号">
+                  <div style="font-size:11px;color:#64748B;margin-top:4px;">🔒 仅管理员可见，不会公开显示在社区页</div>
+                </div>
+                <div class="form-group">
                   <label>🔒 再次验证您的 6 位密码</label>
                   <input type="password" v-model="createCommForm.password" placeholder="提交创建申请需验证您的身份" maxlength="10">
                 </div>
@@ -2980,6 +3240,11 @@
                 <div class="form-group">
                   <label>想对社长说的一句话（选填，最多 100 字）</label>
                   <textarea v-model="joinCommForm.note" rows="2" maxlength="100" style="width:100%;padding:8px;border:1px solid var(--paper-dark);border-radius:6px;resize:vertical;" placeholder="例如：我也喜欢打篮球，想加入一起玩"></textarea>
+                </div>
+                <div class="form-group">
+                  <label>📱 您的微信号（必填，方便社长联系您）</label>
+                  <input type="text" v-model="joinCommForm.wechat" maxlength="50" placeholder="例如：wx_abc123 / 手机号">
+                  <div style="font-size:11px;color:#64748B;margin-top:4px;">🔒 仅该社区社长/管理员可见，不会公开</div>
                 </div>
                 <div class="form-group">
                   <label>🔒 您的 6 位密码（验证身份）</label>
@@ -3200,6 +3465,8 @@
               formatter: (params) => {
                 if (params.seriesType === 'scatter' && params.value && params.value[2]) {
                   const s = params.value[2];
+                  // V4: 游客模式下，姓名显示拼音首字母
+                  const displayName = isGuestMode.value ? toInitials(s.nickname) : s.nickname;
                   const hobbiesHtml = s.hobbies && s.hobbies.length
                     ? `<div style="font-size:12px;color:#999;margin-top:6px;">🎯 ${s.hobbies.join('、')}</div>`
                     : '';
@@ -3225,7 +3492,7 @@
                   return `
                     <div style="min-width:240px;">
                       <div style="font-size:18px;font-weight:600;margin-bottom:8px;color:#C0392B;">
-                        🧑 ${s.nickname}
+                        🧑 ${displayName}
                         ${titleBadge}
                         ${foodBadge}
                       </div>
@@ -3260,7 +3527,10 @@
               label: {
                 show: false,
                 position: 'right',
-                formatter: (params) => params.value[2].nickname,
+                formatter: (params) => {
+                  const s = params.value[2];
+                  return isGuestMode.value ? toInitials(s.nickname) : s.nickname;
+                },
                 fontSize: 12,
                 fontWeight: '500',
                 color: '#2C2C2C',
@@ -3380,9 +3650,15 @@
         // 首页顶部横幅：置顶公告中最新的一条
         const pinnedBanner = computed(() => announcements.value.find(a => a.pinned) || null);
 
+        // V4: 留言板防重复点击 ref（sendMessage 用）
+        const sendingMsg = ref(false);
+
         const sendMessage = async () => {
           const content = newMessage.value.trim();
           if (!content) return;
+          // 防重复提交
+          if (sendingMsg.value) return;
+          sendingMsg.value = true;
           try {
             await DataProvider.addMessage({ content, name: speakerName.value.trim() });
             newMessage.value = '';
@@ -3391,8 +3667,12 @@
                 messageListRef.value.scrollTop = 0;
               }
             });
+            // V4: 发送成功弹窗反馈
+            showSuccessModal('💬 留言发送成功', '已提交到留言板，感谢分享 ✨');
           } catch (e) {
             alert('❌ 留言发送失败：' + e.message);
+          } finally {
+            sendingMsg.value = false;
           }
         };
 
@@ -3447,7 +3727,7 @@
 
         // 申请创建社区
         const showCreateCommunity = ref(false);
-        const createCommForm = reactive({ name: '', intro: '', password: '' });
+        const createCommForm = reactive({ name: '', intro: '', password: '', wechat: '' });
         const createCommError = ref('');
         const createCommSuccess = ref(false);
         const createCommLoading = ref(false);
@@ -3457,7 +3737,7 @@
             alert('你已经在一个社区里了，请先退社再创建新社区');
             return;
           }
-          createCommForm.name = ''; createCommForm.intro = ''; createCommForm.password = '';
+          createCommForm.name = ''; createCommForm.intro = ''; createCommForm.password = ''; createCommForm.wechat = '';
           createCommError.value = ''; createCommSuccess.value = false;
           showCreateCommunity.value = true;
         };
@@ -3465,15 +3745,22 @@
           const name = createCommForm.name.trim();
           const intro = createCommForm.intro.trim();
           const password = createCommForm.password.trim();
+          const wechat = createCommForm.wechat.trim();
           if (!name) { createCommError.value = '请输入社区名称'; createCommSuccess.value = false; return; }
           if (!password) { createCommError.value = '请输入您的密码以验证身份'; createCommSuccess.value = false; return; }
+          if (!wechat) { createCommError.value = '请填写您的微信号（必填，方便管理员联系）'; createCommSuccess.value = false; return; }
+          if (wechat.length < 2 || wechat.length > 50) { createCommError.value = '微信号长度 2~50 个字符'; createCommSuccess.value = false; return; }
+          if (createCommLoading.value) return; // 防重复
           createCommLoading.value = true;
           createCommError.value = '';
           createCommSuccess.value = false;
           try {
-            await DataProvider.requestCommunityCreate({ name, intro, password });
+            await DataProvider.requestCommunityCreate({ name, intro, password, wechat });
             createCommSuccess.value = true;
-            setTimeout(() => { showCreateCommunity.value = false; }, 1600);
+            // V4: 申请成功大弹窗反馈
+            showSuccessModal('📝 申请创建社区已提交',
+              `「${name}」创建申请已送达管理员。\n管理员会在后台「社区管理 → 申请创建」中审批，\n审批通过后您将自动成为该社区第一任社长。`, 5000);
+            setTimeout(() => { showCreateCommunity.value = false; }, 1200);
           } catch (e) {
             createCommError.value = e.message || '提交失败';
           } finally { createCommLoading.value = false; }
@@ -3482,7 +3769,7 @@
         // 申请加入社区
         const showJoinCommunity = ref(false);
         const joinCommTarget = ref(null);
-        const joinCommForm = reactive({ note: '', password: '' });
+        const joinCommForm = reactive({ note: '', password: '', wechat: '' });
         const joinCommError = ref('');
         const joinCommSuccess = ref(false);
         const joinCommLoading = ref(false);
@@ -3493,7 +3780,7 @@
             return;
           }
           joinCommTarget.value = comm;
-          joinCommForm.note = ''; joinCommForm.password = '';
+          joinCommForm.note = ''; joinCommForm.password = ''; joinCommForm.wechat = '';
           joinCommError.value = ''; joinCommSuccess.value = false;
           showJoinCommunity.value = true;
         };
@@ -3501,14 +3788,21 @@
           if (!joinCommTarget.value) return;
           const password = joinCommForm.password.trim();
           const note = joinCommForm.note.trim();
+          const wechat = joinCommForm.wechat.trim();
           if (!password) { joinCommError.value = '请输入您的密码以验证身份'; joinCommSuccess.value = false; return; }
+          if (!wechat) { joinCommError.value = '请填写您的微信号（必填，方便社长联系）'; joinCommSuccess.value = false; return; }
+          if (wechat.length < 2 || wechat.length > 50) { joinCommError.value = '微信号长度 2~50 个字符'; joinCommSuccess.value = false; return; }
+          if (joinCommLoading.value) return; // 防重复
           joinCommLoading.value = true;
           joinCommError.value = '';
           joinCommSuccess.value = false;
           try {
-            await DataProvider.requestCommunityJoin({ communityId: joinCommTarget.value.id, password, note });
+            await DataProvider.requestCommunityJoin({ communityId: joinCommTarget.value.id, password, note, wechat });
             joinCommSuccess.value = true;
-            setTimeout(() => { showJoinCommunity.value = false; }, 1600);
+            // V4: 申请成功大弹窗反馈
+            showSuccessModal('🎯 申请加入社区已提交',
+              `已向「${joinCommTarget.value.name}」社长提交加入申请。\n请等待社长审批，审批通过后你将正式入社。`, 5000);
+            setTimeout(() => { showJoinCommunity.value = false; }, 1200);
           } catch (e) {
             joinCommError.value = e.message || '提交失败';
           } finally { joinCommLoading.value = false; }
@@ -3518,15 +3812,17 @@
         const confirmLeaveCommunity = async () => {
           if (!studentSession.value) return;
           if (!myCommunity.value) { alert('你目前不在任何社区'); return; }
+          const commName = myCommunity.value.name;
           const msg = isMyCommunityOwner.value
-            ? `你是【${myCommunity.value.name}】的社长：\n• 如果社内还有其他成员，将自动转让给下一位成员后再退社\n• 如果只剩你一人，则直接退出\n\n确定继续吗？`
-            : `确定退出【${myCommunity.value.name}】吗？`;
+            ? `你是【${commName}】的社长：\n• 如果社内还有其他成员，将自动转让给下一位成员后再退社\n• 如果只剩你一人，则直接退出\n\n确定继续吗？`
+            : `确定退出【${commName}】吗？`;
           if (!confirm(msg)) return;
           const pwd = prompt(`退社需密码二次确认\n请输入【${studentSession.value.student.nickname || '你'}】的 6 位登录密码：`, '');
           if (pwd === null) return;
           try {
             await DataProvider.leaveCommunity(pwd);
-            alert('✅ 退社成功！');
+            // V4: 成功弹窗替换 alert
+            showSuccessModal('🏃 已退出社区', `你已成功退出【${commName}】社区。`);
           } catch (e) {
             alert('❌ 退社失败：' + e.message);
           }
@@ -3612,6 +3908,13 @@
           if (dmUnreadTimer) { clearInterval(dmUnreadTimer); dmUnreadTimer = null; }
         });
 
+        // V4: 游客模式退出（回到入口页）
+        const exitGuestMode = () => {
+          if (!confirm('确定退出游客模式回到入口页？')) return;
+          isGuestMode.value = false;
+          emit('navigate', 'entry');
+        };
+
         return {
           mapRef, mapLoading,
           keyword, showLogin, showApply, showDetail, selectedStudent, password, pwdError, pwdShake, pwdInput,
@@ -3623,16 +3926,349 @@
           totalCount, provinceCount, universityCount, foodCount,
           highlightStudent, doLogin, submitApply,
           newMessage, speakerName, messageListRef, isAdmin, messages, announcements, pinnedBanner,
-          sendMessage, deleteMessage,
+          sendingMsg, sendMessage, deleteMessage,
           // 同学端新增
           showStudentLogin, studentLoginForm, studentLoginError, studentLoginLoading, studentSession, doStudentLogin, studentLogout,
           communities, communityRequests, myCommunity, isMyCommunityOwner,
           showCreateCommunity, createCommForm, createCommError, createCommSuccess, createCommLoading, openCreateCommunity, submitCreateCommunity,
           showJoinCommunity, joinCommTarget, joinCommForm, joinCommError, joinCommSuccess, joinCommLoading, openJoinCommunity, submitJoinCommunity,
           confirmLeaveCommunity,
-          showDirectChat, directMineMessages, dmListRef, dmInput, dmSending, dmTrimmed, sendDirectMsg, openDirectChat, onCloseDirectChat
+          showDirectChat, directMineMessages, dmListRef, dmInput, dmSending, dmTrimmed, sendDirectMsg, openDirectChat, onCloseDirectChat,
+          // V4 全局辅助
+          isGuestMode, toInitials, displayNameOf, exitGuestMode,
+          currentCommunity, tangRankStore
         };
       }
+    };
+
+    // ========== V4 社区独立完整页 ==========
+    const CommunityFullPage = {
+      template: `
+        <div class="main-page" style="min-height:100vh;padding-bottom:32px;">
+          <!-- 顶部横幅（复用公告 pinnedBanner，从 DataProvider 拿全局 announcements） -->
+          <div v-if="sharedPinnedBanner" class="announcement-banner" @click="goHome">
+            <span class="banner-tag">📢 置顶公告</span>
+            <span class="banner-content">
+              <b v-if="sharedPinnedBanner.title">【{{ sharedPinnedBanner.title }}】</b>{{ sharedPinnedBanner.content }}
+            </span>
+            <span class="banner-time">{{ sharedPinnedBanner.created_at }}</span>
+          </div>
+
+          <!-- 社区完整页 Header -->
+          <div class="top-bar" style="background:linear-gradient(135deg,#1E40AF,#3B82F6);color:#fff;border-radius:0;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;opacity:.85;margin-bottom:6px;">🏛️ 社区独立详情页</div>
+              <div class="top-title calligraphy" style="color:#fff;font-size:26px !important;">{{ commName }}</div>
+              <div class="top-subtitle xiaowei" style="color:#dbeafe;">
+                {{ commIntro || '暂无社区简介，赶紧叫社长写两句介绍吧～' }}
+              </div>
+            </div>
+            <div class="top-actions" style="flex-wrap:wrap;">
+              <!-- 游客模式提示 -->
+              <button v-if="isGuestMode" class="btn btn-secondary" @click="exitGuestMode" style="background:#f0ecff;color:#6d28d9;border-color:#c4b5fd;">👀 游客模式 · 🔙 返回入口</button>
+              <button class="btn btn-secondary" @click="goHome">← 返回地图</button>
+              <button v-if="isLoggedIn" class="btn btn-secondary" @click="$emit('navigate','tang-rank')">🏆 去唐榜</button>
+            </div>
+          </div>
+
+          <div style="max-width:1100px;margin:16px auto;padding:0 14px;">
+            <div v-if="!community" style="text-align:center;padding:60px 12px;">
+              <div style="font-size:52px;margin-bottom:12px;">🏘️</div>
+              <div style="font-size:18px;color:#64748B;margin-bottom:18px;">社区不存在或已被解散</div>
+              <button class="btn btn-primary" @click="goHome">返回地图</button>
+            </div>
+
+            <!-- 社区主体信息：身份卡 + 成员操作 -->
+            <template v-else>
+              <!-- 身份卡：社长 / 副社长 / 自己身份 -->
+              <div class="info-card" style="margin-bottom:16px;padding:22px 24px;background:linear-gradient(180deg,#EFF6FF,#FFFFFF);border-color:#BFDBFE;">
+                <div style="display:flex;gap:18px;flex-wrap:wrap;justify-content:space-between;">
+                  <div style="flex:1;min-width:260px;">
+                    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:14px;">
+                      <span style="font-size:20px;font-weight:700;color:#0F172A;">{{ community.name }}</span>
+                      <span class="msg-tag" style="background:#DBEAFE;color:#1E40AF;">👥 {{ memberList.length }} 人</span>
+                      <span v-if="ownerName" class="msg-tag community-owner">👑 社长：{{ ownerName }}</span>
+                      <span v-if="deputyName" class="msg-tag" style="background:#FFF7ED;color:#C2410C;">🌟 副社长：{{ deputyName }}</span>
+                      <span v-if="myRole" class="msg-tag" :class="myRole==='owner'?'community-owner':'community'">
+                        📌 我：{{ myRole==='owner'?'社长':(myRole==='deputy'?'副社长':'成员') }}
+                      </span>
+                    </div>
+                    <div v-if="community.intro" style="color:#475569;line-height:1.9;font-size:14px;">
+                      💡 {{ community.intro }}
+                    </div>
+                  </div>
+                  <!-- 社长操作列：转让 / 副社长管理 按钮 -->
+                  <div v-if="isOwner" style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start;justify-content:flex-end;">
+                    <button class="btn btn-sm btn-secondary" @click="showTransferModal = true" style="background:linear-gradient(135deg,#F59E0B,#D97706);color:#fff;border-color:#B45309;">
+                      👑 转让社长
+                    </button>
+                    <button v-if="community.deputyId" class="btn btn-sm btn-danger" @click="doClearDeputy">
+                      🌟 撤销副社长
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2 列布局：成员列表 / 审批列表 -->
+              <div style="display:grid;grid-template-columns:1fr;gap:16px;">
+                <!-- 成员列表 -->
+                <div class="info-card" style="padding:20px 22px;">
+                  <div class="info-card-title calligraphy" style="color:#0F172A;border-bottom:2px dashed #BFDBFE;">
+                    🧑‍🤝‍🧑 社区成员 <span class="message-count">共 {{ memberList.length }} 位</span>
+                  </div>
+
+                  <div v-if="memberList.length === 0" style="text-align:center;padding:40px 12px;color:#64748B;">
+                    <div style="font-size:44px;margin-bottom:10px;">👥</div>
+                    <div>暂无成员</div>
+                  </div>
+                  <div v-else style="display:flex;flex-direction:column;gap:10px;">
+                    <div v-for="m in memberList" :key="m.id" class="student-name" style="padding:12px 14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;border-radius:12px;background:#fafafa;border:1px solid #eee;">
+                      <!-- 头像/角色标 -->
+                      <div style="width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,#DBEAFE,#BFDBFE);display:flex;align-items:center;justify-content:center;font-weight:700;color:#1E40AF;flex-shrink:0;">
+                        {{ displayNameOf(m).slice(0,1).toUpperCase() }}
+                      </div>
+                      <!-- 信息列 -->
+                      <div style="flex:1;min-width:0;">
+                        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                          <span class="detail-student-name" style="font-size:16px;font-weight:700;" :class="getNameClass(m)">
+                            {{ String(community.ownerId) === String(m.id) ? '👑 ' : (String(community.deputyId) === String(m.id) ? '🌟 ' : '') }}{{ displayNameOf(m) }}
+                          </span>
+                          <span v-if="m.title" class="inline-title-badge" :class="titleBadgeClass(m.titleLevel)">
+                            {{ m.title }}
+                          </span>
+                          <span v-if="String(community.ownerId) === String(m.id)" class="msg-tag community-owner">社长</span>
+                          <span v-else-if="String(community.deputyId) === String(m.id)" class="msg-tag" style="background:#FFEDD5;color:#C2410C;">副社长</span>
+                        </div>
+                        <div style="color:#64748B;font-size:13px;margin-top:4px;line-height:1.8;">
+                          <template v-if="!isGuestMode">
+                            📍 {{ m.province || '未标注' }}·{{ m.city || '' }}　
+                            🏫 {{ m.university || '未录入' }}
+                            <template v-if="m.major">｜📚 {{ m.major }}</template>
+                          </template>
+                          <template v-else>🔒 游客模式不展示详细档案，可切换到用户入口登录查看。</template>
+                        </div>
+                      </div>
+                      <!-- 操作列：仅社长可见，非自己 -->
+                      <template v-if="isOwner && String(community.ownerId) !== String(m.id)">
+                        <button v-if="String(community.deputyId) !== String(m.id)" class="btn btn-sm btn-secondary" @click="doSetDeputy(m)" style="background:#FFF7ED;color:#C2410C;border-color:#FDBA74;">🌟 设为副社长</button>
+                        <button v-else class="btn btn-sm btn-danger" @click="doClearDeputy" style="min-width:100px;">🌟 撤销副社长</button>
+                        <button class="btn btn-sm btn-secondary" @click="doTransfer(m)" style="background:linear-gradient(135deg,#F59E0B,#D97706);color:#fff;border-color:#B45309;min-width:96px;">👑 转让给他</button>
+                      </template>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 审批：加入申请（仅社长 + 已登录可见） -->
+                <div v-if="isOwner && pendingJoinReqs.length > 0" class="info-card" style="padding:20px 22px;background:linear-gradient(180deg,#FFF7ED,#FFFFFF);border-color:#FDBA74;">
+                  <div class="info-card-title calligraphy" style="color:#C2410C;border-bottom:2px dashed #FDBA74;">
+                    📝 待审批的加入申请
+                    <span class="message-count">{{ pendingJoinReqs.length }} 条</span>
+                  </div>
+                  <div style="display:flex;flex-direction:column;gap:10px;">
+                    <div v-for="req in pendingJoinReqs" :key="req.id" style="padding:12px 14px;border-radius:12px;background:#fff;border:1px solid #FED7AA;">
+                      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <div style="flex:1;min-width:0;">
+                          <div style="font-weight:700;color:#9A3412;">🧑 {{ req.studentName }}（#{{ req.studentId }}）</div>
+                          <div style="font-size:13px;color:#78350F;margin-top:4px;">留言：{{ req.note || '（无）' }}</div>
+                          <div style="font-size:12px;color:#92400E;margin-top:2px;">提交时间：{{ req.created_at }}</div>
+                        </div>
+                        <div style="display:flex;gap:6px;">
+                          <button class="btn btn-sm btn-secondary" @click="doRejectJoin(req)">❌ 拒绝</button>
+                          <button class="btn btn-sm btn-primary" @click="doApproveJoin(req)" style="background:linear-gradient(135deg,#10B981,#059669);border-color:#059669;">✅ 通过</button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+
+          <!-- 转让社长弹窗 -->
+          <transition name="modal">
+            <div v-if="showTransferModal && transferTarget" class="modal-mask" @click.self="showTransferModal = false">
+              <div class="modal-content" style="max-width:440px;">
+                <div class="modal-title calligraphy">👑 转让社长</div>
+                <div style="padding:4px 0 12px 0;line-height:1.9;color:#374151;">
+                  确定要将本社区【{{ community.name }}】的社长身份转让给
+                  <b style="color:#B91C1C;">{{ displayNameOf(transferTarget) }}</b> 吗？
+                  <br><span style="color:#B45309;font-size:13px;">⚠️ 转让后你将不再是社长，需新社长转让才能复位。</span>
+                </div>
+                <div class="form-actions">
+                  <button class="btn btn-secondary" @click="showTransferModal = false">取消</button>
+                  <button class="btn btn-primary" style="background:linear-gradient(135deg,#F59E0B,#D97706);border-color:#B45309;" :disabled="transferLoading" @click="confirmTransfer">
+                    {{ transferLoading ? '转让中…' : '确认转让' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </transition>
+        </div>
+      `,
+      props: [],
+      emits: ['navigate'],
+      setup(props, { emit }) {
+        // 全局共享的 announcementsStore 拿 pinned banner
+        const sharedPinnedBanner = computed(() => (announcementsStore.list || []).find(a => a.pinned) || null);
+
+        // 取当前选中的社区（global currentCommunity ref，从 navigateTo payload 注入）
+        const community = computed(() => currentCommunity.value || null);
+        const commName = computed(() => (community.value && community.value.name) || '（无此社区）');
+        const commIntro = computed(() => community.value ? (community.value.intro || '') : '');
+
+        // 学生列表 + 找成员
+        const allStudents = computed(() => studentsStore.list || []);
+        const ownerName = computed(() => {
+          if (!community.value || !community.value.ownerId) return '';
+          const s = allStudents.value.find(x => String(x.id) === String(community.value.ownerId));
+          return s ? displayNameOf(s) : String(community.value.ownerId);
+        });
+        const deputyName = computed(() => {
+          if (!community.value || !community.value.deputyId) return '';
+          const s = allStudents.value.find(x => String(x.id) === String(community.value.deputyId));
+          return s ? displayNameOf(s) : String(community.value.deputyId);
+        });
+        const memberList = computed(() => {
+          if (!community.value || !Array.isArray(community.value.memberIds)) return [];
+          const ids = community.value.memberIds.map(String);
+          const members = allStudents.value.filter(s => ids.includes(String(s.id)));
+          // 排序：社长 first → 副社长 → 其他按加入顺序（id 升序）
+          return members.slice().sort((a, b) => {
+            const ao = String(a.id) === String(community.value.ownerId) ? 0 : (String(a.id) === String(community.value.deputyId) ? 1 : 2);
+            const bo = String(b.id) === String(community.value.ownerId) ? 0 : (String(b.id) === String(community.value.deputyId) ? 1 : 2);
+            if (ao !== bo) return ao - bo;
+            return (a.id || 0) - (b.id || 0);
+          });
+        });
+
+        // 身份判断
+        const isLoggedIn = computed(() => !!(DataProvider.studentSession && DataProvider.studentSession.student));
+        const meId = computed(() => {
+          const s = DataProvider.studentSession;
+          return s && s.student ? String(s.student.id) : null;
+        });
+        const isOwner = computed(() => !!meId.value && !!community.value && String(community.value.ownerId) === meId.value);
+        const myRole = computed(() => {
+          if (!meId.value || !community.value) return '';
+          if (String(community.value.ownerId) === meId.value) return 'owner';
+          if (String(community.value.deputyId) === meId.value) return 'deputy';
+          return (memberList.value.some(m => String(m.id) === meId.value)) ? 'member' : '';
+        });
+
+        // 审批列表：从 communitiesStore.pendingJoinReqs 里筛出本社区的 + pending
+        const pendingJoinReqs = computed(() => {
+          if (!community.value) return [];
+          const cid = String(community.value.id);
+          const all = communitiesStore.allJoinReqs || communitiesStore.pendingJoinReqs || [];
+          return all.filter(req => String(req.communityId) === cid && (!req.status || req.status === 'pending'));
+        });
+
+        // 转让社长 state
+        const showTransferModal = ref(false);
+        const transferTarget = ref(null);
+        const transferLoading = ref(false);
+
+        // 标题颜色 + 头衔样式
+        const getNameClass = (s) => {
+          const lv = parseInt(s && s.titleLevel) || 0;
+          if (lv === 4) return 'name-crimson';
+          if (lv === 5) return 'name-sky';
+          return '';
+        };
+        const titleBadgeClass = (lv) => {
+          const v = parseInt(lv) || 0;
+          if (v === 1) return 'badge-gold';
+          if (v === 2) return 'badge-silver';
+          if (v === 3) return 'badge-bronze';
+          if (v === 4) return 'badge-crimson';
+          if (v === 5) return 'badge-sky';
+          return 'badge-normal';
+        };
+
+        // Actions
+        const goHome = () => { emit('navigate', 'home'); };
+        const exitGuestMode = () => {
+          if (!confirm('确定退出游客模式回到入口页？')) return;
+          isGuestMode.value = false;
+          emit('navigate', 'entry');
+        };
+
+        const doSetDeputy = async (m) => {
+          if (!m || !isOwner.value) return;
+          if (!confirm(`确定将【${displayNameOf(m)}】设为副社长吗？`)) return;
+          try {
+            await DataProvider.setDeputy(community.value.id, 'set', m.id, { role: 'owner' });
+            showSuccessModal('🌟 已设置副社长', `【${displayNameOf(m)}】已成为本社区副社长 ✨`);
+          } catch (e) {
+            alert('❌ 设置副社长失败：' + e.message);
+          }
+        };
+        const doClearDeputy = async () => {
+          if (!isOwner.value) return;
+          if (!confirm(`确定撤销当前副社长的职务吗？`)) return;
+          try {
+            await DataProvider.setDeputy(community.value.id, 'clear', null, { role: 'owner' });
+            showSuccessModal('🌟 副社长已撤销', `副社长职务已解除`);
+          } catch (e) {
+            alert('❌ 撤销失败：' + e.message);
+          }
+        };
+        const doTransfer = async (m) => {
+          if (!m || !isOwner.value) return;
+          transferTarget.value = m;
+          showTransferModal.value = true;
+        };
+        const confirmTransfer = async () => {
+          if (!transferTarget.value) return;
+          transferLoading.value = true;
+          try {
+            await DataProvider.transferCommunityOwner(community.value.id, transferTarget.value.id, { role: 'owner' });
+            showSuccessModal('👑 社长已转让', `已正式将社长移交给【${displayNameOf(transferTarget.value)}】`);
+            showTransferModal.value = false;
+          } catch (e) {
+            alert('❌ 转让失败：' + e.message);
+          } finally { transferLoading.value = false; }
+        };
+        const doApproveJoin = async (req) => {
+          if (!req || !isOwner.value) return;
+          if (!confirm(`通过【${req.studentName}】的加入申请吗？`)) return;
+          try {
+            await DataProvider.approveCommunityJoin(req.id);
+            showSuccessModal('✅ 加入申请通过', `已欢迎【${req.studentName}】加入本社区 🎉`);
+            await DataProvider.loadCommunityRequests();
+          } catch (e) {
+            alert('❌ 审批失败：' + e.message);
+          }
+        };
+        const doRejectJoin = async (req) => {
+          if (!req || !isOwner.value) return;
+          if (!confirm(`拒绝【${req.studentName}】的加入申请吗？`)) return;
+          try {
+            await DataProvider.rejectCommunityJoin(req.id);
+            showSuccessModal('❌ 已拒绝', `已拒绝【${req.studentName}】的加入申请`);
+            await DataProvider.loadCommunityRequests();
+          } catch (e) {
+            alert('❌ 拒绝失败：' + e.message);
+          }
+        };
+
+        return {
+          // state
+          community, commName, commIntro,
+          memberList, ownerName, deputyName,
+          isGuestMode, toInitials, displayNameOf,
+          isLoggedIn, myRole, isOwner,
+          pendingJoinReqs,
+          showTransferModal, transferTarget, transferLoading,
+          sharedPinnedBanner,
+          // actions
+          goHome, exitGuestMode,
+          getNameClass, titleBadgeClass,
+          doSetDeputy, doClearDeputy,
+          doTransfer, confirmTransfer,
+          doApproveJoin, doRejectJoin,
+        };
+      },
     };
 
     // ========== 管理员页面 ==========
@@ -3793,6 +4429,7 @@
                 <div class="table-header">
                   <div class="col-name">社区 / 申请人</div>
                   <div class="col-school">简介</div>
+                  <div class="col-contact">联系方式</div>
                   <div class="col-status">状态</div>
                   <div class="col-actions">操作</div>
                 </div>
@@ -3811,6 +4448,10 @@
                   </div>
                   <div class="col-school">
                     <div style="white-space:pre-wrap;">{{ r.intro || '（未填写简介）' }}</div>
+                  </div>
+                  <div class="col-contact">
+                    <div v-if="r.wechatContact" style="font-size:13px;color:#0F766E;font-weight:600;">📱 {{ r.wechatContact }}</div>
+                    <div v-else style="font-size:12px;color:#94A3B8;">（老申请，未填微信）</div>
                   </div>
                   <div class="col-status">
                     <span v-if="r.status === 'pending'" class="status-badge status-pending">⏳ 待审批</span>
@@ -3853,6 +4494,7 @@
                 <div class="table-header">
                   <div class="col-name">同学 / 社区</div>
                   <div class="col-school">附言</div>
+                  <div class="col-contact">联系方式</div>
                   <div class="col-status">状态</div>
                   <div class="col-actions">操作</div>
                 </div>
@@ -3871,6 +4513,10 @@
                   </div>
                   <div class="col-school">
                     <div style="white-space:pre-wrap;">{{ r.note || '（未写附言）' }}</div>
+                  </div>
+                  <div class="col-contact">
+                    <div v-if="r.wechatContact" style="font-size:13px;color:#0F766E;font-weight:600;">📱 {{ r.wechatContact }}</div>
+                    <div v-else style="font-size:12px;color:#94A3B8;">（老申请，未填微信）</div>
                   </div>
                   <div class="col-status">
                     <span v-if="r.status === 'pending'" class="status-badge status-pending">⏳ 待审批</span>
@@ -4152,7 +4798,6 @@
                     <div style="padding:4px 10px;background:rgba(255,245,247,0.7);color:#C0002A;border-radius:6px;font-size:12px;font-weight:700;border:1px dashed rgba(192,0,42,0.45);text-shadow:0 0 6px rgba(192,0,42,0.55);">赤红字体 预览</div>
                     <div style="padding:4px 10px;background:linear-gradient(135deg,#E0F2FE,#38BDF8,#0EA5E9);color:#082F49;border-radius:6px;font-size:12px;font-weight:700;border:1px solid #0284C7;box-shadow:0 0 8px rgba(56,189,248,0.55);">天蓝耀眼 预览</div>
                     <div style="padding:4px 10px;background:#F8F8F6;color:#333;border-radius:6px;font-size:12px;border:1px solid #eee;">正常 预览</div>
-                  </div>
                   </div>
                 </div>
                 <div class="form-group">
@@ -4747,24 +5392,357 @@
       }
     };
 
+    // ========== V4 唐榜独立页面 ==========
+    const TangRankPage = {
+      template: `
+        <div class="main-page" style="min-height:100vh;padding-bottom:32px;background:linear-gradient(180deg,#FFF8E1 0%,#FFE0B2 40%,#FFFFFF 100%);">
+          <!-- 顶部横幅（全局 pinned 公告） -->
+          <div v-if="sharedPinnedBanner" class="announcement-banner" @click="goHome">
+            <span class="banner-tag">📢 置顶公告</span>
+            <span class="banner-content">
+              <b v-if="sharedPinnedBanner.title">【{{ sharedPinnedBanner.title }}】</b>{{ sharedPinnedBanner.content }}
+            </span>
+            <span class="banner-time">{{ sharedPinnedBanner.created_at }}</span>
+          </div>
+
+          <!-- 唐榜 Header -->
+          <div class="top-bar" style="background:linear-gradient(135deg,#B91C1C,#991B1B);color:#fff;border-radius:0;">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:13px;opacity:.9;margin-bottom:6px;">🏆 社区投票榜单</div>
+              <div class="top-title calligraphy" style="color:#fff;font-size:28px !important;">
+                🏆 唐榜 · 社区人气排行榜
+              </div>
+              <div class="top-subtitle xiaowei" style="color:#FDE68A;">
+                每位已加入社区的同学，每天 3 票，投给你最欣赏的同学
+              </div>
+            </div>
+            <div class="top-actions" style="flex-wrap:wrap;">
+              <button v-if="isGuestMode" class="btn btn-secondary" @click="exitGuestMode" style="background:#f0ecff;color:#6d28d9;border-color:#c4b5fd;">👀 游客模式 · 🔙 返回入口</button>
+              <button class="btn btn-secondary" @click="goHome">← 返回地图</button>
+              <button class="btn btn-secondary" @click="$emit('navigate','home')" title="回社区广场">🏛️ 去社区广场</button>
+              <button class="btn btn-primary" @click="refreshRank" :disabled="loading" style="background:linear-gradient(135deg,#F59E0B,#D97706);border-color:#B45309;">
+                {{ loading ? '加载中…' : '🔄 刷新榜单' }}
+              </button>
+            </div>
+          </div>
+
+          <div style="max-width:960px;margin:18px auto;padding:0 14px;">
+            <!-- 我的票数 / 身份指示 -->
+            <div class="info-card" style="margin-bottom:16px;padding:18px 20px;background:linear-gradient(180deg,#FFFBEB,#FFFFFF);border-color:#FCD34D;">
+              <div style="display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;align-items:center;">
+                <div style="flex:1;min-width:260px;">
+                  <template v-if="isLoggedIn && me">
+                    <div style="font-weight:700;color:#92400E;margin-bottom:8px;font-size:15px;">
+                      👋 你好，<span class="detail-student-name" :class="getNameClass(me)">{{ displayNameOf(me) }}</span>
+                      <span v-if="myCommunityName" class="msg-tag community" style="margin-left:6px;">🏛️ {{ myCommunityName }}</span>
+                      <span v-else class="msg-tag" style="background:#FEF3C7;color:#92400E;">⚠️ 暂未入社</span>
+                    </div>
+                    <div style="font-size:13px;color:#78350F;line-height:1.9;">
+                      <template v-if="myCommunityName">
+                        🗳️ 今日剩余票数：<b style="font-size:18px;color:#B91C1C;">{{ myRemaining }}</b> / 3 票
+                        <div style="color:#92400E;" v-if="myVotedToday.length > 0">
+                          💡 今日已投给：{{ myVotedNames }}（可连投给同一人）
+                        </div>
+                        <div style="color:#B45309;" v-else>今天你还没投票，快来行使你的权利吧～</div>
+                      </template>
+                      <template v-else>
+                        ⚠️ 仅已加入社区的同学可参与唐榜（你目前未入社，请先加入任意社区）。
+                      </template>
+                    </div>
+                  </template>
+                  <template v-else-if="isGuestMode">
+                    <div style="font-weight:700;color:#6d28d9;margin-bottom:6px;">👀 当前为游客模式</div>
+                    <div style="font-size:13px;color:#6d28d9;">仅可查看榜单与姓名首字母缩写（如 whc）。登录后可投票～</div>
+                  </template>
+                  <template v-else>
+                    <div style="font-weight:700;color:#78350F;margin-bottom:6px;">🎓 登录后即可为社区同学投票</div>
+                    <div style="font-size:13px;color:#92400E;">请回首页「🎓 同学登录」，登录后即可使用你每天的 3 票权利。</div>
+                  </template>
+                </div>
+              </div>
+            </div>
+
+            <!-- 空状态：无数据 -->
+            <div v-if="!loading && rank.length === 0" class="info-card" style="padding:50px 20px;text-align:center;">
+              <div style="font-size:60px;margin-bottom:10px;">🏆</div>
+              <div style="font-size:18px;color:#78350F;margin-bottom:10px;">还没有同学获得投票</div>
+              <div style="font-size:13px;color:#92400E;line-height:1.9;margin-bottom:16px;">
+                成为第一个给社区同学投票的人吧！<br>
+                仅已加入社区的同学互投，未入社不参与榜单。
+              </div>
+              <button v-if="isLoggedIn && myCommunityName" class="btn btn-primary" @click="refreshRank">🔄 刷新看看有没有新票</button>
+              <button v-else-if="!isLoggedIn" class="btn btn-primary" @click="goHome">🎓 去首页登录</button>
+              <button v-else class="btn btn-secondary" @click="goHome">🏛️ 去社区申请加入</button>
+            </div>
+
+            <!-- 榜单主体 -->
+            <template v-else>
+              <div class="info-card" style="padding:20px 22px;background:linear-gradient(180deg,#FFFFFF,#FFFBEB);border-color:#FDE68A;">
+                <div class="info-card-title calligraphy" style="color:#92400E;border-bottom:2px dashed #FCD34D;margin-bottom:18px;">
+                  🏆 唐榜榜单 <span class="message-count">{{ rank.length }} 位上榜</span>
+                </div>
+
+                <!-- 前三名展示卡片（大卡片，前 3 名 medal） -->
+                <div v-if="top3.length > 0" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;" class="tangrank-top3">
+                  <div v-for="(t, i) in top3" :key="t.studentId" class="tangrank-top3-card" :style="top3CardStyle(i)">
+                    <div class="tangrank-top3-medal">{{ ['🥇','🥈','🥉'][i] || '🎖️' }}</div>
+                    <div class="tangrank-top3-name">
+                      <span :class="getNameClass(t.student)">
+                        {{ displayNameOf(t.student) }}
+                      </span>
+                    </div>
+                    <div style="font-size:12px;color:#78350F;margin-bottom:8px;line-height:1.6;">
+                      🏛️ {{ t.communityName }}
+                      <template v-if="t.student && t.student.title"><br>🏅 {{ t.student.title }}</template>
+                    </div>
+                    <div class="tangrank-top3-votes">{{ t.total }} 票</div>
+                    <!-- 投票按钮：允许在前 3 卡片上也投 -->
+                    <button
+                      class="btn btn-sm btn-primary"
+                      style="margin-top:10px;background:linear-gradient(135deg,#B91C1C,#991B1B);border-color:#7F1D1D;"
+                      :disabled="!canVoteFor(t.studentId)"
+                      @click="doVote(t)"
+                    >
+                      {{ !isLoggedIn ? '登录后投' : (!myCommunityName ? '未入社' : (hasVotedFor(t.studentId) ? '今日已投' : '🗳️ 投一票')) }}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 4+ 名完整列表 -->
+                <div v-if="rank.length > 3" style="display:flex;flex-direction:column;gap:8px;margin-top:10px;">
+                  <div
+                    v-for="row in rank.slice(3)"
+                    :key="row.studentId"
+                    class="tangrank-row"
+                    style="display:flex;align-items:center;gap:14px;padding:10px 12px;border-radius:12px;background:#FFFDF7;border:1px solid #FDE68A;"
+                  >
+                    <div class="tangrank-rank-badge" style="width:40px;text-align:center;font-weight:800;color:#92400E;font-size:18px;">
+                      #{{ row.rank }}
+                    </div>
+                    <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#FEF3C7,#FDE68A);display:flex;align-items:center;justify-content:center;font-weight:800;color:#92400E;flex-shrink:0;">
+                      {{ displayNameOf(row.student).slice(0,1).toUpperCase() }}
+                    </div>
+                    <div style="flex:1;min-width:0;">
+                      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <span class="detail-student-name" style="font-weight:700;font-size:15px;" :class="getNameClass(row.student)">
+                          {{ displayNameOf(row.student) }}
+                        </span>
+                        <span v-if="row.student && row.student.title" class="inline-title-badge" :class="titleBadgeClass(row.student.titleLevel)">{{ row.student.title }}</span>
+                        <span class="msg-tag community" style="font-size:11px;">🏛️ {{ row.communityName }}</span>
+                      </div>
+                      <div v-if="!isGuestMode" style="color:#92400E;font-size:12px;margin-top:3px;line-height:1.6;">
+                        📍 {{ row.student ? (row.student.province || '未标注') : '' }}　
+                        🏫 {{ row.student ? (row.student.university || '') : '' }}
+                      </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+                      <div style="font-weight:800;color:#B91C1C;font-size:18px;text-align:right;">
+                        {{ row.total }}<span style="font-size:12px;color:#78350F;margin-left:2px;">票</span>
+                      </div>
+                      <button
+                        class="btn btn-sm btn-primary"
+                        style="background:linear-gradient(135deg,#B91C1C,#991B1B);border-color:#7F1D1D;min-width:84px;"
+                        :disabled="!canVoteFor(row.studentId)"
+                        @click="doVote(row)"
+                      >
+                        {{ voteBtnText(row.studentId) }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </div>
+        </div>
+      `,
+      props: [],
+      emits: ['navigate'],
+      setup(props, { emit }) {
+        const rank = computed({
+          get: () => (tangRankStore.rank || []).map(row => ({
+            ...row,
+            student: (studentsStore.list || []).find(s => String(s.id) === String(row.studentId)) || null,
+          })),
+          set: (v) => { tangRankStore.rank = v; }
+        });
+        const loading = computed(() => !!tangRankStore.loading);
+        const myRemaining = computed(() => tangRankStore.myRemaining || 0);
+        const myVotedToday = computed(() => tangRankStore.myVotedToday || []);
+
+        const sharedPinnedBanner = computed(() => (announcementsStore.list || []).find(a => a.pinned) || null);
+        const isLoggedIn = computed(() => !!(DataProvider.studentSession && DataProvider.studentSession.student));
+        const me = computed(() => {
+          const s = DataProvider.studentSession;
+          return s && s.student ? s.student : null;
+        });
+        const myCommunityId = computed(() => me.value ? (me.value.communityId || null) : null);
+        const myCommunityName = computed(() => {
+          if (!myCommunityId.value) return '';
+          const c = (DataProvider.communities || []).find(x => String(x.id) === String(myCommunityId.value));
+          return c ? c.name : '';
+        });
+
+        const top3 = computed(() => rank.value.slice(0, 3));
+        const myVotedNames = computed(() => {
+          if (!myVotedToday.value.length) return '';
+          const students = studentsStore.list || [];
+          return myVotedToday.value
+            .map(id => {
+              const s = students.find(x => String(x.id) === String(id));
+              return s ? displayNameOf(s) : ('#' + id);
+            })
+            .join('、');
+        });
+
+        const top3CardStyle = (i) => {
+          const gradients = [
+            'background:linear-gradient(180deg,#FFF7AE,#FDE68A);border:2px solid #F59E0B;',
+            'background:linear-gradient(180deg,#E5E7EB,#D1D5DB);border:2px solid #9CA3AF;',
+            'background:linear-gradient(180deg,#FFEDD5,#FED7AA);border:2px solid #F59E0B;',
+          ];
+          return gradients[i] || '';
+        };
+
+        const getNameClass = (s) => {
+          const lv = parseInt(s && s.titleLevel) || 0;
+          if (lv === 4) return 'name-crimson';
+          if (lv === 5) return 'name-sky';
+          return '';
+        };
+        const titleBadgeClass = (lv) => {
+          const v = parseInt(lv) || 0;
+          if (v === 1) return 'badge-gold';
+          if (v === 2) return 'badge-silver';
+          if (v === 3) return 'badge-bronze';
+          if (v === 4) return 'badge-crimson';
+          if (v === 5) return 'badge-sky';
+          return 'badge-normal';
+        };
+
+        const hasVotedFor = (candidateId) => {
+          const key = String(candidateId);
+          return (myVotedToday.value || []).some(id => String(id) === key);
+        };
+        const canVoteFor = (candidateId) => {
+          if (!isLoggedIn.value) return false;
+          if (!myCommunityId.value) return false;
+          if (isGuestMode.value) return false;
+          if (myRemaining.value <= 0) return false;
+          if (me.value && String(me.value.id) === String(candidateId)) return false;
+          return true;
+        };
+        const voteBtnText = (candidateId) => {
+          if (isGuestMode.value) return '🔒 游客';
+          if (!isLoggedIn.value) return '登录后投';
+          if (!myCommunityId.value) return '未入社';
+          if (me.value && String(me.value.id) === String(candidateId)) return '不能投自己';
+          if (hasVotedFor(candidateId) && myRemaining.value > 0) return '🗳️ 再投一票';
+          if (myRemaining.value <= 0) return '今日 3 票用完';
+          return '🗳️ 投一票';
+        };
+
+        const refreshRank = async () => {
+          tangRankStore.loading = true;
+          try {
+            const data = await DataProvider.getTangRank();
+            tangRankStore.rank = data && data.rank ? data.rank : [];
+            tangRankStore.myRemaining = data && typeof data.myRemaining === 'number' ? data.myRemaining : 0;
+            tangRankStore.myVotedToday = data && Array.isArray(data.myVotedToday) ? data.myVotedToday : [];
+          } catch (e) {
+            alert('❌ 拉取唐榜失败：' + e.message);
+          } finally {
+            tangRankStore.loading = false;
+          }
+        };
+        const doVote = async (row) => {
+          if (!row) return;
+          const cid = row.studentId;
+          const cname = row.student ? displayNameOf(row.student) : ('#' + cid);
+          if (!canVoteFor(cid)) return;
+          if (!confirm(`确定把你宝贵的一票投给【${cname}】吗？`)) return;
+          try {
+            tangRankStore.loading = true;
+            const r = await DataProvider.voteTang(cid);
+            // 刷新榜单
+            await refreshRank();
+            showSuccessModal('🏆 唐榜投票成功！',
+              `成功把 1 票投给了【${cname}】\n剩余票数：${typeof r.remaining === 'number' ? r.remaining : Math.max(0, myRemaining.value - 1)} 票`, 3500);
+          } catch (e) {
+            alert('❌ 投票失败：' + e.message);
+          } finally {
+            tangRankStore.loading = false;
+          }
+        };
+
+        const goHome = () => { emit('navigate', 'home'); };
+        const exitGuestMode = () => {
+          if (!confirm('确定退出游客模式回到入口页？')) return;
+          isGuestMode.value = false;
+          emit('navigate', 'entry');
+        };
+
+        onMounted(refreshRank);
+        watch(() => isGuestMode.value, () => { /* identity change noop */ }, { flush: 'post' });
+
+        return {
+          // state
+          rank, loading, myRemaining, myVotedToday,
+          top3, myVotedNames, sharedPinnedBanner,
+          isGuestMode, toInitials, displayNameOf,
+          isLoggedIn, me, myCommunityId, myCommunityName,
+          // helpers
+          getNameClass, titleBadgeClass,
+          top3CardStyle, canVoteFor, voteBtnText, hasVotedFor,
+          // actions
+          goHome, exitGuestMode, refreshRank, doVote
+        };
+      },
+    };
+
     // ========== 根应用 ==========
     const app = createApp({
       setup() {
         const currentPage = ref('entry');
 
         const currentPageComponent = computed(() => {
+          // V4: 扩展社区独立页 / 唐榜页。未定义时回退到占位页
+          const map = {
+            entry: EntryPage,
+            home: MainPage,
+            admin: AdminPage,
+            community: (typeof CommunityFullPage !== 'undefined' ? CommunityFullPage : {
+              template: `<div style="padding:40px;text-align:center;">社区页面加载中…<br><button class="btn btn-primary" @click="$emit('navigate','home')">回到首页</button></div>`,
+              emits: ['navigate']
+            }),
+            'tang-rank': (typeof TangRankPage !== 'undefined' ? TangRankPage : {
+              template: `<div style="padding:40px;text-align:center;">唐榜加载中…<br><button class="btn btn-primary" @click="$emit('navigate','home')">回到首页</button></div>`,
+              emits: ['navigate']
+            })
+          };
+          // 管理员页面鉴权
           const isAuthed = DataProvider.isAdmin();
           if (currentPage.value === 'admin' && !isAuthed) return EntryPage;
-          const map = { entry: EntryPage, home: MainPage, admin: AdminPage };
           return map[currentPage.value] || EntryPage;
         });
 
-        const navigateTo = (page) => {
+        const navigateTo = (page, payload) => {
+          // V4: navigateTo('community', payload) 可自动设置当前社区
+          if (page === 'community') {
+            currentCommunity.value = payload || null;
+          } else if (page === 'tang-rank') {
+            tangRankStore.loading = true;
+          }
           currentPage.value = page;
           window.scrollTo({ top: 0, behavior: 'smooth' });
         };
 
-        return { currentPage, currentPageComponent, navigateTo };
+        return {
+          currentPage, currentPageComponent, navigateTo,
+          // V4 全局
+          successModalState, closeSuccessModal,
+          isGuestMode, currentCommunity, tangRankStore,
+          toInitials, displayNameOf,
+        };
       }
     });
 

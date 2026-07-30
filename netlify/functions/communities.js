@@ -192,12 +192,18 @@ exports.handler = async (event) => {
         if (communities.find(c => (c.name || '').trim() === communityName)) {
           return { statusCode: 409, headers, body: JSON.stringify({ error: '社区名称已存在，请换一个' }) };
         }
+        // 微信号必填
+        const wechatContact = String(body.wechatContact || '').trim();
+        if (!wechatContact || wechatContact.length < 2 || wechatContact.length > 50) {
+          return { statusCode: 400, headers, body: JSON.stringify({ error: '请填写有效的微信号（长度 2~50 个字符）' }) };
+        }
         const req = {
           id: 'cr_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
           creatorStudentId: me.id,
           creatorName: me.nickname,
           communityName,
           communityIntro: String(body.communityIntro || '').slice(0, 200),
+          wechatContact,
           status: 'pending',
           created_at: toBeijingTime(),
           reviewed_by: null,
@@ -219,6 +225,11 @@ exports.handler = async (event) => {
         if (!community) return { statusCode: 404, headers, body: JSON.stringify({ error: '社区不存在' }) };
         const myPending = joinReqs.find(r => String(r.studentId) === String(me.id) && r.status === 'pending');
         if (myPending) return { statusCode: 400, headers, body: JSON.stringify({ error: '您已有加入申请待审批' }) };
+        // 微信号必填
+        const wechatContact = String(body.wechatContact || '').trim();
+        if (!wechatContact || wechatContact.length < 2 || wechatContact.length > 50) {
+          return { statusCode: 400, headers, body: JSON.stringify({ error: '请填写有效的微信号（长度 2~50 个字符）' }) };
+        }
         const req = {
           id: 'jr_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
           studentId: me.id,
@@ -226,6 +237,7 @@ exports.handler = async (event) => {
           communityId,
           communityName: community.name,
           applyNote: String(body.applyNote || '').slice(0, 100),
+          wechatContact,
           status: 'pending',
           created_at: toBeijingTime(),
           decided_by_role: null, // 'admin' | 'owner'
@@ -394,6 +406,40 @@ exports.handler = async (event) => {
           statusCode: 200,
           headers,
           body: JSON.stringify({ ok: true, community, newOwnerName: target ? target.nickname : targetId })
+        };
+      }
+
+      // --- C5.5: POST /api/communities/:id/deputy  社长/管理员 设置/清除 副社长 ---
+      if (method === 'POST' && /\/communities\/[^/]+\/deputy$/.test(path)) {
+        const communityId = path.split('/').slice(-2)[0];
+        const cIdx = communities.findIndex(c => String(c.id) === communityId);
+        if (cIdx === -1) return { statusCode: 404, headers, body: JSON.stringify({ error: '社区不存在' }) };
+        const community = communities[cIdx];
+        const isAdmin = verifyAdmin(event);
+        const me = verifyStudentAny(event, students, body.studentName, body.studentPassword);
+        const isOwner = me && String(community.ownerId) === String(me.id);
+        if (!isAdmin && !isOwner) return { statusCode: 403, headers, body: JSON.stringify({ error: '仅社长或管理员可设置副社长' }) };
+        const action = String(body.action || 'set');
+        if (action === 'clear') {
+          community.deputyId = null;
+          communities[cIdx] = community;
+          await writeJsonFile(FILE_COMMUNITIES, communities, csha);
+          return { statusCode: 200, headers, body: JSON.stringify({ ok: true, community }) };
+        }
+        const deputyId = String(body.deputyId || '').trim();
+        if (!deputyId) return { statusCode: 400, headers, body: JSON.stringify({ error: '请指定副社长候选人' }) };
+        if (String(deputyId) === String(community.ownerId)) return { statusCode: 400, headers, body: JSON.stringify({ error: '不能把自己设为副社长' }) };
+        if (!Array.isArray(community.memberIds) || !(community.memberIds.some(mid => String(mid) === deputyId))) {
+          return { statusCode: 400, headers, body: JSON.stringify({ error: '候选人不是本社成员，请先邀请加入' }) };
+        }
+        community.deputyId = deputyId;
+        communities[cIdx] = community;
+        await writeJsonFile(FILE_COMMUNITIES, communities, csha);
+        const target = students.find(s => String(s.id) === deputyId);
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ ok: true, community, deputyName: target ? target.nickname : deputyId })
         };
       }
 

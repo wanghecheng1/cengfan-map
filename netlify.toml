@@ -121,3 +121,16 @@
   from = "/api/direct-messages/*"
   to = "/.netlify/functions/direct-messages"
   status = 200
+
+# ============ 新增：V4 唐榜 + 副社长（2026-07-30）============
+# 社区 deputy 接口由 communities.js 通配处理：/api/communities/* → communities.js
+
+[[redirects]]
+  from = "/api/tang-rank"
+  to = "/.netlify/functions/tang-rank"
+  status = 200
+
+[[redirects]]
+  from = "/api/tang-rank/*"
+  to = "/.netlify/functions/tang-rank"
+  status = 200
