@@ -1026,8 +1026,8 @@
     "longitude": 117.31082037961947,
     "latitude": 39.187815771015885,
     "password": "123456",
-    "role": "admin",
-    "adminFrame": true,
+    "role": "student",
+    "adminFrame": false,
     "passwordChangedAt": null
   },
   {
