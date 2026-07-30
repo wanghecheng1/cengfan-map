@@ -15,10 +15,11 @@
   ✅ data/tang-rank.json                                  ← 唐榜投票数据（空结构：{dailyVotes,totalVotes,votes}）
   ✅ netlify/functions/tang-rank.js                       ← 唐榜 GET/POST vote 后端 API
 
-修改文件（3 个）：
-  ✅ netlify/functions/communities.js                     ← ① 副社长设置/撤销 API；② 本次补加：C1/C2 申请必填微信+密码校验
+修改文件（4 个）：
+  ✅ netlify/functions/communities.js                     ← ① 副社长设置/撤销 API；② C1/C2 申请必填微信+密码校验
+  ✅ netlify/functions/student-login.js                   ← 本次紧急补加：同学登录严格强制「完整姓名+密码」双必填 + 长度校验 + 详细报错
   ✅ netlify.toml                                         ← 新增 /api/tang-rank 与 /api/tang-rank/* 两条 redirect
-  ✅ index.html                                           ← 核心：游客入口 / 社区独立页 / 唐榜 / 成功弹窗 / 申请加微信必填 / 联系方式列展示
+  ✅ index.html                                           ← 核心：游客入口 / 社区独立页 / 唐榜 / 成功弹窗 / 申请加微信必填 / 登录弹窗强制姓名+密码双必填
 
 新增文档（7 个，提交到仓库更便于回溯）：
   docs/V4_唐榜游客社区升级/ALIGNMENT_V4升级.md
@@ -48,9 +49,9 @@
 
 ```bash
 cd d:\TRAE\cengfan-deploy
-git add data/tang-rank.json netlify/functions/tang-rank.js netlify/functions/communities.js netlify.toml index.html docs/V4_唐榜游客社区升级/*
+git add data/tang-rank.json netlify/functions/tang-rank.js netlify/functions/communities.js netlify/functions/student-login.js netlify.toml index.html docs/V4_唐榜游客社区升级/*
 git status       # （可选）确认上面列出的文件都 staged 了；如果多了其他不想要的可以 unstage
-git commit -m "V4(含补加): 游客入口+社区独立页副社长+唐榜每日3票+申请必填密码微信"
+git commit -m "V4(含补加): 游客入口+社区独立页副社长+唐榜每日3票+申请必填密码微信+同学登录强制完整姓名+密码"
 git push origin main
 ```
 
@@ -69,9 +70,9 @@ git push origin main
 - 检查 `netlify.toml` 第 6-7 行 `[functions] directory = "netlify/functions"` 是否保留；
 - 检查文件路径是否真的放在 `netlify/functions/tang-rank.js`。
 
-### 4️⃣ 浏览器访问你的域名 → 做 7 项人工冒烟测试（按顺序，新增第 7 项「微信必填」）
+### 4️⃣ 浏览器访问你的域名 → 做 8 项人工冒烟测试（按顺序，新增第 7 / 8 项「微信必填 + 登录必填姓名+密码」）
 
-这 7 项就是 `ACCEPTANCE_V4升级.md` 里的「六、人工验证项」+ **本次补加 #7**，请逐一勾选：
+这 8 项就是 `ACCEPTANCE_V4升级.md` 里的「六、人工验证项」+ **本次补加 #7、#8**，请逐一勾选：
 
 - [ ] **6.1 唐榜投票 & 3 票校验**
   - ① 首页点「🎓 同学登录」→ 用一个已加入社区的同学（姓名+密码正确）登录；
@@ -110,6 +111,16 @@ git push origin main
   - ② 申请创建新社区：填了微信但**密码填错** → 后端返回 401「身份验证失败，请重新登录或输入正确密码」 ✅
   - ③ 申请某社区加入：同上①② → 不填微信/密码不对都被拦截 ✅
   - ④ **管理员后台**进入「社区管理 → 申请创建 / 申请加入」两张表格 → **看到新的「📱 联系方式」列显示刚才申请人的微信号**（老申请会显示「老申请，未填微信」占位） ✅
+
+- [ ] **🆕 6.8 同学登录必须填写「完整姓名 + 6 位密码」两项？（本次紧急补加 ⭐ 最高优先验证）**
+  - ① 回到入口 → 用户入口 → 点「🎓 同学登录」→ **只填姓名，不填密码** → 点「登录（姓名+密码）」→ 立即红字报错：「姓名和密码都不能为空（均为必填项）」 ✅
+  - ② **只填密码，不填姓名** → 点登录 → 同样红字报错 ✅
+  - ③ **姓名只填 1 个字**（例如「王」）→ 点登录 → 报错：「请填写完整姓名（至少 2 个字符）」 ✅
+  - ④ **密码只填 1-3 位** → 点登录 → 报错：「密码长度不足，请检查」 ✅
+  - ⑤ **姓名填了 2 字但档案里没有（乱填）** → 后端会提示：「档案中未找到姓名为「XXX」的同学，请核对后重试（注意是否有错别字/空格）」 ✅
+  - ⑥ **姓名正确但密码错** → 后端提示：「「王小明」的密码错误，请确认是否为管理员分配的最新 6 位密码」 ✅
+  - ⑦ **姓名正确 + 密码正确** → 登录成功 → 顶部同学栏显示真实姓名 ✅
+  - ⑧ 验证弹窗 UI：弹窗最顶有橙色粗字「⚠️ 「完整姓名」与「6 位密码」两项均为必填，缺一不可！」；两个 label 前都有 **红星号「*」**；按钮显示「✅ 登录（姓名+密码）」 ✅
 
 ### 5️⃣ 如发现白屏：立即按红框报错截图发给开发者
 

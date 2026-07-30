@@ -9,6 +9,17 @@ const STUDENT_SALT = process.env.STUDENT_TOKEN_SALT || 'cengfan-student-salt-202
 const FILE_DM = 'data/direct-messages.json';
 const FILE_STUDENTS = 'data/students.json';
 const MAX_MSGS_PER_CONV = 500;
+const VALID_RECIPIENT_TYPES = ['admin', 'owner'];
+
+// V5：每条 DM 自动迁移：新增 recipientType 字段（同学发给的对象是谁？ admin=私信管理员；owner=私信站主）
+// - 老数据：如果没有 recipientType，默认为 'admin'（因为旧版都是发给管理员的私信）
+const migrateDmV5 = (all) => all.map(m => {
+  if (VALID_RECIPIENT_TYPES.includes(String(m.recipientType || ''))) return m;
+  return { ...m, recipientType: 'admin' };
+});
+// 身份辅助：X-Student-Token 拿到后顺便拿身份（role）
+const isOwnerStudent = (s) => !!s && (String(s.role || '') === 'owner');
+const isAdminStudent = (s) => !!s && (String(s.role || '') === 'owner' || String(s.role || '') === 'admin');
 
 const md5 = (s) => crypto.createHash('md5').update(s).digest('hex');
 // 解析 X-Student-Token（与 student-login.js / messages.js 一致）
@@ -122,33 +133,79 @@ exports.handler = async (event) => {
     // ============== DM1: GET /api/direct-messages 会话列表 / 单会话明细 ==============
     if (event.httpMethod === 'GET') {
       const { list: students } = await readFile(FILE_STUDENTS);
-      const { list: all } = await readFile(FILE_DM);
+      const { list: rawAll } = await readFile(FILE_DM);
+      const all = migrateDmV5(rawAll);
 
-      // 鉴权：管理员直接看全部；同学端 优先 X-Student-Token，回退 姓名+密码
+      // V5：三种 viewer 模式：
+      //   1) isAdmin (全局超级管理员 ADMIN_TOKEN)：看全部（兼容旧版兜底）
+      //   2) 同学 token 解析出是 owner（站主）：只看 recipientType ∈ {'admin','owner'} 的（两类都看）
+      //   3) 同学 token 解析出是 admin（管理员）：只看 recipientType='admin' 的
+      //   4) 普通同学：只看自己 studentId 的全部（admin+owner 他们发给自己的）
       let viewerStudentId = null;
-      if (!isAdmin) {
-        let me = null;
+      let viewerRole = null; // null(超级管理员/未登录)/'owner'/'admin'/'student'
+      let meStudent = null;
+      if (isAdmin) {
+        viewerRole = null; // 超级管理员：看全部
+      } else {
         const headerToken = event.headers['x-student-token'] || event.headers['X-Student-Token'];
-        if (headerToken) me = parseStudentToken(String(headerToken), students);
-        if (!me) {
+        if (headerToken) meStudent = parseStudentToken(String(headerToken), students);
+        if (!meStudent) {
           const name = qs.studentName || qs.name;
           const password = qs.studentPassword || qs.password;
-          me = verifyStudent(students, name, password);
+          meStudent = verifyStudent(students, name, password);
         }
-        if (!me) return { statusCode: 401, headers, body: JSON.stringify({ error: '请输入正确姓名+密码或重新登录' }) };
-        viewerStudentId = String(me.id);
+        if (!meStudent) return { statusCode: 401, headers, body: JSON.stringify({ error: '请输入正确姓名+密码或重新登录' }) };
+        viewerStudentId = String(meStudent.id);
+        const r = String(meStudent.role || '');
+        viewerRole = (r === 'owner' || r === 'admin' || r === 'student') ? r : 'student';
       }
 
-      // 过滤
-      const byStudentId = qs.studentId; // 管理员查某生；或同学端仅允许查自己
+      // 过滤（V5：区分 viewerRole 和 byStudentId 两种维度）
+      //   byStudentId = 查具体"同学本人的单会话（消息明细）"
+      //   无 byStudentId = 查"管理员收件箱的会话列表"（仅管理员/站主/超级管理员可看）
+      const byStudentId = qs.studentId;
       let filtered = all;
-      if (viewerStudentId) {
-        if (byStudentId && String(byStudentId) !== viewerStudentId) {
-          return { statusCode: 403, headers, body: JSON.stringify({ error: '不能查看他人会话' }) };
+      // A. 如果指定了 byStudentId → 明细模式
+      if (byStudentId) {
+        if (viewerStudentId) {
+          // 自己查自己：不限身份；但如果是用 owner/admin token 查别人的 byStudentId，需要验证权限
+          if (String(byStudentId) !== viewerStudentId) {
+            // owner/admin 登录可以查任意同学的会话消息（但按 recipientType 过滤他们角色允许看到的）
+            if (viewerRole !== 'owner' && viewerRole !== 'admin') {
+              return { statusCode: 403, headers, body: JSON.stringify({ error: '不能查看他人会话' }) };
+            }
+            // owner 允许看某同学 admin+owner 两类；管理员只允许看 admin
+            if (viewerRole === 'owner') {
+              filtered = all.filter(m => String(m.studentId) === String(byStudentId)
+                && (String(m.recipientType || 'admin') === 'admin' || String(m.recipientType || 'admin') === 'owner'));
+            } else {
+              filtered = all.filter(m => String(m.studentId) === String(byStudentId) && String(m.recipientType || 'admin') === 'admin');
+            }
+          } else {
+            // 自己查自己的全部（含 admin+owner，方便统一展示）
+            filtered = all.filter(m => String(m.studentId) === viewerStudentId);
+          }
+        } else {
+          // 超级管理员后台：byStudentId 指定 → 看该同学全部
+          filtered = all.filter(m => String(m.studentId) === String(byStudentId));
         }
-        filtered = all.filter(m => String(m.studentId) === viewerStudentId);
-      } else if (isAdmin && byStudentId) {
-        filtered = all.filter(m => String(m.studentId) === String(byStudentId));
+      } else {
+        // B. 无 byStudentId → 会话列表模式
+        if (viewerRole === 'owner') {
+          // 站主看 admin+owner 两类会话
+          filtered = all.filter(m => String(m.recipientType || 'admin') === 'admin' || String(m.recipientType || 'admin') === 'owner');
+        } else if (viewerRole === 'admin') {
+          // 普通管理员只看 admin
+          filtered = all.filter(m => String(m.recipientType || 'admin') === 'admin');
+        } else if (viewerStudentId) {
+          // 普通同学：看自己的（兼容旧行为）
+          filtered = all.filter(m => String(m.studentId) === viewerStudentId);
+        } else if (isAdmin) {
+          // 超级管理员看全部
+          filtered = all;
+        } else {
+          return { statusCode: 401, headers, body: JSON.stringify({ error: '请登录后再查看' }) };
+        }
       }
 
       // 构造返回：
@@ -198,15 +255,18 @@ exports.handler = async (event) => {
         };
       }
 
-      // 管理员会话列表（分组）
+      // V5：管理员会话列表分组 key = studentId|recipientType
       const groups = new Map();
-      for (const m of all) {
+      for (const m of filtered) {
         const sid = String(m.studentId);
-        if (!groups.has(sid)) groups.set(sid, []);
-        groups.get(sid).push(m);
+        const rt = VALID_RECIPIENT_TYPES.includes(String(m.recipientType || '')) ? String(m.recipientType) : 'admin';
+        const gk = `${sid}|${rt}`;
+        if (!groups.has(gk)) groups.set(gk, []);
+        groups.get(gk).push(m);
       }
       const conversations = [];
-      for (const [sid, msgs] of groups) {
+      for (const [gk, msgs] of groups) {
+        const [sid, rt] = gk.split('|');
         const sorted = [...msgs].sort((a, b) => {
           const ta = a.created_at ? String(a.created_at) : '';
           const tb = b.created_at ? String(b.created_at) : '';
@@ -219,11 +279,14 @@ exports.handler = async (event) => {
           studentId: sid,
           studentName: sObj ? (sObj.nickname || sid) : sid,
           titleLevel: sObj ? (sObj.titleLevel || 0) : 0,
+          recipientType: rt,
+          recipientTypeLabel: rt === 'owner' ? '👑 私信站主' : '🛡️ 私信管理员',
           lastMessage: last ? last.content : '',
           lastMessageAt: last ? (last.created_at || '') : '',
           lastSender: last ? (last.sender || '') : '',
           unread,
-          totalMessages: msgs.length
+          totalMessages: msgs.length,
+          convKey: gk
         });
       }
       // 按最后消息时间倒序
@@ -235,7 +298,12 @@ exports.handler = async (event) => {
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({ mode: 'list', conversations, total: conversations.length })
+        body: JSON.stringify({
+          mode: 'list',
+          viewerRole, // 'owner'/'admin'/'student'/null
+          conversations,
+          total: conversations.length
+        })
       };
     }
 
@@ -247,15 +315,19 @@ exports.handler = async (event) => {
       // ---- DM3: POST /api/direct-messages/mark-read  标已读 ----
       if (path.endsWith('/mark-read')) {
         const { list: students } = await readFile(FILE_STUDENTS);
-        const { list: all, sha } = await readFile(FILE_DM);
+        const { list: rawAll, sha } = await readFile(FILE_DM);
+        const all = migrateDmV5(rawAll);
         let changed = 0;
         let targetStudentId = null;
+        // V5：标记已读时也区分 recipientType
+        const bodyRt = VALID_RECIPIENT_TYPES.includes(String(body.recipientType || '')) ? String(body.recipientType) : null;
         if (isAdmin) {
           targetStudentId = body.studentId ? String(body.studentId) : null;
           const markSender = 'student';
           for (const m of all) {
-            const match = targetStudentId ? String(m.studentId) === String(targetStudentId) : true;
-            if (match && m.sender === markSender && !m.read) {
+            const matchSid = targetStudentId ? String(m.studentId) === String(targetStudentId) : true;
+            const matchRt = bodyRt ? String(m.recipientType || 'admin') === bodyRt : true;
+            if (matchSid && matchRt && m.sender === markSender && !m.read) {
               m.read = true;
               m.read_at = toBeijingTime();
               changed++;
@@ -269,7 +341,8 @@ exports.handler = async (event) => {
           if (!me) return { statusCode: 401, headers, body: JSON.stringify({ error: '身份验证失败' }) };
           targetStudentId = String(me.id);
           for (const m of all) {
-            if (String(m.studentId) === targetStudentId && m.sender === 'admin' && !m.read) {
+            const matchRt = bodyRt ? String(m.recipientType || 'admin') === bodyRt : true;
+            if (String(m.studentId) === targetStudentId && matchRt && m.sender === 'admin' && !m.read) {
               m.read = true;
               m.read_at = toBeijingTime();
               changed++;
@@ -277,7 +350,7 @@ exports.handler = async (event) => {
           }
         }
         if (changed > 0) await writeFile(FILE_DM, all, sha, `DM mark-read (${changed})`);
-        return { statusCode: 200, headers, body: JSON.stringify({ ok: true, markedCount: changed, targetStudentId }) };
+        return { statusCode: 200, headers, body: JSON.stringify({ ok: true, markedCount: changed, targetStudentId, recipientType: bodyRt }) };
       }
 
       // ---- DM2: 默认 POST → 发送消息 ----
@@ -286,8 +359,11 @@ exports.handler = async (event) => {
       if (content.length > 1000) return { statusCode: 400, headers, body: JSON.stringify({ error: '单条消息不超过1000字' }) };
 
       const { list: students } = await readFile(FILE_STUDENTS);
-      const { list: all, sha } = await readFile(FILE_DM);
+      const { list: rawAll, sha } = await readFile(FILE_DM);
+      const all = migrateDmV5(rawAll);
       let sender, studentId, studentName;
+      // V5：recipientType（私信对象：admin=私信管理员；owner=私信站主）
+      let recipientType = VALID_RECIPIENT_TYPES.includes(String(body.recipientType || '')) ? String(body.recipientType) : 'admin';
 
       if (isAdmin) {
         sender = 'admin';
@@ -296,6 +372,18 @@ exports.handler = async (event) => {
         const s = students.find(x => String(x.id) === studentId);
         if (!s) return { statusCode: 404, headers, body: JSON.stringify({ error: '同学不存在' }) };
         studentName = s.nickname || studentId;
+        // V5：管理员/站主回复该同学某条私信 → 保持对方发过来时的 recipientType；body 如果指定了就以 body 为准
+        if (body.recipientType && VALID_RECIPIENT_TYPES.includes(String(body.recipientType))) {
+          recipientType = String(body.recipientType);
+        } else {
+          // 默认：找这个同学最近一条 student 发给我的那条，沿用它的 recipientType
+          const lastStudentMsg = [...all]
+            .filter(m => String(m.studentId) === studentId && m.sender === 'student')
+            .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))[0];
+          if (lastStudentMsg && VALID_RECIPIENT_TYPES.includes(String(lastStudentMsg.recipientType || ''))) {
+            recipientType = String(lastStudentMsg.recipientType);
+          }
+        }
       } else {
         sender = 'student';
         let me = null;
@@ -312,6 +400,7 @@ exports.handler = async (event) => {
         studentId,
         studentName,
         sender,
+        recipientType,
         content,
         created_at: toBeijingTime(),
         read: false,
@@ -319,11 +408,11 @@ exports.handler = async (event) => {
       };
       let nextList = all.concat([newMsg]);
       const { trimmed, removed } = trimConv(nextList, studentId);
-      await writeFile(FILE_DM, trimmed, sha, removed ? `DM from ${sender} to ${studentId} (trim ${removed})` : `DM from ${sender} to ${studentId}`);
+      await writeFile(FILE_DM, trimmed, sha, removed ? `DM ${sender}->${recipientType} ${studentId} (trim ${removed})` : `DM ${sender}->${recipientType} ${studentId}`);
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({ ok: true, message: newMsg, trimmedOldMsgs: removed })
+        body: JSON.stringify({ ok: true, message: newMsg, recipientType, trimmedOldMsgs: removed })
       };
     }
 

@@ -983,6 +983,33 @@
       0%, 100% { transform: scale(1); }
       50%      { transform: scale(1.15); }
     }
+    /* V5：流光扫光（管理员蓝色框、站主金色框通用） */
+    @keyframes shine-sweep {
+      0%   { transform: translateX(-60%) skewX(-20deg); }
+      100% { transform: translateX(160%) skewX(-20deg); }
+    }
+    .detail-title-wrap.owner-glow {
+      background: linear-gradient(135deg,#FEF3C7 0%,#FDE68A 40%,#FBBF24 100%);
+      box-shadow: 0 0 18px rgba(251,191,36,0.55);
+    }
+    .detail-title-wrap.admin-glow {
+      background: linear-gradient(135deg,#E0F2FE 0%,#BAE6FD 40%,#7DD3FC 100%);
+      box-shadow: 0 0 18px rgba(14,165,233,0.55);
+    }
+    .shine-sweep-layer {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      background: linear-gradient(100deg, transparent 25%, rgba(255,255,255,0.65) 50%, transparent 75%);
+      animation: shine-sweep 3.2s linear infinite;
+      z-index: 0;
+    }
+    .detail-title-wrap > *:not(.shine-sweep-layer) {
+      position: relative;
+      z-index: 1;
+    }
     .mini-title-badge {
       display: inline-block;
       margin-left: 8px;
@@ -1657,9 +1684,16 @@
       // 管理员收件箱用：会话列表
       conversations: [],
       // 当前选中会话的消息（管理员或同学端单聊）
-      active: { studentId: null, studentName: '', messages: [] },
+      active: { studentId: null, studentName: '', messages: [], conversation: null },
       // 同学端自己的会话消息（当 studentSession 存在时）
-      mine: { messages: [] }
+      // V5：按 recipientType 分成两份（admin/owner）
+      mine: {
+        messages: [],             // 兼容旧字段（不推荐再使用）
+        byType: {
+          admin: [],
+          owner: []
+        }
+      }
     });
     // 云端连接状态：'checking' | 'cloud' | 'error'
     const cloudStatus = ref('checking');
@@ -1744,6 +1778,11 @@
         return String(me.ownerId) === String(sess.student.id);
       },
       get directMineMessages() { return (directMessagesStore.mine && directMessagesStore.mine.messages) || []; },
+      // V5：分别拿按私信对象的历史消息
+      getMineMessagesByType(type) {
+        if (!directMessagesStore.mine || !directMessagesStore.mine.byType) return [];
+        return directMessagesStore.mine.byType && (directMessagesStore.mine.byType[type] || []);
+      },
 
       getCloudStatus() { return { status: cloudStatus.value, error: cloudError.value }; },
 
@@ -1769,29 +1808,44 @@
 
       // ===== 学生档案 =====
       async getStudents() {
-        const r = await fetchWithRetry('/api/students', { headers: this._getHeaders(true) }, '获取学生档案');
+        const r = await fetchWithRetry('/api/students', { headers: this._getHeaders(true, true) }, '获取学生档案');
+        // V5: 返回 { data: [], me: {}, isGlobalAdmin: boolean }
+        if (r.data && Array.isArray(r.data.data)) {
+          studentsStore.list = r.data.data;
+          if (r.data.data.length > 0) idCounter = Math.max(...r.data.data.map(s => s.id), 0) + 1;
+          // 把权限信息也挂到 store 上供前端用
+          studentsStore._me = r.data.me || null;
+          studentsStore._isGlobalAdmin = !!r.data.isGlobalAdmin;
+          return r.data.data;
+        }
+        // 兼容老返回（纯数组）
         if (Array.isArray(r.data)) {
           studentsStore.list = r.data;
           if (r.data.length > 0) idCounter = Math.max(...r.data.map(s => s.id), 0) + 1;
+          studentsStore._me = null;
+          studentsStore._isGlobalAdmin = !!adminToken;
           return r.data;
         }
         throw new Error('学生数据格式错误');
       },
       async addStudent(student) {
-        if (!adminToken) throw new Error('请先登录管理员账号');
+        // V5: 管理员 / 站主 登录了都能新增（通过 X-Student-Token 或 X-Admin-Token）
+        const hasAuth = !!adminToken || (studentSession.value && (studentSession.value.student.role === 'owner' || studentSession.value.student.role === 'admin'));
+        if (!hasAuth) throw new Error('仅管理员可新增同学档案');
         const r = await fetchWithRetry('/api/students', {
           method: 'POST',
-          headers: this._getHeaders(true),
+          headers: this._getHeaders(true, true),
           body: JSON.stringify(student)
         }, `添加学生:${student.nickname}`);
         studentsStore.list.push(r.data);
         return r.data;
       },
       async updateStudent(id, updates) {
-        if (!adminToken) throw new Error('请先登录管理员账号');
+        const hasAuth = !!adminToken || (studentSession.value && (studentSession.value.student.role === 'owner' || studentSession.value.student.role === 'admin'));
+        if (!hasAuth) throw new Error('仅管理员可编辑同学档案');
         const r = await fetchWithRetry(`/api/students/${id}`, {
           method: 'PUT',
-          headers: this._getHeaders(true),
+          headers: this._getHeaders(true, true),
           body: JSON.stringify(updates)
         }, `更新学生 id:${id}`);
         const idx = studentsStore.list.findIndex(s => s.id == id);
@@ -1799,14 +1853,80 @@
         return r.data;
       },
       async deleteStudent(id) {
-        if (!adminToken) throw new Error('请先登录管理员账号');
+        const hasAuth = !!adminToken || (studentSession.value && studentSession.value.student.role === 'owner');
+        if (!hasAuth) throw new Error('仅站主可删除同学档案');
         await fetchWithRetry(`/api/students/${id}`, {
           method: 'DELETE',
-          headers: this._getHeaders(true)
+          headers: this._getHeaders(true, true)
         }, `删除学生 id:${id}`);
         const idx = studentsStore.list.findIndex(s => s.id == id);
         if (idx > -1) studentsStore.list.splice(idx, 1);
         return true;
+      },
+      // ===== V5: 角色 / 密码 =====
+      async changePassword(oldPassword, newPassword) {
+        const sess = studentSession.value;
+        if (!sess || !sess.student) throw new Error('请先登录后再修改密码');
+        const r = await fetchWithRetry(`/api/students/${sess.student.id}/change-password`, {
+          method: 'POST',
+          headers: this._getHeaders(false, true),
+          body: JSON.stringify({ oldPassword, newPassword })
+        }, '修改登录密码');
+        if (r.data && r.data.ok) {
+          // 更新本地 studentSession 里的 passwordChangedAt
+          const updStudent = { ...sess.student, passwordChangedAt: r.data.passwordChangedAt };
+          studentSession.value = { token: sess.token, student: updStudent };
+          sessionStorage.setItem('STUDENT_INFO', JSON.stringify(updStudent));
+          return r.data;
+        }
+        throw new Error((r.data && r.data.error) || '修改密码失败');
+      },
+      async grantAdmin(studentId) {
+        const r = await fetchWithRetry(`/api/students/${studentId}/grant-admin`, {
+          method: 'POST',
+          headers: this._getHeaders(false, true)
+        }, '授予管理员权限');
+        if (r.data && r.data.ok) {
+          const idx = studentsStore.list.findIndex(s => String(s.id) === String(studentId));
+          if (idx > -1) studentsStore.list[idx] = r.data.student;
+          return r.data.student;
+        }
+        throw new Error((r.data && r.data.error) || '授予失败');
+      },
+      async revokeAdmin(studentId) {
+        const r = await fetchWithRetry(`/api/students/${studentId}/revoke-admin`, {
+          method: 'POST',
+          headers: this._getHeaders(false, true)
+        }, '撤销管理员权限');
+        if (r.data && r.data.ok) {
+          const idx = studentsStore.list.findIndex(s => String(s.id) === String(studentId));
+          if (idx > -1) studentsStore.list[idx] = r.data.student;
+          return r.data.student;
+        }
+        throw new Error((r.data && r.data.error) || '撤销失败');
+      },
+      async transferOwner(studentId, ownerPassword) {
+        const r = await fetchWithRetry(`/api/students/${studentId}/transfer-owner`, {
+          method: 'POST',
+          headers: this._getHeaders(false, true),
+          body: JSON.stringify({ ownerPassword })
+        }, '转让站主身份');
+        if (r.data && r.data.ok) {
+          // 同步 studentsStore 双方角色
+          const oldIdx = studentsStore.list.findIndex(s => String(s.id) === String(r.data.oldOwner.id));
+          if (oldIdx > -1) studentsStore.list[oldIdx] = { ...studentsStore.list[oldIdx], role: r.data.oldOwner.role, adminFrame: false };
+          const newIdx = studentsStore.list.findIndex(s => String(s.id) === String(r.data.newOwner.id));
+          if (newIdx > -1) studentsStore.list[newIdx] = { ...studentsStore.list[newIdx], role: r.data.newOwner.role, adminFrame: true };
+          // 如果我是原站主，也要更新 studentSession（我变成普通同学）
+          const sess = studentSession.value;
+          if (sess && sess.student && String(sess.student.id) === String(r.data.oldOwner.id)) {
+            const upd = { ...sess.student, role: 'student', adminFrame: false };
+            studentSession.value = { token: sess.token, student: upd };
+            sessionStorage.setItem('STUDENT_INFO', JSON.stringify(upd));
+          }
+          return r.data;
+        }
+        throw new Error((r.data && r.data.error) || '转让失败');
       },
 
       // ===== 待审核申请 =====
@@ -1948,12 +2068,13 @@
       isAdmin() { return !!adminToken; },
 
       // ===== 同学端：登录 / 会话 / 登出 =====
-      async studentLogin(studentName, studentPassword) {
+      async studentLogin(studentName, studentPassword, opts = {}) {
+        const adminLogin = !!opts.adminLogin;
         const r = await fetchWithRetry('/api/student-login', {
           method: 'POST',
           headers: this._getHeaders(false),
-          body: JSON.stringify({ studentName, studentPassword })
-        }, '同学登录');
+          body: JSON.stringify({ studentName, studentPassword, adminLogin })
+        }, adminLogin ? '管理员入口登录' : '同学登录');
         if (r.data && r.data.ok) {
           sessionStorage.setItem('STUDENT_TOKEN', r.data.token);
           sessionStorage.setItem('STUDENT_INFO', JSON.stringify(r.data.student));
@@ -1961,6 +2082,17 @@
           return r.data;
         }
         throw new Error((r.data && r.data.error) || '登录失败');
+      },
+      // V5: 判断当前同学登录的人是否有后台权限（owner/admin 或 全局 ADMIN_TOKEN 登录）
+      hasAnyAdminPermission() {
+        if (adminToken) return true;
+        const s = studentSession.value && studentSession.value.student;
+        if (!s) return false;
+        return s.role === 'owner' || s.role === 'admin';
+      },
+      isOwner() {
+        const s = studentSession.value && studentSession.value.student;
+        return !!adminToken || (s && s.role === 'owner');
       },
       async verifyStudentSession(token) {
         const r = await fetchWithRetry('/api/student-login/me', {
@@ -2286,9 +2418,9 @@
         throw new Error((r.data && r.data.error) || '删除失败');
       },
 
-      // ===== 单聊（同学 ↔ 管理员） =====
-      async loadDirectMessages(markRead = true) {
-        // 管理员端：返回会话列表；同学端：返回自己会话的消息
+      // ===== 单聊（同学 ↔ 管理员 / 同学 ↔ 站主，V5 按 recipientType 分离） =====
+      async loadDirectMessages(markRead = true, recipientType = null) {
+        // 管理员端：返回会话列表；同学端：返回自己会话的消息（按 recipientType 拆分）
         const sess = studentSession.value;
         if (adminToken) {
           const list = await this.getDirectMessages({});
@@ -2298,25 +2430,36 @@
           const qs = {
             studentId: String(sess.student.id),
             studentName: sess.student.nickname || '',
-            // 同学端 API 支持密码鉴权，用 header token 也行，这里密码没存，给 token 就行
             studentPassword: '__xst__'
           };
-          // 直接调接口同时带 X-Student-Token，后端若有 header 优先 header
           const r = await fetchWithRetry(
             `/api/direct-messages?studentId=${encodeURIComponent(qs.studentId)}&studentName=${encodeURIComponent(qs.studentName)}&studentPassword=__unused__`,
             { headers: this._getHeaders(false, true) },
             '读取同学单聊消息'
           );
           const data = r.data || {};
+          let trimmed = 0;
           if (data && data.mode === 'conversation' && Array.isArray(data.messages)) {
-            // 标记已读（如果需要）
-            if (markRead && data.messages.some(m => m.sender === 'admin' && !m.read)) {
-              try { await this.markDirectMessagesRead({ studentName: sess.student.nickname, studentPassword: '__unused__' }); } catch {}
+            const all = data.messages;
+            // 标记已读（如果需要，按 recipientType 过滤）
+            if (markRead) {
+              const rts = recipientType ? [recipientType] : ['admin', 'owner'];
+              const needMark = all.some(m => m.sender === 'admin' && !m.read && rts.includes(String(m.recipientType || 'admin')));
+              if (needMark) {
+                try {
+                  for (const rt of rts) {
+                    await this.markDirectMessagesRead({ studentName: sess.student.nickname, studentPassword: '__unused__', recipientType: rt });
+                  }
+                } catch {}
+              }
             }
-            directMessagesStore.mine.messages = data.messages;
-            return 0;
+            // 回填兼容用的 messages（包含所有类型，兼容旧逻辑）
+            directMessagesStore.mine.messages = all;
+            // V5：按 recipientType 拆分
+            directMessagesStore.mine.byType.admin = all.filter(m => String(m.recipientType || 'admin') === 'admin');
+            directMessagesStore.mine.byType.owner = all.filter(m => String(m.recipientType || 'admin') === 'owner');
           }
-          return 0;
+          return trimmed;
         }
         return 0;
       },
@@ -2356,10 +2499,13 @@
         return r.data;
       },
       async sendDirectMessage(payload) {
-        // 同学端调用：payload 是 string 内容，按学生身份构造 body
+        // 同学端调用：payload 是 string 或 {content, recipientType}（admin=私信管理员 / owner=私信站主）
         const sess = studentSession.value;
         if (!sess || !sess.student) throw new Error('请先登录同学身份');
         const content = typeof payload === 'string' ? String(payload) : String(payload.content || '');
+        const recipientType = (typeof payload === 'object' && payload && (payload.recipientType === 'admin' || payload.recipientType === 'owner'))
+          ? payload.recipientType
+          : 'admin';
         if (!content.trim()) throw new Error('内容不能为空');
         const r = await fetchWithRetry('/api/direct-messages', {
           method: 'POST',
@@ -2367,6 +2513,7 @@
           body: JSON.stringify({
             studentName: sess.student.nickname || '',
             studentPassword: '__unused__',
+            recipientType,
             content
           })
         }, '发送单聊消息');
@@ -2379,17 +2526,27 @@
         }
         throw new Error((r.data && r.data.error) || '发送失败');
       },
-      async sendDirectMessageAsAdmin(studentId, content) {
+      async sendDirectMessageAsAdmin(studentId, content, opts = {}) {
+        // opts.recipientType: 'admin'|'owner'（可选，不填后端自动按"该同学最近一条给我的私信类型"）
         if (!adminToken) throw new Error('请先登录管理员');
+        const body = { studentId, content };
+        if (opts && (opts.recipientType === 'admin' || opts.recipientType === 'owner')) {
+          body.recipientType = opts.recipientType;
+        }
         const r = await fetchWithRetry('/api/direct-messages', {
           method: 'POST',
           headers: this._getHeaders(true),
-          body: JSON.stringify({ studentId, content })
+          body: JSON.stringify(body)
         }, `管理员回复单聊 ${studentId}`);
         if (r.data && r.data.ok) {
-          // 乐观更新当前 active 消息列表
-          if (directMessagesStore.active && String(directMessagesStore.active.studentId) === String(studentId)) {
-            directMessagesStore.active.messages = [...(directMessagesStore.active.messages || []), r.data.message];
+          // 乐观更新当前 active 消息列表（按 studentId + recipientType 匹配）
+          const active = directMessagesStore.active;
+          if (active && String(active.studentId) === String(studentId)) {
+            const activeRt = (active.conversation && active.conversation.recipientType) || null;
+            const msgRt = r.data.message && r.data.message.recipientType;
+            if (!activeRt || activeRt === msgRt) {
+              directMessagesStore.active.messages = [...(directMessagesStore.active.messages || []), r.data.message];
+            }
           }
           return r.data;
         }
@@ -2461,52 +2618,128 @@
             <div class="entry-logo">🗺️</div>
             <h1 class="entry-title calligraphy">高中同学全国蹭饭图</h1>
             <p class="entry-subtitle xiaowei">看看他们都在哪</p>
-            <div class="entry-buttons">
-              <button class="entry-btn entry-btn-user" @click="$emit('navigate', 'home')">
+            <div class="entry-buttons" style="flex-wrap:wrap;">
+              <!-- ① 用户入口：任何同学姓名+密码登录 → 进 MainPage -->
+              <button class="entry-btn entry-btn-user" @click="openUserLogin" style="min-width:260px;">
                 <span class="entry-icon">👥</span>
                 <span class="entry-btn-title">用户入口</span>
-                <span class="entry-btn-desc">查看同学分布地图 + 实名制发言</span>
+                <span class="entry-btn-desc">查看同学地图 · 实名制发言 · 申请社区</span>
               </button>
-              <!-- V4: 游客入口按钮 -->
-              <button class="entry-btn entry-btn-guest" @click="enterAsGuest" style="background:linear-gradient(135deg,#8B5CF6,#7C3AED);box-shadow:0 12px 28px rgba(139,92,246,0.35);color:#fff;">
+              <!-- ② V5：管理员入口 → 必须站主/管理员姓名+密码，直接进后台 -->
+              <button class="entry-btn entry-btn-admin" @click="openAdminLogin" style="min-width:260px;background:linear-gradient(135deg,#0EA5E9,#0284C7);color:#fff;border:1px solid #0369A1;box-shadow:0 12px 28px rgba(14,165,233,0.35);">
+                <span class="entry-icon">🛡️</span>
+                <span class="entry-btn-title">管理员入口</span>
+                <span class="entry-btn-desc">仅站主/管理员可登录 · 进入后台</span>
+              </button>
+              <!-- ③ 游客入口 -->
+              <button class="entry-btn entry-btn-guest" @click="enterAsGuest" style="min-width:260px;background:linear-gradient(135deg,#8B5CF6,#7C3AED);box-shadow:0 12px 28px rgba(139,92,246,0.35);color:#fff;">
                 <span class="entry-icon">👀</span>
                 <span class="entry-btn-title">游客入口</span>
                 <span class="entry-btn-desc">看地图/公告，姓名仅显示首字母</span>
               </button>
-              <button class="entry-btn entry-btn-admin" @click="showAdminLogin = true">
-                <span class="entry-icon">🔧</span>
-                <span class="entry-btn-title">管理员入口</span>
-                <span class="entry-btn-desc">档案管理与审核</span>
-              </button>
             </div>
-            <div class="entry-footer xiaowei">
-              同窗情谊 · 山高水长
+            <div class="entry-footer xiaowei" style="display:flex;flex-direction:column;gap:8px;">
+              <div>同窗情谊 · 山高水长</div>
+              <div style="font-size:12px;color:#94A3B8;">
+                <a href="javascript:void(0)" @click="showGlobalAdminLogin = true" style="color:#94A3B8;text-decoration:underline;cursor:pointer;">🔧 超级管理员密码登录（备用）</a>
+              </div>
             </div>
           </div>
 
-          <!-- 管理员登录弹窗 -->
+          <!-- ====== V5：管理员入口登录弹窗（姓名+密码，必须 role=owner/admin）====== -->
           <transition name="modal">
             <div v-if="showAdminLogin" class="modal-mask" @click.self="showAdminLogin = false">
-              <div class="modal-content" style="max-width:380px;">
-                <div class="modal-title calligraphy">🔐 管理员登录</div>
+              <div class="modal-content" style="max-width:440px;">
+                <div class="modal-title calligraphy">🛡️ 管理员入口登录</div>
+                <div style="padding:4px 0 4px 0;font-size:13px;font-weight:700;color:#0369A1;text-align:center;">
+                  ⚠️ 仅限「站主」或「被站主授权的管理员」登录，其他同学请走「用户入口」。
+                </div>
+                <div style="padding:6px 0 10px 0;font-size:13px;color:#475569;">
+                  <p style="margin:4px 0;">🔑 默认密码：</p>
+                  <ul style="padding-left:18px;margin:4px 0;line-height:1.8;">
+                    <li>站主（王鹤澄）：<b>123456wHc</b>（首次登录后可自行修改 1 次）</li>
+                    <li>管理员/普通同学：<b>123456</b>（首次登录后可自行修改 1 次）</li>
+                  </ul>
+                </div>
                 <div class="form-group">
-                  <label>请输入管理员密码</label>
+                  <label>管理员姓名 <span style="color:#C0002A;font-weight:700;">*</span></label>
+                  <input type="text" required v-model="adminLoginForm.name" placeholder="请输入管理员/站主完整姓名" @keyup.enter="doAdminLogin">
+                </div>
+                <div class="form-group">
+                  <label>登录密码 <span style="color:#C0002A;font-weight:700;">*</span></label>
+                  <input type="password" required maxlength="32" v-model="adminLoginForm.password" placeholder="6 位以上专属密码" @keyup.enter="doAdminLogin">
+                </div>
+                <div v-if="adminLoginError" style="color:#C0002A;font-size:13px;margin-top:6px;text-align:center;">❌ {{ adminLoginError }}</div>
+                <div class="form-actions">
+                  <button class="btn btn-secondary" @click="showAdminLogin = false">取消</button>
+                  <button class="btn btn-primary" @click="doAdminLogin" :disabled="adminLoginLoading" style="background:linear-gradient(135deg,#0EA5E9,#0284C7);border-color:#0369A1;">
+                    {{ adminLoginLoading ? '登录中...' : '🛡️ 进入管理后台' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </transition>
+
+          <!-- ====== V5：用户入口登录弹窗（任何同学姓名+密码，进 MainPage）====== -->
+          <transition name="modal">
+            <div v-if="showUserLogin" class="modal-mask" @click.self="showUserLogin = false">
+              <div class="modal-content" style="max-width:440px;">
+                <div class="modal-title calligraphy">👥 用户入口登录</div>
+                <div style="padding:4px 0 4px 0;font-size:13px;font-weight:700;color:#92400E;text-align:center;">
+                  ⚠️ 「完整姓名」与「密码」两项均为必填，缺一不可！
+                </div>
+                <div style="padding:6px 0 10px 0;font-size:13px;color:#475569;">
+                  <p style="margin:4px 0;">🔑 默认密码：</p>
+                  <ul style="padding-left:18px;margin:4px 0;line-height:1.8;">
+                    <li>站主（王鹤澄）：<b>123456wHc</b>（首次登录后可自行修改 1 次）</li>
+                    <li>其他同学：<b>123456</b>（首次登录后可自行修改 1 次）</li>
+                  </ul>
+                </div>
+                <div class="form-group">
+                  <label>同学姓名 <span style="color:#C0002A;font-weight:700;">*</span>（与档案一致，完整全名）</label>
+                  <input type="text" required v-model="userLoginForm.name" placeholder="请输入您的完整姓名，例如：王小明" @keyup.enter="doUserLogin">
+                </div>
+                <div class="form-group">
+                  <label>专属登录密码 <span style="color:#C0002A;font-weight:700;">*</span></label>
+                  <input type="password" required maxlength="32" v-model="userLoginForm.password" placeholder="请输入 6 位以上登录密码（默认 123456）" @keyup.enter="doUserLogin">
+                </div>
+                <div v-if="userLoginError" style="color:#C0002A;font-size:13px;margin-top:6px;text-align:center;">❌ {{ userLoginError }}</div>
+                <div class="form-actions">
+                  <button class="btn btn-secondary" @click="showUserLogin = false">取消</button>
+                  <button class="btn btn-primary" @click="doUserLogin" :disabled="userLoginLoading">
+                    {{ userLoginLoading ? '登录中...' : '✅ 进入用户中心' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </transition>
+
+          <!-- ====== 备用：超级管理员（全局 ADMIN_TOKEN 密码）登录弹窗 ====== -->
+          <transition name="modal">
+            <div v-if="showGlobalAdminLogin" class="modal-mask" @click.self="showGlobalAdminLogin = false">
+              <div class="modal-content" style="max-width:380px;">
+                <div class="modal-title calligraphy">🔧 超级管理员密码登录（备用）</div>
+                <div style="font-size:12px;color:#94A3B8;margin:4px 0 10px 0;text-align:center;">
+                  站主一般请走「🛡️ 管理员入口」用姓名+密码登录；此入口仅在极端情况下备用。
+                </div>
+                <div class="form-group">
+                  <label>请输入超级管理员密码</label>
                   <input
-                    ref="pwdInput"
+                    ref="globalPwdInput"
                     type="password"
                     v-model="adminPwd"
                     :class="{ 'input-error': pwdError }"
                     :style="{ animation: pwdShake ? 'shake 0.4s ease' : 'none' }"
-                    @keyup.enter="doAdminLogin"
-                    placeholder="请输入密码"
+                    @keyup.enter="doGlobalAdminLogin"
+                    placeholder="请输入备用超级管理员密码"
                   >
                 </div>
                 <div v-if="pwdError" style="color:#E74C3C;font-size:13px;margin-top:8px;text-align:center;">
                   密码错误，请重试
                 </div>
                 <div class="form-actions">
-                  <button class="btn btn-secondary" @click="showAdminLogin = false">取消</button>
-                  <button class="btn btn-primary" @click="doAdminLogin">登录</button>
+                  <button class="btn btn-secondary" @click="showGlobalAdminLogin = false">取消</button>
+                  <button class="btn btn-primary" @click="doGlobalAdminLogin">登录</button>
                 </div>
               </div>
             </div>
@@ -2516,11 +2749,36 @@
       props: [],
       emits: ['navigate'],
       setup(props, { emit }) {
-        const showAdminLogin = ref(false);
+        // === 备用：超级管理员（全局 ADMIN_TOKEN 密码）登录 ===
+        const showGlobalAdminLogin = ref(false);
         const adminPwd = ref('');
         const pwdError = ref(false);
         const pwdShake = ref(false);
-        const pwdInput = ref(null);
+        const globalPwdInput = ref(null);
+
+        // === V5：管理员入口（姓名+密码，必须 role=owner/admin）===
+        const showAdminLogin = ref(false);
+        const adminLoginForm = reactive({ name: '', password: '' });
+        const adminLoginLoading = ref(false);
+        const adminLoginError = ref('');
+
+        // === V5：用户入口（任何同学姓名+密码）===
+        const showUserLogin = ref(false);
+        const userLoginForm = reactive({ name: '', password: '' });
+        const userLoginLoading = ref(false);
+        const userLoginError = ref('');
+
+        // === 打开弹窗便捷方法 ===
+        const openAdminLogin = () => {
+          adminLoginForm.name = ''; adminLoginForm.password = '';
+          adminLoginError.value = ''; adminLoginLoading.value = false;
+          showAdminLogin.value = true;
+        };
+        const openUserLogin = () => {
+          userLoginForm.name = ''; userLoginForm.password = '';
+          userLoginError.value = ''; userLoginLoading.value = false;
+          showUserLogin.value = true;
+        };
 
         // V4: 游客入口：进入时设置 isGuestMode=true + 清空任何已有同学会话（避免冲突）
         const enterAsGuest = () => {
@@ -2531,12 +2789,66 @@
             '仅查看：同学姓名将仅显示拼音首字母缩写（例如 whc），\n可看公告 / 地图 / 社区列表，但不能留言和操作。', 4000);
         };
 
+        // === V5：管理员入口登录（必须 role=owner/admin）===
         const doAdminLogin = async () => {
+          adminLoginError.value = '';
+          const name = (adminLoginForm.name || '').trim();
+          const pwd = adminLoginForm.password || '';
+          if (name.length < 2) { adminLoginError.value = '请输入管理员/站主的完整姓名（至少 2 字）'; return; }
+          if (pwd.length < 4) { adminLoginError.value = '密码长度至少 4 位'; return; }
+          adminLoginLoading.value = true;
+          try {
+            const res = await DataProvider.studentLogin(name, pwd, true);
+            if (res.ok) {
+              isGuestMode.value = false;
+              showAdminLogin.value = false;
+              showSuccessModal('🛡️ 管理员登录成功',
+                `欢迎，${res.student.name}${res.isOwner ? '（站主）' : res.isAdmin ? '（管理员）' : ''}！已进入后台。`, 3200);
+              emit('navigate', 'admin');
+            } else {
+              adminLoginError.value = res.error || '登录失败，请检查姓名和密码';
+            }
+          } catch (e) {
+            adminLoginError.value = '登录异常：' + (e.message || String(e));
+          } finally {
+            adminLoginLoading.value = false;
+          }
+        };
+
+        // === V5：用户入口登录（任何同学，进 MainPage）===
+        const doUserLogin = async () => {
+          userLoginError.value = '';
+          const name = (userLoginForm.name || '').trim();
+          const pwd = userLoginForm.password || '';
+          if (name.length < 2) { userLoginError.value = '请输入完整姓名（至少 2 字）'; return; }
+          if (pwd.length < 4) { userLoginError.value = '密码长度至少 4 位'; return; }
+          userLoginLoading.value = true;
+          try {
+            const res = await DataProvider.studentLogin(name, pwd, false);
+            if (res.ok) {
+              isGuestMode.value = false;
+              showUserLogin.value = false;
+              showSuccessModal('✅ 登录成功',
+                `欢迎回来，${res.student.name}！\n${res.isOwner ? '您是站主，可前往「管理员入口」管理全站。' :
+                  res.isAdmin ? '您是管理员，可前往「管理员入口」操作后台。' :
+                  '您可自行修改密码（限 1 次）并完善个人信息。'}`, 3800);
+              emit('navigate', 'home');
+            } else {
+              userLoginError.value = res.error || '登录失败，请检查姓名和密码';
+            }
+          } catch (e) {
+            userLoginError.value = '登录异常：' + (e.message || String(e));
+          } finally {
+            userLoginLoading.value = false;
+          }
+        };
+
+        // === 备用：超级管理员（全局 ADMIN_TOKEN 密码）登录 ===
+        const doGlobalAdminLogin = async () => {
           const ok = await DataProvider.adminLogin(adminPwd.value);
           if (ok) {
-            showAdminLogin.value = false;
+            showGlobalAdminLogin.value = false;
             adminPwd.value = '';
-            // V4: 管理员身份需退出游客模式
             isGuestMode.value = false;
             emit('navigate', 'admin');
           } else {
@@ -2544,15 +2856,20 @@
             pwdShake.value = true;
             adminPwd.value = '';
             setTimeout(() => pwdShake.value = false, 500);
-            if (pwdInput.value) pwdInput.value.focus();
+            if (globalPwdInput.value) globalPwdInput.value.focus();
           }
         };
 
-        watch(showAdminLogin, (val) => {
-          if (val) nextTick(() => pwdInput.value && pwdInput.value.focus());
+        watch(showGlobalAdminLogin, (val) => {
+          if (val) nextTick(() => globalPwdInput.value && globalPwdInput.value.focus());
         });
 
-        return { showAdminLogin, adminPwd, pwdError, pwdShake, pwdInput, doAdminLogin, enterAsGuest };
+        return {
+          showGlobalAdminLogin, adminPwd, pwdError, pwdShake, globalPwdInput, doGlobalAdminLogin,
+          showAdminLogin, adminLoginForm, adminLoginLoading, adminLoginError, openAdminLogin, doAdminLogin,
+          showUserLogin, userLoginForm, userLoginLoading, userLoginError, openUserLogin, doUserLogin,
+          enterAsGuest
+        };
       }
     };
 
@@ -2626,7 +2943,9 @@
                     </template>
                   </div>
                   <button v-if="myCommunity" class="btn btn-sm btn-danger" @click="confirmLeaveCommunity" title="退出当前社区">🚪 退社</button>
-                  <button class="btn btn-sm btn-secondary" @click="openDirectChat" title="单聊管理员">💌 私信管理员</button>
+                  <!-- V5：私信双入口（管理员独立 / 站主独立） -->
+                      <button class="btn btn-sm btn-secondary" @click="openDirectChat('admin')" title="私信管理员（站主也能看到）">💌 私信管理员</button>
+                      <button class="btn btn-sm btn-secondary" @click="openDirectChat('owner')" title="私信站主（仅站主可见，管理员看不到）" style="background:linear-gradient(135deg,#FEF3C7,#FDE68A);color:#78350F;border:1px solid #D97706;">👑 私信站主</button>
                   <button class="btn btn-sm btn-secondary" @click="studentLogout">✕ 退出登录</button>
                 </div>
               </template>
@@ -3035,20 +3354,44 @@
 
           <!-- 学生详情弹窗 -->
           <transition name="modal">
-            <div v-if="showDetail && selectedStudent" class="modal-mask" @click.self="showDetail = false">
+            <div v-if="showDetail && selectedStudent" class="modal-mask" @click.self="closeDetailModal">
               <div class="modal-content" style="max-width:420px;">
-                <div class="modal-title calligraphy">
+                <div class="modal-title calligraphy" :class="detailTitleWrapClass" :style="detailTitleWrapStyle">
+                  <!-- 扫光层（站主/管理员专有，通过 CSS 伪类控制动画显示） -->
+                  <div v-if="detailTitleWrapClass" class="shine-sweep-layer"></div>
                   <span
                     class="detail-student-name"
-                    :class="{
-                      'name-crimson': (parseInt(selectedStudent.titleLevel) || 0) === 4,
-                      'name-sky': (parseInt(selectedStudent.titleLevel) || 0) === 5
-                    }"
-                  >🧑 {{ displayNameOf(selectedStudent) }}</span> 的档案
+                    :class="[
+                      (parseInt(selectedStudent.titleLevel) || 0) === 4 ? 'name-crimson' : '',
+                      (parseInt(selectedStudent.titleLevel) || 0) === 5 ? 'name-sky' : ''
+                    ]"
+                    :style="detailNameInnerStyle"
+                  >
+                    <template v-if="selectedStudent.role === 'owner'">👑</template>
+                    <template v-else-if="isStudentAdmin(selectedStudent) && selectedStudent.adminFrame">🛡️</template>
+                    <template v-else>🧑</template>
+                    {{ displayNameOf(selectedStudent) }}
+                  </span> 的档案
+                  <span v-if="selectedStudent.role === 'owner'" class="status-badge status-approved" style="margin-left:8px;font-size:12px;background:linear-gradient(135deg,#FBBF24,#F59E0B);color:#451A03;border:1px solid #D97706;">👑 站主</span>
+                  <span v-else-if="isStudentAdmin(selectedStudent)" class="status-badge status-approved" style="margin-left:8px;font-size:12px;background:linear-gradient(135deg,#38BDF8,#0EA5E9);color:#082F49;border:1px solid #0369A1;">🛡️ 管理员</span>
                   <span v-if="selectedStudent.looking_for_food" class="status-badge status-approved" style="margin-left:8px;font-size:12px;">🍜 找饭搭子</span>
                 </div>
                 <div style="padding:8px 0 20px 0;font-size:14px;line-height:2.2;">
-                  <!-- 头衔大徽章（最显眼位置，按色号变色） -->
+                  <!-- V5：管理员蓝色耀眼外框（独立于头衔系统） -->
+                  <div v-if="isStudentAdmin(selectedStudent) && selectedStudent.adminFrame"
+                       style="margin-bottom:16px;padding:14px 16px;border-radius:12px;border:2px solid #0284C7;background:linear-gradient(135deg,#E0F2FE 0%,#BAE6FD 50%,#7DD3FC 100%);box-shadow:0 0 14px rgba(14,165,233,0.45),0 0 30px rgba(56,189,248,0.2) inset,0 0 0 1px rgba(255,255,255,0.6) inset;position:relative;overflow:hidden;">
+                    <div style="position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:linear-gradient(120deg,transparent 30%,rgba(255,255,255,0.55) 50%,transparent 70%);animation:shine-sweep 3.2s linear infinite;"></div>
+                    <div style="position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;">
+                      <div style="display:flex;align-items:center;gap:8px;">
+                        <span style="font-size:20px;">🛡️</span>
+                        <div>
+                          <div style="font-size:14px;font-weight:700;color:#0C4A6E;">官方管理员 · 专属标识</div>
+                          <div style="font-size:12px;color:#0369A1;">此身份由站主授予，蓝色耀眼框独立于头衔称号系统</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <!-- 头衔大徽章（独立系统，可与管理员蓝色框同时存在） -->
                   <div v-if="selectedStudent.title" style="margin-bottom:16px;">
                     <div class="title-detail-badge" :class="{
                       'badge-gold': (parseInt(selectedStudent.titleLevel) || 0) === 1,
@@ -3059,6 +3402,24 @@
                       'badge-normal': !(parseInt(selectedStudent.titleLevel) > 0)
                     }">
                       🏅 {{ selectedStudent.title }}
+                    </div>
+                  </div>
+                  <!-- V5：本人查看 → 密码修改 / 角色/身份 信息 -->
+                  <div v-if="isMyself(selectedStudent)" style="margin-bottom:14px;padding:12px 14px;border-radius:10px;background:#F0F9FF;border:1px dashed #0EA5E9;">
+                    <div style="font-size:13px;font-weight:700;color:#075985;margin-bottom:8px;">🔐 我的账户</div>
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+                      <div style="font-size:12px;color:#334155;">
+                        密码修改：
+                        <template v-if="selectedStudent.passwordChangedAt">
+                          <span style="color:#059669;font-weight:600;">✅ 已于 {{ formatTs(selectedStudent.passwordChangedAt) }} 修改过（限 1 次）</span>
+                        </template>
+                        <template v-else>
+                          <span style="color:#B45309;font-weight:600;">⏳ 尚未修改，默认 123456（站主默认 123456wHc）</span>
+                        </template>
+                      </div>
+                      <button v-if="!selectedStudent.passwordChangedAt" class="btn btn-sm btn-primary" @click="openChangeMyPassword" style="background:linear-gradient(135deg,#0EA5E9,#0284C7);border-color:#0369A1;">
+                        🔑 修改密码（1 次）
+                      </button>
                     </div>
                   </div>
                   <div style="display:flex;padding:8px 0;border-bottom:1px dashed #eee;">
@@ -3093,7 +3454,39 @@
                   </div>
                 </div>
                 <div class="form-actions">
-                  <button class="btn btn-primary" @click="showDetail = false">关闭</button>
+                  <button class="btn btn-primary" @click="closeDetailModal">关闭</button>
+                </div>
+              </div>
+            </div>
+          </transition>
+
+          <!-- V5：本人密码修改弹窗（仅允许 1 次） -->
+          <transition name="modal">
+            <div v-if="showChangePwd" class="modal-mask" @click.self="showChangePwd = false">
+              <div class="modal-content" style="max-width:420px;">
+                <div class="modal-title calligraphy">🔑 修改我的登录密码</div>
+                <div style="padding:6px 0 12px 0;font-size:13px;color:#B45309;font-weight:600;text-align:center;">
+                  ⚠️ 每位同学（含站主）仅允许修改 1 次密码，请务必牢记新密码！
+                </div>
+                <div class="form-group">
+                  <label>原密码 <span style="color:#C0002A;font-weight:700;">*</span></label>
+                  <input type="password" maxlength="32" v-model="changePwdForm.old" placeholder="请输入当前使用的密码">
+                </div>
+                <div class="form-group">
+                  <label>新密码 <span style="color:#C0002A;font-weight:700;">*</span>（至少 6 位）</label>
+                  <input type="password" maxlength="32" v-model="changePwdForm.new1" placeholder="请输入 6 位以上新密码">
+                </div>
+                <div class="form-group">
+                  <label>再输一次新密码 <span style="color:#C0002A;font-weight:700;">*</span></label>
+                  <input type="password" maxlength="32" v-model="changePwdForm.new2" placeholder="再次输入相同新密码">
+                </div>
+                <div v-if="changePwdError" style="color:#C0002A;font-size:13px;margin:6px 0;text-align:center;">❌ {{ changePwdError }}</div>
+                <div v-if="changePwdSuccess" style="color:#059669;font-size:13px;margin:6px 0;text-align:center;">✅ {{ changePwdSuccess }}</div>
+                <div class="form-actions">
+                  <button class="btn btn-secondary" @click="showChangePwd = false">取消</button>
+                  <button class="btn btn-primary" @click="submitChangeMyPassword" :disabled="changePwdLoading" style="background:linear-gradient(135deg,#0EA5E9,#0284C7);border-color:#0369A1;">
+                    {{ changePwdLoading ? '提交中...' : '✅ 确认修改（仅此一次）' }}
+                  </button>
                 </div>
               </div>
             </div>
@@ -3160,10 +3553,13 @@
           <!-- ====== 同学端：登录弹窗 ====== -->
           <transition name="modal">
             <div v-if="showStudentLogin" class="modal-mask" @click.self="showStudentLogin = false">
-              <div class="modal-content" style="max-width:400px;">
+              <div class="modal-content" style="max-width:420px;">
                 <div class="modal-title calligraphy">🎓 同学登录（实名制）</div>
-                <div style="padding:6px 0 12px 0;font-size:13px;color:#888;">
-                  <p style="margin:4px 0;">✅ 输入正确姓名+密码，即可：</p>
+                <div style="padding:4px 0 4px 0;font-size:13px;font-weight:700;color:#92400E;text-align:center;">
+                  ⚠️ 「完整姓名」与「6 位密码」两项均为必填，缺一不可！
+                </div>
+                <div style="padding:8px 0 12px 0;font-size:13px;color:#475569;">
+                  <p style="margin:4px 0;">✅ 登录成功后即可：</p>
                   <ul style="padding-left:18px;margin:6px 0;line-height:1.8;">
                     <li>留言板实名制发言（自动附带上社区名称）</li>
                     <li>申请创建社区 / 申请加入社区 / 退出社区 / 转让社长</li>
@@ -3172,18 +3568,29 @@
                   <p style="margin:6px 0;color:#92400E;">💡 初始密码请联系管理员获取，管理员可查看/重置每位同学密码。</p>
                 </div>
                 <div class="form-group">
-                  <label>同学姓名（与档案一致）</label>
-                  <input type="text" v-model="studentLoginForm.name" placeholder="例如：王小明" @keyup.enter="doStudentLogin">
+                  <label>同学姓名 <span style="color:#C0002A;font-weight:700;">*</span>（与档案一致，完整全名）</label>
+                  <input
+                    type="text"
+                    required
+                    v-model="studentLoginForm.name"
+                    placeholder="请输入您的完整姓名，例如：王小明"
+                    @keyup.enter="doStudentLogin">
                 </div>
                 <div class="form-group">
-                  <label>专属 6 位数字密码</label>
-                  <input type="password" v-model="studentLoginForm.password" placeholder="6 位纯数字" maxlength="10" @keyup.enter="doStudentLogin">
+                  <label>专属 6 位数字密码 <span style="color:#C0002A;font-weight:700;">*</span></label>
+                  <input
+                    type="password"
+                    required
+                    maxlength="10"
+                    v-model="studentLoginForm.password"
+                    placeholder="请输入 6 位专属登录密码（管理员分配）"
+                    @keyup.enter="doStudentLogin">
                 </div>
                 <div v-if="studentLoginError" style="color:#C0002A;font-size:13px;margin-top:6px;text-align:center;">❌ {{ studentLoginError }}</div>
                 <div class="form-actions">
                   <button class="btn btn-secondary" @click="showStudentLogin = false">取消</button>
                   <button class="btn btn-primary" @click="doStudentLogin" :disabled="studentLoginLoading">
-                    {{ studentLoginLoading ? '登录中...' : '✅ 登录' }}
+                    {{ studentLoginLoading ? '登录中...' : '✅ 登录（姓名+密码）' }}
                   </button>
                 </div>
               </div>
@@ -3262,32 +3669,63 @@
             </div>
           </transition>
 
-          <!-- ====== 同学端：单聊管理员 ====== -->
+          <!-- ====== V5 同学端：私信管理员 / 私信站主（弹窗顶显示 recipientType 对应 Tab） ====== -->
           <transition name="modal">
             <div v-if="showDirectChat" class="modal-mask" @click.self="onCloseDirectChat">
               <div class="modal-content" style="max-width:520px;width:96vw;">
-                <div class="modal-title calligraphy" style="display:flex;justify-content:space-between;align-items:center;">
-                  <span>💌 私信管理员（仅管理员可见）</span>
+                <div class="modal-title calligraphy" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <span>{{ dmCurrentType === 'owner' ? '👑 私信站主（仅站主可见，管理员看不到）' : '💌 私信管理员（站主和管理员都可见）' }}</span>
+                    <span
+                      class="msg-tag"
+                      :style="dmCurrentType === 'owner'
+                        ? {background:'linear-gradient(135deg,#FEF3C7,#FDE68A)',color:'#78350F',border:'1px solid #D97706'}
+                        : {background:'linear-gradient(135deg,#E0F2FE,#BAE6FD)',color:'#0C4A6E',border:'1px solid #0284C7'}"
+                    >{{ dmCurrentType === 'owner' ? '👑 收件人：站主' : '🛡️ 收件人：管理员' }}</span>
+                    <!-- V5：弹窗内切换 Tab（同一个弹窗，换私信对象） -->
+                    <span style="display:inline-flex;gap:4px;margin-left:6px;">
+                      <button class="btn btn-sm" @click="switchDmType('admin')" :class="dmCurrentType === 'admin' ? 'btn-primary' : 'btn-secondary'" :disabled="dmSending">🛡️ 管理员</button>
+                      <button class="btn btn-sm" @click="switchDmType('owner')" :class="dmCurrentType === 'owner' ? 'btn-primary' : 'btn-secondary'" :disabled="dmSending">👑 站主</button>
+                    </span>
+                  </div>
                   <span style="font-size:12px;color:#888;font-weight:normal;">👤 {{ studentSession && studentSession.student ? studentSession.student.nickname : '' }}</span>
                 </div>
                 <!-- 聊天区 -->
-                <div class="message-list chat-list" ref="dmListRef" style="max-height:320px;margin-bottom:10px;background:#FFFDF8;border-radius:8px;padding:10px 12px;border:1px dashed #F5C842;">
-                  <div v-if="directMineMessages.length === 0" style="text-align:center;padding:30px 0;color:#999;font-size:13px;">
-                    还没有对话，说点什么吧~
+                <div class="message-list chat-list" ref="dmListRef" :style="{ maxHeight:'320px', marginBottom:'10px', borderRadius:'8px', padding:'10px 12px',
+                  background: dmCurrentType === 'owner' ? '#FFFBEB' : '#FFFDF8',
+                  border: (dmCurrentType === 'owner' ? '1px dashed #F59E0B' : '1px dashed #F5C842') }">
+                  <div v-if="currentTypeMineMessages.length === 0" style="text-align:center;padding:30px 0;color:#999;font-size:13px;">
+                    还没有{{ dmCurrentType === 'owner' ? '与站主的' : '与管理员的' }}对话，说点什么吧~
                   </div>
                   <div
-                    v-for="(m, i) in directMineMessages"
+                    v-for="(m, i) in currentTypeMineMessages"
                     :key="m.id"
                     class="chat-bubble"
                     :class="m.sender === 'admin' ? 'chat-bubble--left' : 'chat-bubble--right'"
                     :style="{ animationDelay: i*0.015 + 's' }"
                   >
-                    <div class="chat-avatar" :class="m.sender === 'admin' ? 'chat-avatar--admin' : 'chat-avatar--me'">
-                      {{ m.sender === 'admin' ? '管' : '我' }}
+                    <div class="chat-avatar" :class="[
+                      m.sender === 'admin'
+                        ? (m.recipientType === 'owner' ? 'chat-avatar--owner' : 'chat-avatar--admin')
+                        : 'chat-avatar--me'
+                    ]" :style="m.recipientType === 'owner' && m.sender === 'admin' ? {background:'linear-gradient(135deg,#FBBF24,#F59E0B)',color:'#451A03',borderColor:'#D97706'} : {}">
+                      {{ m.sender === 'admin' ? (m.recipientType === 'owner' ? '主' : '管') : '我' }}
                     </div>
                     <div class="chat-body">
                       <div class="chat-name-row">
-                        <span style="font-weight:600;">{{ m.sender === 'admin' ? '管理员' : (studentSession && studentSession.student ? studentSession.student.nickname : '我') }}</span>
+                        <span style="font-weight:600;">
+                          {{ m.sender === 'admin'
+                            ? (m.recipientType === 'owner' ? '站主' : '管理员')
+                            : ((studentSession && studentSession.student) ? studentSession.student.nickname : '我') }}
+                        </span>
+                        <span
+                          v-if="m.sender !== 'admin'"
+                          class="msg-tag"
+                          style="font-size:10px;margin-left:6px;padding:1px 6px;"
+                          :style="m.recipientType === 'owner'
+                            ? {background:'#FEF3C7',color:'#78350F',border:'1px solid #F59E0B'}
+                            : {background:'#E0F2FE',color:'#0C4A6E',border:'1px solid #0EA5E9'}"
+                        >{{ m.recipientType === 'owner' ? '👑 私信站主' : '🛡️ 私信管理员' }}</span>
                         <span style="color:#999;font-size:11px;margin-left:6px;">{{ m.created_at }}</span>
                       </div>
                       <div class="chat-content">{{ m.content }}</div>
@@ -3301,10 +3739,14 @@
                     rows="2"
                     maxlength="1000"
                     @keyup.ctrl.enter="sendDirectMsg"
-                    placeholder="Ctrl+Enter 快捷发送，最多 1000 字..."
+                    :placeholder="dmCurrentType === 'owner'
+                      ? '（仅站主可见）Ctrl+Enter 快捷发送，最多 1000 字...'
+                      : '（站主和管理员都能看到）Ctrl+Enter 快捷发送，最多 1000 字...'"
                     style="flex:1;padding:8px 10px;border:1px solid var(--paper-dark);border-radius:6px;resize:vertical;font-family:inherit;"
                   ></textarea>
-                  <button class="btn btn-primary" @click="sendDirectMsg" :disabled="dmSending || !dmInput.trim()" style="align-self:flex-end;">
+                  <button class="btn btn-primary" @click="sendDirectMsg" :disabled="dmSending || !dmInput.trim()"
+                    :style="dmCurrentType === 'owner' ? {background:'linear-gradient(135deg,#F59E0B,#D97706)',borderColor:'#B45309'} : {}"
+                    style="align-self:flex-end;">
                     {{ dmSending ? '发送中...' : '📤' }}
                   </button>
                 </div>
@@ -3695,7 +4137,9 @@
         const doStudentLogin = async () => {
           const name = studentLoginForm.name.trim();
           const password = studentLoginForm.password.trim();
-          if (!name || !password) { studentLoginError.value = '姓名和密码都不能为空'; return; }
+          if (!name || !password) { studentLoginError.value = '姓名和密码都不能为空（均为必填项）'; return; }
+          if (name.length < 2) { studentLoginError.value = '请填写完整姓名（至少 2 个字符）'; return; }
+          if (password.length < 4) { studentLoginError.value = '密码长度不足，请检查'; return; }
           studentLoginLoading.value = true;
           studentLoginError.value = '';
           try {
@@ -3717,6 +4161,82 @@
         const studentLogout = () => {
           if (!confirm('确定退出同学登录？（会话为内存态，关标签页自动失效）')) return;
           DataProvider.studentLogout();
+        };
+
+        // ========== V5：同学详情弹窗相关（本人密码修改、管理员蓝色框、身份展示） ==========
+        const isStudentAdmin = (s) => !!(s && (s.role === 'owner' || s.role === 'admin'));
+        const isMyself = (s) => !!(s && studentSession.value && studentSession.value.student && studentSession.value.student.id === s.id);
+        const formatTs = (ts) => {
+          if (!ts) return '';
+          try {
+            const d = typeof ts === 'number' ? new Date(ts) : new Date(ts);
+            return new Intl.DateTimeFormat('zh-CN', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).format(d);
+          } catch (e) { return String(ts); }
+        };
+        // 详情弹窗标题：站主/管理员蓝色框（含流光效果）。由于是 style 绑定，CSS 伪类不可用，改用内联样式 + 全局 CSS 类控制。
+        const detailTitleWrapClass = computed(() => {
+          const s = selectedStudent.value;
+          if (!s) return '';
+          if (s.role === 'owner') return 'detail-title-wrap owner-glow';
+          if (isStudentAdmin(s) && s.adminFrame) return 'detail-title-wrap admin-glow';
+          return '';
+        });
+        const detailTitleWrapStyle = computed(() => {
+          const s = selectedStudent.value;
+          if (!s) return {};
+          if (s.role === 'owner') {
+            return { padding: '14px 18px', borderRadius: '14px', border: '2px solid #D97706', position: 'relative', overflow: 'hidden' };
+          }
+          if (isStudentAdmin(s) && s.adminFrame) {
+            return { padding: '14px 18px', borderRadius: '14px', border: '2px solid #0284C7', position: 'relative', overflow: 'hidden' };
+          }
+          return {};
+        });
+        const detailNameInnerStyle = computed(() => {
+          const s = selectedStudent.value;
+          if (!s) return {};
+          if (s.role === 'owner') return { color: '#78350F', textShadow: '0 0 6px rgba(251,191,36,0.8)' };
+          if (isStudentAdmin(s) && s.adminFrame) return { color: '#0C4A6E', textShadow: '0 0 6px rgba(56,189,248,0.7)' };
+          return {};
+        });
+        const closeDetailModal = () => { showDetail.value = false; showChangePwd.value = false; };
+        const showChangePwd = ref(false);
+        const changePwdForm = reactive({ old: '', new1: '', new2: '' });
+        const changePwdError = ref('');
+        const changePwdSuccess = ref('');
+        const changePwdLoading = ref(false);
+        const openChangeMyPassword = () => {
+          changePwdForm.old = ''; changePwdForm.new1 = ''; changePwdForm.new2 = '';
+          changePwdError.value = ''; changePwdSuccess.value = ''; changePwdLoading.value = false;
+          showChangePwd.value = true;
+        };
+        const submitChangeMyPassword = async () => {
+          changePwdError.value = ''; changePwdSuccess.value = '';
+          const o = (changePwdForm.old || '').trim();
+          const n1 = (changePwdForm.new1 || '').trim();
+          const n2 = (changePwdForm.new2 || '').trim();
+          if (!o) { changePwdError.value = '请输入原密码'; return; }
+          if (n1.length < 6) { changePwdError.value = '新密码长度至少 6 位'; return; }
+          if (n1 !== n2) { changePwdError.value = '两次输入的新密码不一致'; return; }
+          if (o === n1) { changePwdError.value = '新密码不能与原密码相同'; return; }
+          changePwdLoading.value = true;
+          try {
+            const r = await DataProvider.changeMyPassword(o, n1);
+            if (r && r.ok) {
+              changePwdSuccess.value = '密码修改成功！本次为您仅有的 1 次修改机会。';
+              setTimeout(() => { showChangePwd.value = false; }, 2200);
+              // 同步更新详情弹窗里的 selectedStudent（如果查看的是本人）
+              if (selectedStudent.value && studentSession.value && selectedStudent.value.id === studentSession.value.student.id) {
+                selectedStudent.value = { ...selectedStudent.value, passwordChangedAt: (r && r.passwordChangedAt) || Date.now() };
+              }
+            } else {
+              changePwdError.value = (r && r.error) ? r.error : '修改失败，请检查原密码是否正确';
+            }
+          } catch (e) {
+            changePwdError.value = '修改异常：' + (e.message || String(e));
+          } finally {
+            changePwdLoading.value = false;
+          }
         };
 
         // ========== 社区列表 / 我的社区 ==========
@@ -3828,9 +4348,16 @@
           }
         };
 
-        // ========== 同学端：私信管理员 ==========
+        // ========== V5 同学端：私信管理员 / 私信站主（双 recipientType 分开存储） ==========
         const showDirectChat = ref(false);
+        const dmCurrentType = ref('admin'); // 'admin' | 'owner'
+        // directMineMessages 兼容旧字段保留（仅保留历史；新的 currentTypeMineMessages 用
         const directMineMessages = computed(() => DataProvider.directMineMessages);
+        const currentTypeMineMessages = computed(() => {
+          const t = dmCurrentType.value === 'owner' ? 'owner' : 'admin';
+          const arr = DataProvider.getMineMessagesByType(t) || [];
+          return arr.slice().sort((a, b) => String(a.created_at || '').localeCompare(String(b.created_at || '')));
+        });
         const dmListRef = ref(null);
         const dmInput = ref('');
         const dmSending = ref(false);
@@ -3846,9 +4373,9 @@
         };
         const loadDmAndMarkRead = async (markRead = true) => {
           try {
-            const beforeCount = directMineMessages.value.length;
-            const trimmed = await DataProvider.loadDirectMessages(markRead);
-            const afterCount = directMineMessages.value.length;
+            const beforeCount = currentTypeMineMessages.value.length;
+            const trimmed = await DataProvider.loadDirectMessages(markRead, dmCurrentType.value);
+            const afterCount = currentTypeMineMessages.value.length;
             if (afterCount > beforeCount) scrollToBottom();
             if (trimmed && trimmed > 0) dmTrimmed.value = (dmTrimmed.value || 0) + trimmed;
           } catch (e) { /* 忽略 */ }
@@ -3858,21 +4385,30 @@
           if (!content) return;
           dmSending.value = true;
           try {
-            await DataProvider.sendDirectMessage(content);
+            await DataProvider.sendDirectMessage({ content, recipientType: dmCurrentType.value });
             dmInput.value = '';
             scrollToBottom();
           } catch (e) {
             alert('❌ 发送失败：' + e.message);
           } finally { dmSending.value = false; }
         };
-        const openDirectChat = async () => {
+        const openDirectChat = async (type = 'admin') => {
           if (!studentSession.value) { showStudentLogin.value = true; return; }
+          dmCurrentType.value = (type === 'owner') ? 'owner' : 'admin';
           dmTrimmed.value = 0;
           showDirectChat.value = true;
           await loadDmAndMarkRead(true);
           scrollToBottom();
           if (dmPollTimer) clearInterval(dmPollTimer);
           dmPollTimer = setInterval(() => { loadDmAndMarkRead(true); }, 5000);
+        };
+        const switchDmType = async (type) => {
+          if (dmSending.value) return;
+          const t = type === 'owner' ? 'owner' : 'admin';
+          if (dmCurrentType.value === t) return;
+          dmCurrentType.value = t;
+          await loadDmAndMarkRead(true);
+          scrollToBottom();
         };
         const onCloseDirectChat = () => {
           showDirectChat.value = false;
@@ -3934,6 +4470,10 @@
           showJoinCommunity, joinCommTarget, joinCommForm, joinCommError, joinCommSuccess, joinCommLoading, openJoinCommunity, submitJoinCommunity,
           confirmLeaveCommunity,
           showDirectChat, directMineMessages, dmListRef, dmInput, dmSending, dmTrimmed, sendDirectMsg, openDirectChat, onCloseDirectChat,
+          dmCurrentType, currentTypeMineMessages, switchDmType,
+          // V5 详情弹窗辅助 + 密码修改
+          isStudentAdmin, isMyself, formatTs, detailTitleWrapClass, detailTitleWrapStyle, detailNameInnerStyle, closeDetailModal,
+          showChangePwd, changePwdForm, changePwdError, changePwdSuccess, changePwdLoading, openChangeMyPassword, submitChangeMyPassword,
           // V4 全局辅助
           isGuestMode, toInitials, displayNameOf, exitGuestMode,
           currentCommunity, tangRankStore
@@ -4347,6 +4887,114 @@
               </div>
             </div>
 
+            <!-- V5：角色管理 Tab（仅站主可见，授/撤管理员、转让站主、蓝色框开关） -->
+            <div v-else-if="activeTab === 'role-mgmt'" class="admin-tab-panel">
+              <div style="margin-bottom:16px;padding:14px 16px;border-radius:12px;background:linear-gradient(135deg,#FEF3C7 0%,#FDE68A 50%,#FCD34D 100%);border:2px solid #D97706;box-shadow:0 0 16px rgba(251,191,36,0.35);">
+                <div style="font-size:15px;font-weight:700;color:#78350F;">👑 仅站主可见 · 全站角色总控</div>
+                <div style="font-size:12px;color:#92400E;margin-top:4px;line-height:1.8;">
+                  · 站主账号全网站主：<b>{{ ownerStudent ? ownerStudent.nickname : '（暂无，异常）' }}</b>（全站仅此 1 位，可转让给任意同学）<br>
+                  · 管理员数量：<b>{{ adminStudents.length }}</b> 人（由站主授予/撤销，可多人，管理员可进入「管理员后台，但不能进行角色管理）<br>
+                  · 蓝色耀眼框（<span style="display:inline-block;padding:1px 8px;border-radius:4px;background:linear-gradient(135deg,#E0F2FE,#7DD3FC);border:1px solid #0284C7;color:#0C4A6E;font-weight:600;">adminFrame</span>）：管理员独有独立选项，与头衔称号系统完全无关，可单独开关。
+                </div>
+              </div>
+              <div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                <input type="text" v-model="roleKeyword" placeholder="🔍 搜索姓名/大学..." style="padding:8px 12px;border:1px solid var(--paper-dark);border-radius:6px;min-width:220px;">
+                <div style="display:flex;gap:8px;font-size:13px;color:#64748B;align-items:center;flex-wrap:wrap;">
+                  <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" v-model="roleFilterOwner" style="accent-color:#D97706;"> 👑 站主</label>
+                  <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" v-model="roleFilterAdmin" style="accent-color:#0369A1;"> 🛡️ 管理员</label>
+                  <label style="display:flex;align-items:center;gap:4px;cursor:pointer;"><input type="checkbox" v-model="roleFilterStudent" style="accent-color:#475569;"> 👤 普通同学</label>
+                </div>
+              </div>
+              <div class="student-table">
+                <div class="table-header">
+                  <div class="col-name">姓名 / 身份</div>
+                  <div class="col-school">大学 / 专业</div>
+                  <div class="col-major" style="flex:0 0 220px;">🛡️ 管理员蓝色框（独立于头衔）</div>
+                  <div class="col-actions">👑 角色操作（仅站主）</div>
+                </div>
+                <div v-if="roleFilteredList.length === 0" style="padding:60px;text-align:center;color:#999;">
+                  <div style="font-size:48px;margin-bottom:12px;">👥</div>
+                  <div>暂无匹配的同学</div>
+                </div>
+                <div v-for="(s, idx) in roleFilteredList" :key="s.id" class="table-row fade-in-up" :style="{ animationDelay: idx*0.02 + 's' }">
+                  <div class="col-name">
+                    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                      <strong>{{ s.nickname }}</strong>
+                      <span v-if="s.role === 'owner'" class="status-badge status-approved" style="background:linear-gradient(135deg,#FBBF24,#F59E0B);color:#451A03;border:1px solid #D97706;font-size:11px;">👑 站主</span>
+                      <span v-else-if="s.role === 'admin'" class="status-badge status-approved" style="background:linear-gradient(135deg,#38BDF8,#0EA5E9);color:#082F49;border:1px solid #0369A1;font-size:11px;">🛡️ 管理员</span>
+                      <span v-else class="status-badge status-pending" style="font-size:11px;">👤 普通</span>
+                      <span v-if="s.title" class="mini-title-badge" :title="s.title">🏅 {{ s.title }}</span>
+                    </div>
+                    <div style="font-size:12px;color:#94A3B8;margin-top:2px;">
+                      密码状态：{{ s.passwordChangedAt ? '✅ 已改 1 次' : '⏳ 默认密码（未改）' }}
+                    </div>
+                  </div>
+                  <div class="col-school">
+                    <div>{{ s.university || '—' }}</div>
+                    <div style="color:#999;font-size:12px;">{{ s.major || '' }}</div>
+                  </div>
+                  <div class="col-major" style="flex:0 0 220px;">
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                      <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+                        <input type="checkbox" v-model="s.adminFrame" @change="toggleAdminFrame(s)" :disabled="s.role === 'student'" :style="{ accentColor:'#0EA5E9' }">
+                        <span :style="{ color: s.role==='student' ? '#94A3B8' : '#0369A1', fontWeight: 600 }">启用蓝色框</span>
+                      </label>
+                      <span v-if="s.role === 'student'" style="font-size:11px;color:#94A3B8;">（需先设为管理员）</span>
+                    </div>
+                    <div v-if="s.adminFrame && s.role !== 'student'" style="margin-top:4px;padding:3px 8px;border-radius:6px;background:linear-gradient(135deg,#E0F2FE,#BAE6FD);border:1px solid #0284C7;color:#0C4A6E;font-size:11px;font-weight:600;display:inline-block;">🛡️ 蓝色耀眼框已开启</div>
+                  </div>
+                  <div class="col-actions" style="display:flex;flex-direction:column;gap:6px;align-items:flex-start;">
+                    <template v-if="s.role === 'owner'">
+                      <button class="btn btn-sm btn-primary" @click="openTransferOwnerModal(s)" :disabled="roleLoadingId === s.id" style="background:linear-gradient(135deg,#F59E0B,#D97706);border-color:#B45309;">
+                        👑 转让站主给 TA
+                      </button>
+                      <span style="font-size:11px;color:#92400E;">（当前站主：仅 1 位）</span>
+                    </template>
+                    <template v-else-if="s.role === 'admin'">
+                        <button class="btn btn-sm btn-danger" @click="revokeAdmin(s)" :disabled="roleLoadingId === s.id">
+                          🚫 撤销管理员
+                        </button>
+                        <button class="btn btn-sm btn-primary" @click="openTransferOwnerModal(s)" :disabled="roleLoadingId === s.id" style="background:linear-gradient(135deg,#8B5CF6,#7C3AED);border-color:#6D28D9;">
+                          👑 直接提升为站主
+                        </button>
+                    </template>
+                    <template v-else>
+                        <button class="btn btn-sm btn-primary" @click="grantAdmin(s)" :disabled="roleLoadingId === s.id" style="background:linear-gradient(135deg,#0EA5E9,#0284C7);border-color:#0369A1;">
+                          🛡️ 授予管理员
+                        </button>
+                    </template>
+                    <span v-if="roleLoadingId === s.id" style="font-size:11px;color:#64748B;">执行中...</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 转让站主二次确认弹窗 -->
+              <transition name="modal">
+                <div v-if="showTransferOwner && transferTarget" class="modal-mask" @click.self="showTransferOwner = false">
+                  <div class="modal-content" style="max-width:460px;">
+                    <div class="modal-title calligraphy">👑 转让站主身份</div>
+                    <div style="padding:12px 14px;background:#FEF2F2;border:1px dashed #EF4444;border-radius:8px;margin-bottom:14px;color:#991B1B;font-size:13px;line-height:1.8;">
+                      <b>⚠️ 转让后你将失去站主权限，变为普通同学；此操作不可撤销！</b><br>
+                      新站主将获得：角色管理（授/撤管理员、转让站主）、删除同学等最高权限。<br>
+                      当前站主：<b>{{ ownerStudent ? ownerStudent.nickname : '' }}</b><br>
+                      拟转让给：<b style="color:#B91C1C;">{{ transferTarget.nickname }}</b>
+                    </div>
+                    <div class="form-group">
+                      <label>请输入 <span style="color:#B91C1C;font-weight:700;">{{ transferTarget.nickname }}</span> 以确认：</label>
+                      <input type="text" v-model="transferConfirmName" placeholder="请完整输入对方姓名进行二次确认" @keyup.enter="submitTransferOwner">
+                    </div>
+                    <div v-if="transferError" style="color:#C0002A;font-size:13px;margin:4px 0;text-align:center;">❌ {{ transferError }}</div>
+                    <div class="form-actions">
+                      <button class="btn btn-secondary" @click="showTransferOwner = false">取消</button>
+                      <button class="btn btn-primary" @click="submitTransferOwner" :disabled="!!roleLoadingId" style="background:linear-gradient(135deg,#DC2626,#B91C1C);border-color:#991B1B;">
+                        {{ roleLoadingId ? '转让中...' : '✅ 确认转让站主（不可撤销）' }}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </transition>
+            </div>
+
             <!-- 密码管理 Tab -->
             <div v-else-if="activeTab === 'password'" class="admin-tab-panel">
               <div style="display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:16px;">
@@ -4575,37 +5223,60 @@
               </div>
             </div>
 
-            <!-- 单聊收件箱 Tab -->
+            <!-- 单聊收件箱 Tab（V5：站主看到 admin+owner 两类，管理员只看 admin；会话列表/消息标签显示 recipientType） -->
             <div v-else-if="activeTab === 'direct-messages'" class="admin-tab-panel">
+              <div style="margin-bottom:10px;padding:8px 12px;border-radius:8px;background:#EFF6FF;border:1px dashed #3B82F6;font-size:12px;color:#1E40AF;line-height:1.9;">
+                <b>💡 V5 私信规则：</b><br>
+                <template v-if="amIOwner">👑 你是<strong>站主</strong>，这里能看到同学发给「🛡️ 管理员」和发给「👑 站主」的<strong>全部两类私信</strong>。</template>
+                <template v-else-if="amIAdmin">🛡️ 你是<strong>管理员</strong>，这里<strong>仅能看到</strong>同学发给「🛡️ 管理员」的私信；<strong>同学发给站主（👑 私信站主）的内容，你完全看不到</strong>（由站主独立处理）。</template>
+                <template v-else>🔧 你使用超级管理员备用密码登录，可看到全部两类私信用于兜底。</template>
+              </div>
               <div style="display:flex;gap:14px;min-height:460px;">
-                <!-- 左侧：会话列表 -->
-                <div style="flex:0 0 260px;border:1px solid var(--paper-dark);border-radius:10px;background:#FAFAF6;overflow:hidden;display:flex;flex-direction:column;">
-                  <div style="padding:10px 14px;background:linear-gradient(135deg,#FFFBF0,#FFF6E0);border-bottom:1px solid var(--paper-dark);display:flex;justify-content:space-between;align-items:center;">
+                <!-- 左侧：会话列表（V5：key 用 convKey = studentId|recipientType） -->
+                <div style="flex:0 0 280px;border:1px solid var(--paper-dark);border-radius:10px;background:#FAFAF6;overflow:hidden;display:flex;flex-direction:column;">
+                  <div style="padding:10px 14px;background:linear-gradient(135deg,#FFFBF0,#FFF6E0);border-bottom:1px solid var(--paper-dark);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
                     <div style="font-weight:700;color:#92400E;">📬 同学私信箱
                       <span v-if="dmUnreadTotal > 0" style="margin-left:6px;padding:2px 8px;background:#C0002A;color:#fff;border-radius:10px;font-size:11px;font-weight:600;">未读 {{ dmUnreadTotal }}</span>
                     </div>
-                    <button class="btn btn-sm btn-secondary" @click="dmLoadConversations()" title="刷新">🔄</button>
+                    <button class="btn btn-sm btn-secondary" @click="dmLoadConversations()" title="刷新">🔄 刷新</button>
+                  </div>
+                  <!-- V5：私信类型筛选（全部/只看管理员/只看站主） -->
+                  <div style="padding:8px 12px;border-bottom:1px solid #EEE7DA;background:#FFFBF0;display:flex;gap:6px;flex-wrap:wrap;">
+                    <button class="btn btn-sm" :class="dmFilterType==='all' ? 'btn-primary' : 'btn-secondary'" @click="dmFilterType='all'">全部</button>
+                    <button class="btn btn-sm" :class="dmFilterType==='admin' ? 'btn-primary' : 'btn-secondary'" @click="dmFilterType='admin'">🛡️ 私信管理员</button>
+                    <button class="btn btn-sm" :class="dmFilterType==='owner' ? 'btn-primary' : 'btn-secondary'" @click="dmFilterType='owner'" v-if="amIOwner || !amIAdmin">👑 私信站主</button>
                   </div>
                   <div style="flex:1;overflow-y:auto;">
-                    <div v-if="dmConversations.length === 0" style="padding:40px 10px;text-align:center;color:#999;font-size:13px;">
+                    <div v-if="dmFilteredConversations.length === 0" style="padding:40px 10px;text-align:center;color:#999;font-size:13px;">
                       <div style="font-size:36px;margin-bottom:6px;">📭</div>
-                      <div>暂无私聊消息</div>
+                      <div>暂无私聊消息（{{ dmFilterType==='all' ? '全部类型' : dmFilterType==='admin' ? '仅私信管理员' : '仅私信站主' }}）</div>
                     </div>
                     <div
-                      v-for="conv in dmConversations"
-                      :key="conv.studentId"
-                      @click="dmSelectStudent(conv.studentId)"
-                      :class="['dm-conv-item', { active: conv.studentId === dmActiveStudentId }]"
+                      v-for="conv in dmFilteredConversations"
+                      :key="conv.convKey || (conv.studentId + '|' + conv.recipientType)"
+                      @click="dmSelectConversation(conv)"
+                      :class="['dm-conv-item', { active: dmActiveConvKey === (conv.convKey || (conv.studentId + '|' + conv.recipientType)) }]"
                       style="padding:10px 14px;border-bottom:1px solid #EEE7DA;cursor:pointer;"
                     >
-                      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+                      <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap;">
                         <div style="font-weight:600;color:#1F2937;">👤 {{ conv.studentName || conv.studentId }}</div>
                         <span v-if="conv.unread > 0" style="padding:2px 8px;background:#C0002A;color:#fff;border-radius:10px;font-size:11px;font-weight:600;">{{ conv.unread }}</span>
                       </div>
-                      <div style="font-size:12px;color:#64748B;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                        {{ conv.lastPreview || '（无内容）' }}
+                      <div style="margin-top:4px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                        <span
+                          class="msg-tag"
+                          style="font-size:11px;padding:2px 8px;"
+                          :style="conv.recipientType === 'owner'
+                            ? {background:'linear-gradient(135deg,#FEF3C7,#FDE68A)',color:'#78350F',border:'1px solid #D97706'}
+                            : {background:'linear-gradient(135deg,#E0F2FE,#BAE6FD)',color:'#0C4A6E',border:'1px solid #0284C7'}"
+                        >{{ conv.recipientTypeLabel || (conv.recipientType === 'owner' ? '👑 私信站主' : '🛡️ 私信管理员') }}</span>
                       </div>
-                      <div style="font-size:11px;color:#94A3B8;margin-top:2px;">{{ conv.lastTime || '' }} · {{ conv.total || 0 }} 条</div>
+                      <div style="font-size:12px;color:#64748B;margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                        {{ conv.lastMessage || conv.lastPreview || '（无内容）' }}
+                      </div>
+                      <div style="font-size:11px;color:#94A3B8;margin-top:2px;">
+                        {{ conv.lastMessageAt || conv.lastTime || '' }} · {{ conv.totalMessages || conv.total || 0 }} 条
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -4614,15 +5285,44 @@
                   <template v-if="!dmActiveConversation">
                     <div style="margin:auto;text-align:center;color:#999;">
                       <div style="font-size:48px;margin-bottom:10px;">💬</div>
-                      <div>请从左侧选择一位同学开始对话</div>
+                      <div>请从左侧选择一位同学的某类私信开始对话</div>
                     </div>
                   </template>
                   <template v-else>
-                    <div style="padding:10px 14px;background:linear-gradient(135deg,#EFF6FF,#DBEAFE);border-bottom:1px solid #BFDBFE;display:flex;justify-content:space-between;align-items:center;">
-                      <div style="font-weight:700;color:#1E3A8A;">👤 {{ dmActiveConversation.studentName || dmActiveConversation.studentId }} 的对话</div>
-                      <div style="font-size:12px;color:#64748B;">共 {{ dmActiveConversation.total || 0 }} 条消息</div>
+                    <div
+                      :style="{
+                        padding:'10px 14px',
+                        borderBottom:'1px solid',
+                        display:'flex',
+                        justifyContent:'space-between',
+                        alignItems:'center',
+                        gap:8,
+                        flexWrap:'wrap',
+                        background: dmActiveConversationRecipientType==='owner'
+                          ? 'linear-gradient(135deg,#FEF3C7,#FDE68A)'
+                          : 'linear-gradient(135deg,#EFF6FF,#DBEAFE)',
+                        borderColor: dmActiveConversationRecipientType==='owner' ? '#F59E0B' : '#BFDBFE'
+                      }"
+                    >
+                      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <div :style="{fontWeight:700,color: dmActiveConversationRecipientType==='owner' ? '#78350F' : '#1E3A8A'}">
+                          👤 {{ dmActiveConversation.studentName || dmActiveConversation.studentId }}
+                        </div>
+                        <span
+                          class="msg-tag"
+                          style="font-size:11px;padding:2px 8px;"
+                          :style="dmActiveConversationRecipientType === 'owner'
+                            ? {background:'linear-gradient(135deg,#FEF3C7,#FDE68A)',color:'#78350F',border:'1px solid #D97706'}
+                            : {background:'linear-gradient(135deg,#E0F2FE,#BAE6FD)',color:'#0C4A6E',border:'1px solid #0284C7'}"
+                        >{{ dmActiveConversationRecipientType === 'owner' ? '👑 私信站主' : '🛡️ 私信管理员' }}</span>
+                      </div>
+                      <div style="font-size:12px;color:#64748B;">共 {{ dmActiveConversation.total || dmActiveConversation.totalMessages || 0 }} 条消息</div>
                     </div>
                     <div class="message-list chat-list" ref="dmListRefAdmin" style="flex:1;padding:10px 14px;overflow-y:auto;background:#FFFDF8;">
+                      <div v-if="(dmActiveConversation.messages || []).length === 0" style="text-align:center;padding:36px 0;color:#999;font-size:13px;">
+                        <div style="font-size:30px;">💭</div>
+                        <div style="margin-top:4px;">还没有消息内容</div>
+                      </div>
                       <div
                         v-for="(m, i) in (dmActiveConversation.messages || [])"
                         :key="m.id"
@@ -4630,29 +5330,65 @@
                         :class="m.sender === 'student' ? 'chat-bubble--left' : 'chat-bubble--right'"
                         :style="{ animationDelay: i*0.015 + 's' }"
                       >
-                        <div class="chat-avatar" :class="m.sender === 'admin' ? 'chat-avatar--admin' : 'chat-avatar--me'">
-                          {{ m.sender === 'admin' ? '管' : (dmActiveConversation.studentName || dmActiveConversation.studentId).slice(0,1) }}
+                        <div class="chat-avatar" :class="[
+                          m.sender === 'admin'
+                            ? ((m.recipientType || dmActiveConversationRecipientType) === 'owner' ? 'chat-avatar--owner' : 'chat-avatar--admin')
+                            : 'chat-avatar--me'
+                        ]" :style="(m.recipientType || dmActiveConversationRecipientType) === 'owner' && m.sender === 'admin' ? {background:'linear-gradient(135deg,#FBBF24,#F59E0B)',color:'#451A03',borderColor:'#D97706'} : {}">
+                          {{ m.sender === 'admin'
+                            ? ((m.recipientType || dmActiveConversationRecipientType) === 'owner' ? '主' : '管')
+                            : ((dmActiveConversation.studentName || dmActiveConversation.studentId || '?').slice(0,1)) }}
                         </div>
                         <div class="chat-body">
-                          <div class="chat-name-row">
-                            <span style="font-weight:600;">{{ m.sender === 'admin' ? '管理员' : (dmActiveConversation.studentName || dmActiveConversation.studentId) }}</span>
+                          <div class="chat-name-row" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                            <span style="font-weight:600;">{{ m.sender === 'admin'
+                              ? (((m.recipientType || dmActiveConversationRecipientType) === 'owner') ? '站主' : '管理员')
+                              : (dmActiveConversation.studentName || dmActiveConversation.studentId) }}</span>
+                            <span v-if="m.sender === 'student'"
+                              class="msg-tag"
+                              style="font-size:10px;padding:1px 6px;"
+                              :style="(m.recipientType || 'admin') === 'owner'
+                                ? {background:'#FEF3C7',color:'#78350F',border:'1px solid #F59E0B'}
+                                : {background:'#E0F2FE',color:'#0C4A6E',border:'1px solid #0EA5E9'}"
+                            >{{ (m.recipientType || 'admin') === 'owner' ? '👑 发给站主' : '🛡️ 发给管理员' }}</span>
                             <span style="color:#999;font-size:11px;margin-left:6px;">{{ m.created_at }}</span>
                           </div>
                           <div class="chat-content" style="white-space:pre-wrap;">{{ m.content }}</div>
                         </div>
                       </div>
                     </div>
-                    <div style="padding:10px 14px;background:#FFFBEB;border-top:1px solid #F5C842;">
+                    <div
+                      :style="{
+                        padding:'10px 14px',
+                        borderTop:'1px solid',
+                        background: dmActiveConversationRecipientType==='owner' ? '#FFFBEB' : '#FFF7ED',
+                        borderColor: dmActiveConversationRecipientType==='owner' ? '#F59E0B' : '#F5C842'
+                      }"
+                    >
+                      <div style="font-size:11px;color:#78350F;margin-bottom:4px;">
+                        {{ amIOwner
+                          ? '👑 你（站主）以「' + (dmActiveConversationRecipientType === 'owner' ? '站主身份' : '管理员身份') + '」回复此消息。'
+                          : '🛡️ 你（管理员）以「管理员身份」回复此消息。' }}
+                      </div>
                       <div style="display:flex;gap:8px;">
                         <textarea
                           v-model="dmAdminSendText"
                           rows="2"
                           maxlength="2000"
                           @keyup.ctrl.enter="dmAdminSend"
-                          placeholder="Ctrl+Enter 快捷回复，最多 2000 字..."
+                          :placeholder="dmActiveConversationRecipientType === 'owner'
+                            ? '（作为站主身份回复，Ctrl+Enter 快捷回复，最多 2000 字...）'
+                            : '（作为管理员身份回复，Ctrl+Enter 快捷回复，最多 2000 字...）'"
                           style="flex:1;padding:8px 10px;border:1px solid var(--paper-dark);border-radius:6px;resize:vertical;font-family:inherit;"
                         ></textarea>
-                        <button class="btn btn-primary" @click="dmAdminSend" :disabled="dmAdminSending || !dmAdminSendText.trim()" style="align-self:flex-end;">
+                        <button class="btn btn-primary"
+                          @click="dmAdminSend"
+                          :disabled="dmAdminSending || !dmAdminSendText.trim()"
+                          :style="dmActiveConversationRecipientType === 'owner'
+                            ? {background:'linear-gradient(135deg,#F59E0B,#D97706)',borderColor:'#B45309'}
+                            : {}"
+                          style="align-self:flex-end;"
+                        >
                           {{ dmAdminSending ? '发送中...' : '📤 回复' }}
                         </button>
                       </div>
@@ -4883,17 +5619,33 @@
         </div>
       `,
       setup(props, { emit }) {
-        const tabs = [
-          { key: 'pending', label: '待审核' },
-          { key: 'all', label: '全部档案' },
-          { key: 'food', label: '找饭搭子' },
-          { key: 'password', label: '🔑 密码管理' },
-          { key: 'community-create', label: '🏛️ 创建社审批' },
-          { key: 'community-join', label: '🎯 加入社审批' },
-          { key: 'community-manage', label: '🏘️ 社区管理' },
-          { key: 'direct-messages', label: '💌 单聊收件箱' },
-          { key: 'announcement', label: '公告管理' }
-        ];
+        // V5：当前同学会话的身份（owner / admin / student / null）
+        const curRole = computed(() => {
+          const sess = DataProvider.studentSession;
+          if (!sess || !sess.student) return null;
+          const r = sess.student.role;
+          return (r === 'owner' || r === 'admin' || r === 'student') ? r : 'student';
+        });
+        const amIOwner = computed(() => curRole.value === 'owner');
+        const amIAdmin = computed(() => curRole.value === 'owner' || curRole.value === 'admin');
+        // V5：tabs 动态 —— 仅站主可见「角色管理」Tab
+        const tabs = computed(() => {
+          const base = [
+            { key: 'pending', label: '待审核' },
+            { key: 'all', label: '全部档案' },
+            { key: 'food', label: '找饭搭子' },
+            { key: 'password', label: '🔑 密码管理' },
+            { key: 'community-create', label: '🏛️ 创建社审批' },
+            { key: 'community-join', label: '🎯 加入社审批' },
+            { key: 'community-manage', label: '🏘️ 社区管理' },
+            { key: 'direct-messages', label: '💌 单聊收件箱' },
+            { key: 'announcement', label: '公告管理' }
+          ];
+          if (amIOwner.value) {
+            base.splice(3, 0, { key: 'role-mgmt', label: '👑 角色管理' }); // 插在密码管理前
+          }
+          return base;
+        });
         const activeTab = ref('pending');
         const showModal = ref(false);
         const isEdit = ref(false);
@@ -4901,6 +5653,121 @@
         const showAnnounceForm = ref(false);
         const isEditAnnouncement = ref(false);
         const editAnnouncementId = ref(null);
+
+        // ========= V5：角色管理 Tab（仅站主） =========
+        const roleKeyword = ref('');
+        const roleFilterOwner = ref(true);
+        const roleFilterAdmin = ref(true);
+        const roleFilterStudent = ref(true);
+        const roleLoadingId = ref(null);
+        const ownerStudent = computed(() => (studentsStore.list || []).find(s => s.role === 'owner') || null);
+        const adminStudents = computed(() => (studentsStore.list || []).filter(s => s.role === 'admin'));
+        const roleFilteredList = computed(() => {
+          let list = studentsStore.list || [];
+          const kw = roleKeyword.value.trim();
+          if (kw) {
+            list = list.filter(s => ((s.nickname || '').includes(kw) || (s.university || '').includes(kw)));
+          }
+          const hasAny = roleFilterOwner.value || roleFilterAdmin.value || roleFilterStudent.value;
+          if (!hasAny) return [];
+          return list.filter(s => {
+            if (s.role === 'owner') return roleFilterOwner.value;
+            if (s.role === 'admin') return roleFilterAdmin.value;
+            return roleFilterStudent.value;
+          });
+        });
+        // 授予管理员（站主操作）
+        const grantAdmin = async (s) => {
+          if (!confirm(`确定授予【${s.nickname}】管理员权限？\n\n· TA 可从「管理员入口」登录并进入后台\n· 自动启用「🛡️ 蓝色耀眼框」专属标识\n· 站主随时可撤销`)) return;
+          roleLoadingId.value = s.id;
+          try {
+            const r = await DataProvider.grantAdmin(s.id);
+            if (r && r.ok) {
+              // 同步本地状态
+              const target = (studentsStore.list || []).find(x => x.id === s.id);
+              if (target) { target.role = 'admin'; target.adminFrame = true; }
+              showSuccessModal('🛡️ 已授予管理员', `【${s.nickname}】已成为管理员，可从「管理员入口」登录进入后台。`, 3200);
+            } else {
+              alert('❌ 授予失败：' + ((r && r.error) ? r.error : '未知错误'));
+            }
+          } catch (e) {
+            alert('❌ 授予异常：' + e.message);
+          } finally { roleLoadingId.value = null; }
+        };
+        // 撤销管理员（站主操作）
+        const revokeAdmin = async (s) => {
+          if (!confirm(`确定撤销【${s.nickname}】的管理员权限？\n\n· 撤销后 TA 将无法从「管理员入口」登录\n· 蓝色耀眼框会一并关闭`)) return;
+          roleLoadingId.value = s.id;
+          try {
+            const r = await DataProvider.revokeAdmin(s.id);
+            if (r && r.ok) {
+              const target = (studentsStore.list || []).find(x => x.id === s.id);
+              if (target) { target.role = 'student'; target.adminFrame = false; }
+              showSuccessModal('✅ 已撤销管理员', `【${s.nickname}】已恢复为普通同学身份。`, 2800);
+            } else {
+              alert('❌ 撤销失败：' + ((r && r.error) ? r.error : '未知错误'));
+            }
+          } catch (e) {
+            alert('❌ 撤销异常：' + e.message);
+          } finally { roleLoadingId.value = null; }
+        };
+        // 切换 adminFrame（管理员蓝色耀眼框，独立于头衔系统）
+        const toggleAdminFrame = async (s) => {
+          if (s.role === 'student') return; // 普通同学不可开
+          roleLoadingId.value = s.id;
+          try {
+            const r = await DataProvider.toggleAdminFrame(s.id, !!s.adminFrame);
+            if (!(r && r.ok)) {
+              alert('❌ 切换失败：' + ((r && r.error) ? r.error : '未知错误'));
+              s.adminFrame = !s.adminFrame; // 回滚 UI
+            }
+          } catch (e) {
+            alert('❌ 切换异常：' + e.message);
+            s.adminFrame = !s.adminFrame;
+          } finally { roleLoadingId.value = null; }
+        };
+        // 转让站主
+        const showTransferOwner = ref(false);
+        const transferTarget = ref(null);
+        const transferConfirmName = ref('');
+        const transferError = ref('');
+        const openTransferOwnerModal = (s) => {
+          transferTarget.value = s;
+          transferConfirmName.value = '';
+          transferError.value = '';
+          showTransferOwner.value = true;
+        };
+        const submitTransferOwner = async () => {
+          transferError.value = '';
+          if (!transferTarget.value) return;
+          if (transferConfirmName.value.trim() !== transferTarget.value.nickname) {
+            transferError.value = `请完整输入【${transferTarget.value.nickname}】进行二次确认`;
+            return;
+          }
+          if (!confirm(`⚠️ 最后确认：将站主身份转让给【${transferTarget.value.nickname}】？\n\n· 转让后你将变为普通同学\n· 此操作不可撤销！`)) return;
+          roleLoadingId.value = transferTarget.value.id;
+          try {
+            const r = await DataProvider.transferOwner(transferTarget.value.id);
+            if (r && r.ok) {
+              // 同步本地
+              const list = studentsStore.list || [];
+              list.forEach(x => {
+                if (x.id === transferTarget.value.id) { x.role = 'owner'; if (x.role !== 'student') x.adminFrame = true; }
+                else if (x.role === 'owner') { x.role = 'student'; }
+              });
+              showTransferOwner.value = false;
+              showSuccessModal('👑 站主身份已转让',
+                `新站主：${transferTarget.value.nickname}\n你已变为普通同学，角色管理 Tab 将不再可见。`, 4000);
+              // 如果当前 Tab 是角色管理，切回 pending（我已经不是 owner 了）
+              if (activeTab.value === 'role-mgmt') activeTab.value = 'pending';
+            } else {
+              transferError.value = (r && r.error) ? r.error : '转让失败，请稍后重试';
+            }
+          } catch (e) {
+            transferError.value = '转让异常：' + e.message;
+          } finally { roleLoadingId.value = null; }
+        };
+
         // ========= 密码管理 Tab =========
         const pwdKeyword = ref('');
         const filteredStudentsWithPwd = computed(() => {
@@ -5075,8 +5942,17 @@
           } catch (e) { alert('❌ 删除失败：' + e.message); }
         };
 
-        // ========= 单聊收件箱（管理员） =========
+        // ========= 单聊收件箱（管理员 / 站主 V5 分层） =========
         const dmConversations = computed(() => (directMessagesStore && directMessagesStore.conversations) || []);
+        // V5：站主可见全部（admin+owner）；管理员仅能在列表中看到 admin 类型的会话
+        const dmFilterType = ref('all'); // all / admin / owner
+        const dmFilteredConversations = computed(() => {
+          let arr = dmConversations.value || [];
+          if (dmFilterType.value === 'admin') arr = arr.filter(c => String(c.recipientType || 'admin') === 'admin');
+          else if (dmFilterType.value === 'owner') arr = arr.filter(c => String(c.recipientType || 'admin') === 'owner');
+          return arr;
+        });
+        const dmActiveConvKey = ref(null); // 'studentId|recipientType'
         const dmActiveStudentId = ref(null);
         const dmAdminSendText = ref('');
         const dmAdminSending = ref(false);
@@ -5086,9 +5962,23 @@
           try { await DataProvider.loadDirectMessages(false); } catch (e) {}
         };
         const dmSelectStudent = async (studentId) => {
-          dmActiveStudentId.value = studentId;
+          // 兼容旧调用（按 studentId 默认选 admin 类型会话）
+          const match = dmConversations.value.find(c => String(c.studentId) === String(studentId) && String(c.recipientType || 'admin') === 'admin')
+            || dmConversations.value.find(c => String(c.studentId) === String(studentId));
+          if (match) await dmSelectConversation(match);
+        };
+        const dmSelectConversation = async (conv) => {
+          const sid = conv && conv.studentId;
+          if (!sid) return;
+          const rt = conv && (conv.recipientType === 'owner' ? 'owner' : 'admin');
+          dmActiveStudentId.value = sid;
+          dmActiveConvKey.value = `${sid}|${rt}`;
           dmAdminSendText.value = '';
-          try { await DataProvider.markDirectReadByStudent(studentId); } catch (e) {}
+          try {
+            await DataProvider.getDirectMessages({ studentId: sid });
+            // 标记已读（按 recipientType 精细）
+            await DataProvider.markDirectMessagesRead({ studentId: sid, recipientType: rt });
+          } catch (e) {}
           nextTick(() => {
             const el = dmListRefAdmin.value;
             if (el) el.scrollTop = el.scrollHeight;
@@ -5096,18 +5986,38 @@
         };
         const dmActiveConversation = computed(() => {
           if (!dmActiveStudentId.value) return null;
-          return dmConversations.value.find(c => c.studentId === dmActiveStudentId.value) || null;
+          const rt = (dmActiveConvKey.value || '').split('|')[1] || 'admin';
+          // 取 store 中当前该 studentId 全量 messages（已按 recipientType 合并在 directMessagesStore.active.messages 中），同时补 conversation 对象
+          const baseConv = dmConversations.value.find(c => String(c.studentId) === String(dmActiveStudentId.value) && String(c.recipientType || 'admin') === rt);
+          const active = directMessagesStore.active || {};
+          if (active && String(active.studentId) === String(dmActiveStudentId.value) && Array.isArray(active.messages)) {
+            // 只保留本次会话类型的消息
+            const filtered = (active.messages || []).filter(m => String(m.recipientType || 'admin') === rt);
+            return {
+              ...(baseConv || { studentId: dmActiveStudentId.value, studentName: active.studentName || dmActiveStudentId.value }),
+              recipientType: rt,
+              messages: filtered,
+              total: filtered.length
+            };
+          }
+          return baseConv || null;
+        });
+        const dmActiveConversationRecipientType = computed(() => {
+          return ((dmActiveConvKey.value || '').split('|')[1]) || 'admin';
         });
         const dmUnreadTotal = computed(() => {
-          return dmConversations.value.reduce((sum, c) => sum + (c.unread || 0), 0);
+          return dmFilteredConversations.value.reduce((sum, c) => sum + (c.unread || 0), 0);
         });
         const dmAdminSend = async () => {
           const content = dmAdminSendText.value.trim();
           if (!content || !dmActiveStudentId.value) return;
+          const rt = dmActiveConversationRecipientType.value;
           dmAdminSending.value = true;
           try {
-            await DataProvider.sendDirectMessageAsAdmin(dmActiveStudentId.value, content);
+            await DataProvider.sendDirectMessageAsAdmin(dmActiveStudentId.value, content, { recipientType: rt });
             dmAdminSendText.value = '';
+            // 回复后立即刷新列表和会话（乐观同步）
+            await DataProvider.getDirectMessages({ studentId: dmActiveStudentId.value });
             nextTick(() => {
               const el = dmListRefAdmin.value;
               if (el) el.scrollTop = el.scrollHeight;
@@ -5380,14 +6290,22 @@
           approveApplication, rejectApplication,
           openEditAnnouncement, resetAnnounceForm, publishAnnouncement, removeAnnouncement,
           logout, goMain,
-          // 新增
+          // V5：角色/身份动态
+          curRole, amIOwner, amIAdmin,
+          // V5：角色管理 Tab（仅站主）
+          roleKeyword, roleFilterOwner, roleFilterAdmin, roleFilterStudent, roleLoadingId,
+          ownerStudent, adminStudents, roleFilteredList,
+          grantAdmin, revokeAdmin, toggleAdminFrame,
+          showTransferOwner, transferTarget, transferConfirmName, transferError,
+          openTransferOwnerModal, submitTransferOwner,
+          // 密码管理 + 社区审批 + 社区管理 + 单聊
           pwdKeyword, filteredStudentsWithPwd, pwdStats, revealPwd, toggleRevealPwd, resetOnePwd, batchFillPasswords, copyPwd,
           createReqs, createReqsPending, approveCreateReq, rejectCreateReq,
           joinReqs, joinReqsForAdminOrOwner, myCommunityForAdmin, approveJoinReq, rejectJoinReq,
           showMembersModal, memberModalComm, openMembersModal, transferOwner, adminKickMember,
           communityListForManage, deleteCommunity,
-          dmConversations, dmActiveStudentId, dmAdminSendText, dmAdminSending, dmListRefAdmin,
-          dmLoadConversations, dmSelectStudent, dmActiveConversation, dmUnreadTotal, dmAdminSend
+          dmConversations, dmFilterType, dmFilteredConversations, dmActiveConvKey, dmActiveStudentId, dmAdminSendText, dmAdminSending, dmListRefAdmin,
+          dmLoadConversations, dmSelectStudent, dmSelectConversation, dmActiveConversation, dmActiveConversationRecipientType, dmUnreadTotal, dmAdminSend
         };
       }
     };
