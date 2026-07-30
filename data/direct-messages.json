@@ -1,1 +1,13 @@
-[]
+[
+  {
+    "id": "dm_1785385077882_418",
+    "studentId": "1785293808536",
+    "studentName": "庄玉轩",
+    "sender": "student",
+    "recipientType": "owner",
+    "content": "站主站主，我好喜欢你啊",
+    "created_at": "2026-07-30 12:17",
+    "read": false,
+    "read_at": null
+  }
+]
