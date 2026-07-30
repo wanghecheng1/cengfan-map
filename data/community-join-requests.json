@@ -35,11 +35,11 @@
     "communityName": "二次元元老社",
     "applyNote": "",
     "wechatContact": "你有",
-    "status": "pending",
+    "status": "approved",
     "created_at": "2026-07-30 16:13",
-    "decided_by_role": null,
-    "decided_by_id": null,
-    "decided_at": null,
+    "decided_by_role": "admin",
+    "decided_by_id": "admin",
+    "decided_at": "2026-07-30 16:13",
     "rejectReason": ""
   }
 ]
