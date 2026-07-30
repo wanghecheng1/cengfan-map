@@ -15,9 +15,12 @@
     "title": "管理员",
     "titleLevel": 5,
     "created_at": "2026-07-29 14:52",
-    "password": "224972",
+    "password": "123456",
     "communityId": null,
-    "communityName": ""
+    "communityName": "",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "王鹤澄",
@@ -37,9 +40,12 @@
     "title": "站主",
     "created_at": "2026-07-29 14:31",
     "titleLevel": 1,
-    "password": "092142",
+    "password": "123456wHc",
     "communityId": null,
-    "communityName": ""
+    "communityName": "",
+    "role": "owner",
+    "adminFrame": true,
+    "passwordChangedAt": null
   },
   {
     "nickname": "陈思远",
@@ -57,7 +63,10 @@
     "title": "奶蠡",
     "titleLevel": 0,
     "created_at": "2026-07-29 19:07",
-    "password": "026623"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "韩景琦",
@@ -77,9 +86,12 @@
     "title": "光头强叔叔",
     "titleLevel": 4,
     "created_at": "2026-07-29 18:23",
-    "password": "854129",
+    "password": "123456",
     "communityId": null,
-    "communityName": ""
+    "communityName": "",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "倪星瑞",
@@ -97,7 +109,10 @@
     "title": "小狐狸莫邪",
     "titleLevel": 0,
     "created_at": "2026-07-29 18:25",
-    "password": "573278"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "周鹏宇",
@@ -117,9 +132,12 @@
     "title": "奶蛆",
     "titleLevel": 3,
     "created_at": "2026-07-29 18:06",
-    "password": "064921",
+    "password": "123456",
     "communityId": "c_1785339389565_234",
-    "communityName": "奶龙一族"
+    "communityName": "奶龙一族",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "杨子江",
@@ -137,7 +155,10 @@
     "title": "奶豆",
     "titleLevel": 0,
     "created_at": "2026-07-29 18:23",
-    "password": "812671"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "张钦峰",
@@ -155,7 +176,10 @@
     "title": "",
     "titleLevel": 0,
     "created_at": "2026-07-29 18:24",
-    "password": "480615"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "李梓航",
@@ -170,7 +194,10 @@
     "longitude": 118.81868633633128,
     "latitude": 32.1906474011541,
     "id": 1785293387710,
-    "password": "990672"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "王逸晨",
@@ -190,7 +217,10 @@
     "longitude": 109.03866061929996,
     "latitude": 34.455767495838124,
     "id": 1785293392766,
-    "password": "351008"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "张子函",
@@ -208,7 +238,10 @@
     "title": "奶家军族长",
     "titleLevel": 3,
     "created_at": "2026-07-29 14:56",
-    "password": "730496"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "王浩然",
@@ -226,7 +259,10 @@
     "longitude": 123.537195786292,
     "latitude": 41.827215145792564,
     "id": 1785293562138,
-    "password": "362735"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "卜睿杰",
@@ -244,7 +280,10 @@
     "title": "国服马超",
     "titleLevel": 0,
     "created_at": "2026-07-29 19:01",
-    "password": "217574"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "李恺",
@@ -259,7 +298,10 @@
     "longitude": 118.83149861263944,
     "latitude": 32.08245438438751,
     "id": 1785293669490,
-    "password": "735557"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "庄玉轩",
@@ -274,12 +316,15 @@
     "longitude": 118.77391108687495,
     "latitude": 32.03603748000796,
     "id": 1785293808536,
-    "password": "855475",
+    "password": "123456",
     "title": "梅西球迷？！",
     "titleLevel": 2,
     "created_at": "2026-07-29 22:57",
     "communityId": null,
-    "communityName": ""
+    "communityName": "",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "海育民",
@@ -299,7 +344,10 @@
     "created_at": "2026-07-29 13:27",
     "title": "小黄毛",
     "titleLevel": 0,
-    "password": "658172"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "祖儿",
@@ -317,7 +365,10 @@
     "title": "奶家军主人",
     "created_at": "2026-07-29 15:10",
     "titleLevel": 0,
-    "password": "292769"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "刘颖",
@@ -332,7 +383,10 @@
     "longitude": 118.70856889838937,
     "latitude": 32.14758407095809,
     "id": 1785294431323,
-    "password": "359805"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "周永南",
@@ -347,7 +401,10 @@
     "longitude": 112.9494988117471,
     "latitude": 28.176765150572614,
     "id": 1785294726388,
-    "password": "296802"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "赵奕涵",
@@ -364,7 +421,10 @@
     "longitude": 118.89934071328383,
     "latitude": 32.08449501487248,
     "id": 1785294732180,
-    "password": "736759"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "朱旺",
@@ -384,7 +444,10 @@
     "title": "奶🐶",
     "titleLevel": 0,
     "created_at": "2026-07-29 18:56",
-    "password": "120611"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "臧雨秋",
@@ -402,7 +465,10 @@
     "title": "",
     "titleLevel": 0,
     "created_at": "2026-07-29 18:57",
-    "password": "534756"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "陈秋臣",
@@ -421,7 +487,10 @@
     "longitude": 117.29519696363886,
     "latitude": 36.83836672038948,
     "id": 1785295501955,
-    "password": "908449"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "张轩铭",
@@ -442,9 +511,12 @@
     "title": "司令（抱大腿）",
     "titleLevel": 0,
     "created_at": "2026-07-29 18:32",
-    "password": "592607",
+    "password": "123456",
     "communityId": "c_1785339389565_234",
-    "communityName": "奶龙一族"
+    "communityName": "奶龙一族",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "熊浩涵",
@@ -461,7 +533,10 @@
     "longitude": 118.95596794647773,
     "latitude": 32.19506876243191,
     "id": 1785295556861,
-    "password": "651308"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "王媛",
@@ -476,7 +551,10 @@
     "longitude": 118.86662356420953,
     "latitude": 32.00028485016735,
     "id": 1785296659874,
-    "password": "387672"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "钱淼",
@@ -494,9 +572,12 @@
     "title": "管理员",
     "titleLevel": 5,
     "created_at": "2026-07-29 14:55",
-    "password": "827332",
+    "password": "123456",
     "communityId": "c_1785339389565_234",
-    "communityName": "奶龙一族"
+    "communityName": "奶龙一族",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "nickname": "马丁良",
@@ -514,7 +595,10 @@
     "title": "奶🐴",
     "titleLevel": 0,
     "created_at": "2026-07-29 19:06",
-    "password": "620411"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785298970750,
@@ -530,7 +614,10 @@
     "looking_for_food": true,
     "longitude": 118.81816885661495,
     "latitude": 31.971339298493533,
-    "password": "914435"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785299648705,
@@ -546,7 +633,10 @@
     "looking_for_food": true,
     "longitude": 118.65881602162565,
     "latitude": 31.865533827546326,
-    "password": "992097"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785300191020,
@@ -564,7 +654,10 @@
     "latitude": 42.004791141587646,
     "title": "奶毛",
     "titleLevel": 0,
-    "password": "573051"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785300199789,
@@ -580,7 +673,10 @@
     "looking_for_food": false,
     "longitude": 118.9502373350725,
     "latitude": 32.036697418544776,
-    "password": "777925"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785300348201,
@@ -596,7 +692,10 @@
     "looking_for_food": false,
     "longitude": 116.349037749811,
     "latitude": 39.91921405965011,
-    "password": "291785"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785300360297,
@@ -616,7 +715,10 @@
     "latitude": 23.219270861097574,
     "title": "张老祖",
     "titleLevel": 3,
-    "password": "254218"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785302197161,
@@ -632,7 +734,10 @@
     "looking_for_food": false,
     "longitude": 118.6619243631488,
     "latitude": 32.08669643626713,
-    "password": "743756"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785302839462,
@@ -650,7 +755,10 @@
     "latitude": 31.982963526792528,
     "title": "奶爸",
     "titleLevel": 0,
-    "password": "993373"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785303197346,
@@ -666,7 +774,10 @@
     "looking_for_food": false,
     "longitude": 118.75820698488548,
     "latitude": 32.155271027616486,
-    "password": "313810"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785304547554,
@@ -682,7 +793,10 @@
     "looking_for_food": false,
     "longitude": 109.02123920524411,
     "latitude": 34.42453160329297,
-    "password": "547374"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785305737959,
@@ -698,7 +812,10 @@
     "looking_for_food": false,
     "longitude": 118.93771541102468,
     "latitude": 31.89296428241408,
-    "password": "880602"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785306568820,
@@ -717,7 +834,10 @@
     "looking_for_food": true,
     "longitude": 118.72335004030586,
     "latitude": 32.19578570794931,
-    "password": "820108"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785306576440,
@@ -734,7 +854,10 @@
     "looking_for_food": false,
     "longitude": 121.3021893849801,
     "latitude": 31.38372165300152,
-    "password": "429284"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785306924083,
@@ -751,7 +874,10 @@
     "looking_for_food": false,
     "longitude": 116.93102432326525,
     "latitude": 36.690449044668405,
-    "password": "786654"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785307163442,
@@ -771,7 +897,10 @@
     "longitude": 103.89651790206743,
     "latitude": 30.58927010866964,
     "titleLevel": 3,
-    "password": "114412"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785308078940,
@@ -789,7 +918,10 @@
     "looking_for_food": false,
     "longitude": 118.79788144240725,
     "latitude": 31.94483630298675,
-    "password": "961912"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785308381760,
@@ -807,7 +939,10 @@
     "looking_for_food": false,
     "longitude": 117.16742791300369,
     "latitude": 36.78369416717612,
-    "password": "898493"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785314743397,
@@ -825,7 +960,10 @@
     "looking_for_food": false,
     "longitude": 109.08167439074163,
     "latitude": 34.52001320052996,
-    "password": "895528"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785314747179,
@@ -843,7 +981,10 @@
     "looking_for_food": false,
     "longitude": 118.87933209651469,
     "latitude": 32.17345947265422,
-    "password": "837389"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785314753888,
@@ -861,7 +1002,10 @@
     "looking_for_food": false,
     "longitude": 114.30426135483515,
     "latitude": 30.524088758229773,
-    "password": "913595"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785314791165,
@@ -881,7 +1025,10 @@
     "looking_for_food": true,
     "longitude": 117.31082037961947,
     "latitude": 39.187815771015885,
-    "password": "735014"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785314799409,
@@ -899,7 +1046,10 @@
     "looking_for_food": true,
     "longitude": 118.88580609528219,
     "latitude": 32.18495755265628,
-    "password": "699740"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785314807825,
@@ -921,7 +1071,10 @@
     "looking_for_food": true,
     "longitude": 118.80438616980099,
     "latitude": 31.988258657283797,
-    "password": "875952"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785319404362,
@@ -939,7 +1092,10 @@
     "looking_for_food": false,
     "longitude": 118.83108531068454,
     "latitude": 32.053983021623644,
-    "password": "506162"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785319771166,
@@ -957,7 +1113,10 @@
     "looking_for_food": true,
     "longitude": 104.10981614614147,
     "latitude": 30.543783501513754,
-    "password": "240824"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785322613169,
@@ -975,7 +1134,10 @@
     "looking_for_food": false,
     "longitude": 118.9518074545672,
     "latitude": 32.089267387537745,
-    "password": "889214"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785324095455,
@@ -993,7 +1155,10 @@
     "looking_for_food": false,
     "longitude": 117.25198634348872,
     "latitude": 36.72293617416342,
-    "password": "013424"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785326670184,
@@ -1016,7 +1181,10 @@
     "looking_for_food": true,
     "longitude": 103.64635848721585,
     "latitude": 35.959426441790825,
-    "password": "967689"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785327335562,
@@ -1036,7 +1204,10 @@
     "looking_for_food": true,
     "longitude": 116.21727676430385,
     "latitude": 39.93972147618786,
-    "password": "770861"
+    "password": "123456",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   },
   {
     "id": 1785368208473,
@@ -1054,8 +1225,11 @@
     "looking_for_food": false,
     "longitude": 117.20525717365568,
     "latitude": 36.80356120753806,
-    "password": "191526",
+    "password": "123456",
     "communityId": null,
-    "communityName": ""
+    "communityName": "",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null
   }
 ]
