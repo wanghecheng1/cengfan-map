@@ -2942,6 +2942,23 @@
                     :title="studentSession.student.role === 'owner' ? '你是站主，点击进入管理后台' : '你是管理员，点击进入管理后台'">
                     {{ studentSession.student.role === 'owner' ? '👑 进入管理后台' : '🛡️ 进入管理后台' }}
                   </button>
+                  <!-- V5.3：顶部直接显示「🔐 修改密码」入口（每人登录后一眼就看到，不用再打开自己档案） -->
+                  <button
+                    v-if="!studentSession.student.passwordChangedAt"
+                    class="btn btn-sm btn-primary"
+                    @click="openChangeMyPassword"
+                    style="background:linear-gradient(135deg,#D97706,#B45309);border-color:#92400E;"
+                    title="每位同学仅可修改 1 次密码，请在自己熟悉的环境下修改，牢记新密码">
+                    🔐 修改密码（仅 1 次）
+                  </button>
+                  <button
+                    v-else
+                    class="btn btn-sm btn-secondary"
+                    disabled
+                    style="opacity:.85;cursor:not-allowed;"
+                    title="你已修改过密码（每人仅 1 次），忘记请联系管理员重置">
+                    ✅ 已改过密码
+                  </button>
                   <button v-if="myCommunity" class="btn btn-sm btn-danger" @click="confirmLeaveCommunity" title="退出当前社区">🚪 退社</button>
                   <!-- V5：私信双入口（管理员独立 / 站主独立） -->
                   <button class="btn btn-sm btn-secondary" @click="openDirectChat('admin')" title="私信管理员（站主也能看到）">💌 私信管理员</button>
@@ -2998,8 +3015,18 @@
                         'title-sky': (parseInt(s.titleLevel) || 0) === 5
                       }"
                       @click="highlightStudent(s)"
-                      :title="s.title ? ('【' + s.title + '】' + (s.major || '')) : (s.major || '点击查看')"
+                      :title="
+                        (s.role === 'owner' ? '👑 站主 · ' : (isStudentAdmin(s) && s.adminFrame ? '🛡️ 管理员 · ' : '')) +
+                        (s.title ? ('【' + s.title + '】' + (s.major || '')) : (s.major || '点击查看'))
+                      "
                     >
+                      <!-- V5.3：首页名录直接显示角色小标识（🛡️蓝/👑金），不用点开详情才看见 -->
+                      <template v-if="s.role === 'owner'">
+                        <span class="inline-title-badge" style="background:linear-gradient(135deg,#FBBF24,#F59E0B);color:#451A03;border:1px solid #D97706;margin-right:4px;padding:1px 6px;">👑</span>
+                      </template>
+                      <template v-else-if="isStudentAdmin(s) && s.adminFrame">
+                        <span class="inline-title-badge" style="background:linear-gradient(135deg,#38BDF8,#0EA5E9);color:#082F49;border:1px solid #0369A1;margin-right:4px;padding:1px 6px;">🛡️</span>
+                      </template>
                       <span v-if="s.title" class="inline-title-badge" :class="{
                         'badge-gold': (parseInt(s.titleLevel) || 0) === 1,
                         'badge-silver': (parseInt(s.titleLevel) || 0) === 2,
@@ -3464,16 +3491,16 @@
                         </template>
                       </div>
                     </div>
-                    <!-- 权限/条件提示条 -->
+                    <!-- 权限/条件提示条（V5.3：未入社同学仍可被投票 → 该提示改为"温馨提示未上榜"而非拦截） -->
                     <div style="margin-bottom:10px;font-size:12px;line-height:1.8;">
                       <template v-if="isGuestMode"><span class="msg-tag" style="background:#f0ecff;color:#6d28d9;">🔒 游客模式：无法投票，请先退出游客模式并登录</span></template>
                       <template v-else-if="!studentSession || !studentSession.student"><span class="msg-tag" style="background:#FEF3C7;color:#92400E;">🔐 先从「🎓 同学登录」登录 → 再投票（实名制）</span></template>
                       <template v-else-if="!isStudentMeInCommunity"><span class="msg-tag" style="background:#FEF3C7;color:#92400E;">🏛️ 投票要求：你必须先加入任意社区（才能投票和参与唐榜）</span></template>
                       <template v-else-if="isMyself(selectedStudent)"><span class="msg-tag" style="background:#FEE2E2;color:#991B1B;">🙅 不能投给自己哦～</span></template>
-                      <template v-else-if="!selectedStudent.communityId"><span class="msg-tag" style="background:#FEF3C7;color:#92400E;">🏛️ 该同学还没加入社区，暂不上榜（等他加入社区后就能接受投票啦）</span></template>
+                      <template v-else-if="!selectedStudent.communityId"><span class="msg-tag" style="background:#FEF3C7;color:#92400E;border:1px dashed #F59E0B;">💡 该同学暂未加入社区（已在唐榜末尾段显示，等 TA 入社后总票数自动计入正式榜单前列）</span></template>
                       <template v-else-if="hasTangVotedTodayFor(selectedStudent.id) && tangMyRemaining > 0"><span class="msg-tag" style="background:#DBEAFE;color:#1E40AF;">✅ 今日已给 TA 投过 1 票，还可以再投（每日 3 票不限定不同人）</span></template>
                       <template v-else-if="tangMyRemaining <= 0"><span class="msg-tag" style="background:#FEE2E2;color:#991B1B;">⏳ 今日 3 票已全部用完，明天 0 点再来～</span></template>
-                      <template v-else><span class="msg-tag" style="background:#ECFDF5;color:#065F46;">💡 点击右侧「🏆 投 1 票」立即计入唐榜榜单</span></template>
+                      <template v-else><span class="msg-tag" style="background:#ECFDF5;color:#065F46;">💡 点击右侧「🏆 投 1 票」立即计入总票数</span></template>
                     </div>
                     <div style="display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;">
                       <div style="font-size:12px;color:#78350F;line-height:1.7;">
@@ -4299,7 +4326,8 @@
           if (!studentSession.value || !studentSession.value.student) return false;
           if (!isStudentMeInCommunity.value) return false;
           if (isMyself(s)) return false;
-          if (!s.communityId) return false;
+          // V5.3 新规则：投票人必须入社，但允许投票给未入社的同学（哪怕他还没入社，也接受他得票，等他入社后自动上唐榜）
+          // （之前：!s.communityId 禁止；现在：允许）
           if ((tangMyRemaining.value || 0) <= 0) return false;
           return true;
         };
@@ -4309,7 +4337,7 @@
           if (!studentSession.value || !studentSession.value.student) return '🔐 先登录';
           if (!isStudentMeInCommunity.value) return '🏛️ 你未入社';
           if (isMyself(s)) return '🙅 不能投自己';
-          if (!s.communityId) return '🏛️ TA 未入社';
+          // V5.3：允许投给未入社同学（不再显示"TA 未入社"禁用）
           if (hasTangVotedTodayFor(s.id) && tangMyRemaining.value > 0) return '再投 1 票';
           if ((tangMyRemaining.value || 0) <= 0) return '3 票用完';
           return '投 1 票';
@@ -4320,7 +4348,7 @@
           if (!studentSession.value || !studentSession.value.student) return '请点击右上角「🎓 同学登录」登录后再投票';
           if (!isStudentMeInCommunity.value) return '投票功能仅限已加入社区的同学使用，请先申请加入任意社区';
           if (isMyself(s)) return '不能投给自己哦';
-          if (!s.communityId) return '该同学还未加入社区，暂不可投（他加入社区后就可以了）';
+          // V5.3：未入社的同学仍然允许接受投票
           if ((tangMyRemaining.value || 0) <= 0) return '你今天 3 票已经全部用完，明天 0 点再来～';
           return '';
         };
@@ -6455,7 +6483,7 @@
                 🏆 唐榜 · 社区人气排行榜
               </div>
               <div class="top-subtitle xiaowei" style="color:#FDE68A;">
-                每位已加入社区的同学，每天 3 票，投给你最欣赏的同学
+                每位已加入社区的同学，每天 3 票，投给你最欣赏的同学；未入社同学也可被投票，票数先累计并显示在榜单末尾，TA 入社后自动进入正式榜段
               </div>
             </div>
             <div class="top-actions" style="flex-wrap:wrap;">
@@ -6510,7 +6538,7 @@
               <div style="font-size:18px;color:#78350F;margin-bottom:10px;">还没有同学获得投票</div>
               <div style="font-size:13px;color:#92400E;line-height:1.9;margin-bottom:16px;">
                 成为第一个给社区同学投票的人吧！<br>
-                仅已加入社区的同学互投，未入社不参与榜单。
+                仅已加入社区的同学可投票；未入社同学也可被投票，入社后自动进入正式榜单段。
               </div>
               <button v-if="isLoggedIn && myCommunityName" class="btn btn-primary" @click="refreshRank">🔄 刷新看看有没有新票</button>
               <button v-else-if="!isLoggedIn" class="btn btn-primary" @click="goHome">🎓 去首页登录</button>
@@ -6534,7 +6562,12 @@
                       </span>
                     </div>
                     <div style="font-size:12px;color:#78350F;margin-bottom:8px;line-height:1.6;">
-                      🏛️ {{ t.communityName }}
+                      <template v-if="t.communityName === '暂未入社'">
+                        <span class="msg-tag" style="background:#FEF3C7;color:#92400E;border:1px dashed #F59E0B;">⚠️ 暂未入社（已获票 {{ t.total }}，入社后自动进入正式榜段）</span>
+                      </template>
+                      <template v-else>
+                        <span class="msg-tag community" style="font-size:11px;">🏛️ {{ t.communityName }}</span>
+                      </template>
                       <template v-if="t.student && t.student.title"><br>🏅 {{ t.student.title }}</template>
                     </div>
                     <div class="tangrank-top3-votes">{{ t.total }} 票</div>
@@ -6570,7 +6603,12 @@
                           {{ displayNameOf(row.student) }}
                         </span>
                         <span v-if="row.student && row.student.title" class="inline-title-badge" :class="titleBadgeClass(row.student.titleLevel)">{{ row.student.title }}</span>
-                        <span class="msg-tag community" style="font-size:11px;">🏛️ {{ row.communityName }}</span>
+                        <template v-if="row.communityName === '暂未入社'">
+                          <span class="msg-tag" style="background:#FEF3C7;color:#92400E;border:1px dashed #F59E0B;font-size:11px;">⚠️ 暂未入社（入社后自动进入正式榜段）</span>
+                        </template>
+                        <template v-else>
+                          <span class="msg-tag community" style="font-size:11px;">🏛️ {{ row.communityName }}</span>
+                        </template>
                       </div>
                       <div v-if="!isGuestMode" style="color:#92400E;font-size:12px;margin-top:3px;line-height:1.6;">
                         📍 {{ row.student ? (row.student.province || '未标注') : '' }}　

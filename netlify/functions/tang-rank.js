@@ -107,21 +107,23 @@ exports.handler = async (event) => {
       const dailyVotes = rankData.dailyVotes || {};
       const today = todayStr();
 
-      // 2) 构建榜单：已在社区的同学，总票 >= 1 才显示
-      const rankedList = students
-        .filter(s => s && s.communityId)
+      // 2) 构建榜单（V5.3：所有票数>0的同学都上唐榜；未入社的同学显示「暂未入社」徽标，排在已入社同学后面）
+      const allWithVotes = students
+        .filter(s => s)
         .map(s => {
           const community = communities.find(c => String(c.id) === String(s.communityId));
           return {
             studentId: s.id,
             nickname: s.nickname || String(s.id),
             communityId: s.communityId || null,
-            communityName: community ? community.name : '未入社',
+            communityName: community ? community.name : '暂未入社',
+            inCommunity: !!s.communityId,
             total: parseInt(totalVotes[String(s.id)] || '0', 10),
           };
         })
         .filter(r => r.total > 0)
-        .sort((a, b) => b.total - a.total)
+        // 已入社同学在前（按总票数），未入社在后（同样按总票数）
+        .sort((a, b) => (b.inCommunity === a.inCommunity ? (b.total - a.total) : (b.inCommunity ? 1 : -1)))
         .map((r, idx) => ({ ...r, rank: idx + 1 }));
 
       // 3) 计算当前用户剩余票数
@@ -140,7 +142,7 @@ exports.handler = async (event) => {
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({ rank: rankedList, myRemaining, myVotedToday })
+        body: JSON.stringify({ rank: allWithVotes, myRemaining, myVotedToday })
       };
     }
 
@@ -156,7 +158,9 @@ exports.handler = async (event) => {
 
       const candidate = students.find(s => String(s.id) === String(candidateId));
       if (!candidate) return { statusCode: 400, headers, body: JSON.stringify({ error: '候选人档案不存在' }) };
-      if (!candidate.communityId) return { statusCode: 403, headers, body: JSON.stringify({ error: '候选人尚未加入社区，暂不上榜' }) };
+      // V5.3 新规则：投票人必须入社（上一行已校验 fromStudent.communityId）
+      // 但候选人可以未入社：未入社的同学先累计票数，等他加入社区后当天自动出现在唐榜上
+      // （原校验：if (!candidate.communityId) return 403 → 已删除）
       if (String(fromStudent.id) === String(candidateId)) return { statusCode: 400, headers, body: JSON.stringify({ error: '不能投给自己哦' }) };
 
       // 读 tang-rank.json
