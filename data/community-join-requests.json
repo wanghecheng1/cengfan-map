@@ -26,5 +26,20 @@
     "decided_by_id": "admin",
     "decided_at": "2026-07-29 23:58",
     "rejectReason": ""
+  },
+  {
+    "id": "jr_1785399181511_357",
+    "studentId": 1785296708731,
+    "studentName": "钱淼",
+    "communityId": "c_1785389868000_152",
+    "communityName": "二次元元老社",
+    "applyNote": "",
+    "wechatContact": "你有",
+    "status": "pending",
+    "created_at": "2026-07-30 16:13",
+    "decided_by_role": null,
+    "decided_by_id": null,
+    "decided_at": null,
+    "rejectReason": ""
   }
 ]
