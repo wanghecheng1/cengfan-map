@@ -1889,7 +1889,7 @@
         if (r.data && r.data.ok) {
           const idx = studentsStore.list.findIndex(s => String(s.id) === String(studentId));
           if (idx > -1) studentsStore.list[idx] = r.data.student;
-          return r.data.student;
+          return { ok: true, student: r.data.student };
         }
         throw new Error((r.data && r.data.error) || '授予失败');
       },
@@ -1901,7 +1901,7 @@
         if (r.data && r.data.ok) {
           const idx = studentsStore.list.findIndex(s => String(s.id) === String(studentId));
           if (idx > -1) studentsStore.list[idx] = r.data.student;
-          return r.data.student;
+          return { ok: true, student: r.data.student };
         }
         throw new Error((r.data && r.data.error) || '撤销失败');
       },
@@ -2655,11 +2655,7 @@
                   ⚠️ 仅限「站主」或「被站主授权的管理员」登录，其他同学请走「用户入口」。
                 </div>
                 <div style="padding:6px 0 10px 0;font-size:13px;color:#475569;">
-                  <p style="margin:4px 0;">🔑 默认密码：</p>
-                  <ul style="padding-left:18px;margin:4px 0;line-height:1.8;">
-                    <li>站主（王鹤澄）：<b>123456wHc</b>（首次登录后可自行修改 1 次）</li>
-                    <li>管理员/普通同学：<b>123456</b>（首次登录后可自行修改 1 次）</li>
-                  </ul>
+                  <p style="margin:4px 0;">🔑 默认密码：<b>123456</b>（首次登录后可自行修改 1 次）</p>
                 </div>
                 <div class="form-group">
                   <label>管理员姓名 <span style="color:#C0002A;font-weight:700;">*</span></label>
@@ -2689,11 +2685,7 @@
                   ⚠️ 「完整姓名」与「密码」两项均为必填，缺一不可！
                 </div>
                 <div style="padding:6px 0 10px 0;font-size:13px;color:#475569;">
-                  <p style="margin:4px 0;">🔑 默认密码：</p>
-                  <ul style="padding-left:18px;margin:4px 0;line-height:1.8;">
-                    <li>站主（王鹤澄）：<b>123456wHc</b>（首次登录后可自行修改 1 次）</li>
-                    <li>其他同学：<b>123456</b>（首次登录后可自行修改 1 次）</li>
-                  </ul>
+                  <p style="margin:4px 0;">🔑 默认密码：<b>123456</b>（首次登录后可自行修改 1 次）</p>
                 </div>
                 <div class="form-group">
                   <label>同学姓名 <span style="color:#C0002A;font-weight:700;">*</span>（与档案一致，完整全名）</label>
@@ -2829,8 +2821,8 @@
               isGuestMode.value = false;
               showUserLogin.value = false;
               showSuccessModal('✅ 登录成功',
-                `欢迎回来，${res.student.name}！\n${res.isOwner ? '您是站主，可前往「管理员入口」管理全站。' :
-                  res.isAdmin ? '您是管理员，可前往「管理员入口」操作后台。' :
+                `欢迎回来，${res.student.name}！\n${res.isOwner ? '👑 你是站主，顶部已出现「👑 进入管理后台」按钮，直接点击进入，不用再输密码。' :
+                  res.isAdmin ? '🛡️ 你是管理员，顶部已出现「🛡️ 进入管理后台」按钮，直接点击进入，不用再输密码。' :
                   '您可自行修改密码（限 1 次）并完善个人信息。'}`, 3800);
               emit('navigate', 'home');
             } else {
@@ -2942,10 +2934,18 @@
                       </span>
                     </template>
                   </div>
+                  <!-- V5.1：已登录的管理员/站主 → 直接显示「进入管理后台」，不用返回首页再从管理员入口输密码 -->
+                  <button v-if="studentSession.student.role === 'owner' || studentSession.student.role === 'admin'"
+                    class="btn btn-sm btn-primary"
+                    @click="$emit('navigate','admin')"
+                    style="background:linear-gradient(135deg,#0EA5E9,#0284C7);border-color:#0369A1;"
+                    :title="studentSession.student.role === 'owner' ? '你是站主，点击进入管理后台' : '你是管理员，点击进入管理后台'">
+                    {{ studentSession.student.role === 'owner' ? '👑 进入管理后台' : '🛡️ 进入管理后台' }}
+                  </button>
                   <button v-if="myCommunity" class="btn btn-sm btn-danger" @click="confirmLeaveCommunity" title="退出当前社区">🚪 退社</button>
                   <!-- V5：私信双入口（管理员独立 / 站主独立） -->
-                      <button class="btn btn-sm btn-secondary" @click="openDirectChat('admin')" title="私信管理员（站主也能看到）">💌 私信管理员</button>
-                      <button class="btn btn-sm btn-secondary" @click="openDirectChat('owner')" title="私信站主（仅站主可见，管理员看不到）" style="background:linear-gradient(135deg,#FEF3C7,#FDE68A);color:#78350F;border:1px solid #D97706;">👑 私信站主</button>
+                  <button class="btn btn-sm btn-secondary" @click="openDirectChat('admin')" title="私信管理员（站主也能看到）">💌 私信管理员</button>
+                  <button class="btn btn-sm btn-secondary" @click="openDirectChat('owner')" title="私信站主（仅站主可见，管理员看不到）" style="background:linear-gradient(135deg,#FEF3C7,#FDE68A);color:#78350F;border:1px solid #D97706;">👑 私信站主</button>
                   <button class="btn btn-sm btn-secondary" @click="studentLogout">✕ 退出登录</button>
                 </div>
               </template>
@@ -3414,7 +3414,7 @@
                           <span style="color:#059669;font-weight:600;">✅ 已于 {{ formatTs(selectedStudent.passwordChangedAt) }} 修改过（限 1 次）</span>
                         </template>
                         <template v-else>
-                          <span style="color:#B45309;font-weight:600;">⏳ 尚未修改，默认 123456（站主默认 123456wHc）</span>
+                          <span style="color:#B45309;font-weight:600;">⏳ 尚未修改，默认 123456</span>
                         </template>
                       </div>
                       <button v-if="!selectedStudent.passwordChangedAt" class="btn btn-sm btn-primary" @click="openChangeMyPassword" style="background:linear-gradient(135deg,#0EA5E9,#0284C7);border-color:#0369A1;">
@@ -3451,6 +3451,46 @@
                   </div>
                   <div v-if="!selectedStudent.wechat && !selectedStudent.qq" style="padding:12px 0;color:#999;text-align:center;border-top:1px dashed #eee;">
                     该同学暂未填写联系方式
+                  </div>
+
+                  <!-- V5.2：唐榜投票卡（同学详情弹窗底部 → 点击最下方直接投票，投完立即计入唐榜） -->
+                  <div v-if="selectedStudent" style="margin-top:14px;padding:14px 16px;border-radius:12px;background:linear-gradient(180deg,#FFFBEB,#FFFFFF);border:2px solid #FDE68A;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px;">
+                      <div style="font-size:14px;font-weight:800;color:#92400E;">🏆 唐榜投票 · {{ selectedStudent.nickname }}</div>
+                      <div style="font-size:13px;color:#B45309;">
+                        当前总得票：<b style="font-size:18px;color:#B91C1C;">{{ tangTotalOf(selectedStudent) }}</b> 票
+                        <template v-if="studentSession && studentSession.student">
+                          　·　你今日剩余 <b style="color:#B91C1C;">{{ tangMyRemaining }}</b> 票
+                        </template>
+                      </div>
+                    </div>
+                    <!-- 权限/条件提示条 -->
+                    <div style="margin-bottom:10px;font-size:12px;line-height:1.8;">
+                      <template v-if="isGuestMode"><span class="msg-tag" style="background:#f0ecff;color:#6d28d9;">🔒 游客模式：无法投票，请先退出游客模式并登录</span></template>
+                      <template v-else-if="!studentSession || !studentSession.student"><span class="msg-tag" style="background:#FEF3C7;color:#92400E;">🔐 先从「🎓 同学登录」登录 → 再投票（实名制）</span></template>
+                      <template v-else-if="!isStudentMeInCommunity"><span class="msg-tag" style="background:#FEF3C7;color:#92400E;">🏛️ 投票要求：你必须先加入任意社区（才能投票和参与唐榜）</span></template>
+                      <template v-else-if="isMyself(selectedStudent)"><span class="msg-tag" style="background:#FEE2E2;color:#991B1B;">🙅 不能投给自己哦～</span></template>
+                      <template v-else-if="!selectedStudent.communityId"><span class="msg-tag" style="background:#FEF3C7;color:#92400E;">🏛️ 该同学还没加入社区，暂不上榜（等他加入社区后就能接受投票啦）</span></template>
+                      <template v-else-if="hasTangVotedTodayFor(selectedStudent.id) && tangMyRemaining > 0"><span class="msg-tag" style="background:#DBEAFE;color:#1E40AF;">✅ 今日已给 TA 投过 1 票，还可以再投（每日 3 票不限定不同人）</span></template>
+                      <template v-else-if="tangMyRemaining <= 0"><span class="msg-tag" style="background:#FEE2E2;color:#991B1B;">⏳ 今日 3 票已全部用完，明天 0 点再来～</span></template>
+                      <template v-else><span class="msg-tag" style="background:#ECFDF5;color:#065F46;">💡 点击右侧「🏆 投 1 票」立即计入唐榜榜单</span></template>
+                    </div>
+                    <div style="display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap;">
+                      <div style="font-size:12px;color:#78350F;line-height:1.7;">
+                        🎯 唐榜说明：<br>
+                        · 每位入社同学每天可投 <b>3 票</b>（可投给同 1 人或不同人）<br>
+                        · 投票后立即计入该同学总票数，切换到「🏆 唐榜」页能看到榜单实时更新
+                      </div>
+                      <button
+                        class="btn btn-primary"
+                        style="background:linear-gradient(135deg,#B91C1C,#991B1B);border-color:#7F1D1D;min-width:140px;"
+                        :disabled="!canTangVoteFor(selectedStudent)"
+                        :title="canTangVoteFor(selectedStudent) ? '投出今日的 1 票给 ' + selectedStudent.nickname : tangVoteDisabledReason(selectedStudent)"
+                        @click="doVoteInDetail(selectedStudent)"
+                      >
+                        🏆 {{ tangVoteBtnText(selectedStudent) }}
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div class="form-actions">
@@ -4239,6 +4279,78 @@
           }
         };
 
+        // ========== V5.2：同学详情弹窗中的「唐榜投票」相关函数 ==========
+        const tangMyRemaining = computed(() => tangRankStore.myRemaining || 0);
+        const isStudentMeInCommunity = computed(() => !!(studentSession.value && studentSession.value.student && studentSession.value.student.communityId));
+        const tangTotalOf = (s) => {
+          if (!s) return 0;
+          const rank = tangRankStore.rank || [];
+          const found = rank.find(r => String(r.studentId) === String(s.id));
+          return found ? (parseInt(found.total, 10) || 0) : 0;
+        };
+        const hasTangVotedTodayFor = (candidateId) => {
+          if (!candidateId) return false;
+          const arr = tangRankStore.myVotedToday || [];
+          return arr.some(x => String(x) === String(candidateId));
+        };
+        const canTangVoteFor = (s) => {
+          if (!s) return false;
+          if (isGuestMode.value) return false;
+          if (!studentSession.value || !studentSession.value.student) return false;
+          if (!isStudentMeInCommunity.value) return false;
+          if (isMyself(s)) return false;
+          if (!s.communityId) return false;
+          if ((tangMyRemaining.value || 0) <= 0) return false;
+          return true;
+        };
+        const tangVoteBtnText = (s) => {
+          if (!s) return '—';
+          if (isGuestMode.value) return '🔒 游客';
+          if (!studentSession.value || !studentSession.value.student) return '🔐 先登录';
+          if (!isStudentMeInCommunity.value) return '🏛️ 你未入社';
+          if (isMyself(s)) return '🙅 不能投自己';
+          if (!s.communityId) return '🏛️ TA 未入社';
+          if (hasTangVotedTodayFor(s.id) && tangMyRemaining.value > 0) return '再投 1 票';
+          if ((tangMyRemaining.value || 0) <= 0) return '3 票用完';
+          return '投 1 票';
+        };
+        const tangVoteDisabledReason = (s) => {
+          if (!s) return '';
+          if (isGuestMode.value) return '游客模式无法投票，请先登录';
+          if (!studentSession.value || !studentSession.value.student) return '请点击右上角「🎓 同学登录」登录后再投票';
+          if (!isStudentMeInCommunity.value) return '投票功能仅限已加入社区的同学使用，请先申请加入任意社区';
+          if (isMyself(s)) return '不能投给自己哦';
+          if (!s.communityId) return '该同学还未加入社区，暂不可投（他加入社区后就可以了）';
+          if ((tangMyRemaining.value || 0) <= 0) return '你今天 3 票已经全部用完，明天 0 点再来～';
+          return '';
+        };
+        const tangVoteInDetailLoading = ref(false);
+        const doVoteInDetail = async (s) => {
+          if (!s || !canTangVoteFor(s)) return;
+          if (!confirm(`确定把今天的一票投给【${s.nickname || '同学'}】吗？\n（唐榜实时更新，投票后可在「🏆 唐榜」页面立刻看到结果）`)) return;
+          tangVoteInDetailLoading.value = true;
+          try {
+            const r = await DataProvider.voteTang(s.id);
+            // 刷新唐榜（含榜单、剩余票数、今日已投）
+            try {
+              const fresh = await DataProvider.getTangRank();
+              if (fresh) {
+                tangRankStore.rank = fresh.rank || [];
+                tangRankStore.myRemaining = typeof fresh.myRemaining === 'number' ? fresh.myRemaining : 0;
+                tangRankStore.myVotedToday = Array.isArray(fresh.myVotedToday) ? fresh.myVotedToday : [];
+              }
+            } catch (_) {}
+            const newTotal = (r && typeof r.newTotal === 'number') ? r.newTotal : (tangTotalOf(s) || 1);
+            const remain = (r && typeof r.remaining === 'number') ? r.remaining : Math.max(0, (tangMyRemaining.value || 1) - 1);
+            showSuccessModal('🏆 唐榜投票成功',
+              `已把 1 票投给【${s.nickname || '同学'}】🎉\nTA 当前总得票：${newTotal} 票\n你今日剩余：${remain} 票`, 3500);
+          } catch (e) {
+            alert('❌ 投票失败：' + (e.message || String(e)));
+          } finally {
+            tangVoteInDetailLoading.value = false;
+          }
+        };
+
         // ========== 社区列表 / 我的社区 ==========
         const communities = computed(() => DataProvider.communities);
         const communityRequests = computed(() => DataProvider.communityRequests);
@@ -4429,6 +4541,15 @@
           if (DataProvider.studentSession) {
             try { await Promise.all([DataProvider.loadCommunities(), DataProvider.loadCommunityRequests(), DataProvider.loadDirectMessages(false)]); } catch (e) {}
           }
+          // 刷新唐榜（确保详情弹窗里的「当前总得票」有数据；即便没登录也拉榜单显示）
+          try {
+            const fresh = await DataProvider.getTangRank();
+            if (fresh) {
+              tangRankStore.rank = fresh.rank || [];
+              tangRankStore.myRemaining = typeof fresh.myRemaining === 'number' ? fresh.myRemaining : 0;
+              tangRankStore.myVotedToday = Array.isArray(fresh.myVotedToday) ? fresh.myVotedToday : [];
+            }
+          } catch (_) {}
           // 未读红点刷新（即便没打开聊天，也让顶部数字可见）
           if (dmUnreadTimer) clearInterval(dmUnreadTimer);
           dmUnreadTimer = setInterval(() => {
@@ -4474,9 +4595,12 @@
           // V5 详情弹窗辅助 + 密码修改
           isStudentAdmin, isMyself, formatTs, detailTitleWrapClass, detailTitleWrapStyle, detailNameInnerStyle, closeDetailModal,
           showChangePwd, changePwdForm, changePwdError, changePwdSuccess, changePwdLoading, openChangeMyPassword, submitChangeMyPassword,
+          // V5.2 同学详情弹窗内唐榜投票
+          tangRankStore, tangMyRemaining, isStudentMeInCommunity, tangTotalOf, hasTangVotedTodayFor,
+          canTangVoteFor, tangVoteBtnText, tangVoteDisabledReason, tangVoteInDetailLoading, doVoteInDetail,
           // V4 全局辅助
           isGuestMode, toInitials, displayNameOf, exitGuestMode,
-          currentCommunity, tangRankStore
+          currentCommunity
         };
       }
     };
