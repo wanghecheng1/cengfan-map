@@ -383,10 +383,10 @@
     "longitude": 118.70856889838937,
     "latitude": 32.14758407095809,
     "id": 1785294431323,
-    "password": "123456",
+    "password": "654321",
     "role": "student",
     "adminFrame": false,
-    "passwordChangedAt": null
+    "passwordChangedAt": "2026-07-30 13:28"
   },
   {
     "nickname": "周永南",
