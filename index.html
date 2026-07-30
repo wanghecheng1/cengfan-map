@@ -1809,13 +1809,20 @@
       // ===== 学生档案 =====
       async getStudents() {
         const r = await fetchWithRetry('/api/students', { headers: this._getHeaders(true, true) }, '获取学生档案');
-        // V5: 返回 { data: [], me: {}, isGlobalAdmin: boolean }
+        // V5.3 返回: { data:[], me:{}, isGlobalAdmin:bool, canSeePasswords:'owner-or-global'|'admin-only'|'none' }
         if (r.data && Array.isArray(r.data.data)) {
           studentsStore.list = r.data.data;
           if (r.data.data.length > 0) idCounter = Math.max(...r.data.data.map(s => s.id), 0) + 1;
-          // 把权限信息也挂到 store 上供前端用
           studentsStore._me = r.data.me || null;
           studentsStore._isGlobalAdmin = !!r.data.isGlobalAdmin;
+          // V5.3：三级权限（关键：普通管理员不能看👑站主密码）
+          //   'owner-or-global' → 站主本人 / 全局管理员：能看所有包括站主
+          //   'admin-only'      → 普通管理员：能看除👑站主以外的所有人
+          //   'none'            → 普通同学 / 未登录：所有人都是脱敏 ****xx
+          const flag = r.data.canSeePasswords;
+          studentsStore._canSeePasswords = (flag === 'owner-or-global')
+            ? 'owner-or-global'
+            : (flag === 'admin-only') ? 'admin-only' : 'none';
           return r.data.data;
         }
         // 兼容老返回（纯数组）
@@ -1824,6 +1831,7 @@
           if (r.data.length > 0) idCounter = Math.max(...r.data.map(s => s.id), 0) + 1;
           studentsStore._me = null;
           studentsStore._isGlobalAdmin = !!adminToken;
+          studentsStore._canSeePasswords = adminToken ? 'owner-or-global' : 'none';
           return r.data;
         }
         throw new Error('学生数据格式错误');
@@ -2069,7 +2077,9 @@
 
       // ===== 同学端：登录 / 会话 / 登出 =====
       async studentLogin(studentName, studentPassword, opts = {}) {
-        const adminLogin = !!opts.adminLogin;
+        // V5.3 兼容：历史调用有 studentLogin(name, pwd, true)（第三个参数是布尔值 adminLogin）
+        const adminLogin =
+          (typeof opts === 'boolean' ? opts : !!(opts && opts.adminLogin));
         const r = await fetchWithRetry('/api/student-login', {
           method: 'POST',
           headers: this._getHeaders(false),
@@ -2970,7 +2980,7 @@
               <template v-else>
                 <button class="btn btn-primary" @click="showStudentLogin = true" style="background:linear-gradient(135deg,#0EA5E9,#0284C7);border-color:#0284C7;">🎓 同学登录</button>
               </template>
-              <button class="btn btn-secondary" @click="showLogin = true">🔧 管理</button>
+              <!-- 🔧 管理按钮：V5.3 普通用户右上角彻底移除（只有 owner/admin 能从顶部快捷进入后台，无需再走输密码弹窗）-->
             </div>
           </div>
 
@@ -4288,7 +4298,9 @@
           if (o === n1) { changePwdError.value = '新密码不能与原密码相同'; return; }
           changePwdLoading.value = true;
           try {
-            const r = await DataProvider.changeMyPassword(o, n1);
+            // ⚠️ 注意：DataProvider 里真实的方法名是 changePassword(old, new)，不是 changeMyPassword！
+            // （之前写的 changeMyPassword 不存在 → 报 "is not a function"）
+            const r = await DataProvider.changePassword(o, n1);
             if (r && r.ok) {
               changePwdSuccess.value = '密码修改成功！本次为您仅有的 1 次修改机会。';
               setTimeout(() => { showChangePwd.value = false; }, 2200);
@@ -5162,8 +5174,24 @@
                   🗝️ 批量补全密码（{{ pwdStats.missing }} 人缺失）
                 </button>
               </div>
-              <div style="font-size:13px;color:#92400E;padding:10px 14px;background:#FFFBEB;border:1px dashed #F59E0B;border-radius:8px;margin-bottom:14px;">
-                📌 密码为每位同学独立随机生成的 6 位数字，<b>请务必通过私下方式告知本人</b>，不要在公开场合泄露。管理员可点「👁️ 显示密码」查看任意同学的当前密码，也可单独重置。
+              <!-- V5.3：三级密码查看权限诊断提示 -->
+              <div style="font-size:13px;padding:10px 14px;border:1px dashed;border-radius:8px;margin-bottom:14px;line-height:1.8;
+                background:{{ canSeeOwnerPassword ? '#F0FDF4' : (canSeeNormalPassword ? '#EFF6FF' : '#FEF2F2') }};
+                border-color:{{ canSeeOwnerPassword ? '#10B981' : (canSeeNormalPassword ? '#3B82F6' : '#EF4444') }};">
+                📌 密码为每位同学独立随机生成的 6 位数字，<b>请务必通过私下方式告知本人</b>，不要在公开场合泄露。
+                <br>
+                <template v-if="canSeeOwnerPassword">
+                  <span style="color:#065F46;">✅ 你是 <b>{{ curRole === 'owner' ? '👑 站主' : '🔧 全局管理员' }}</b>，可查看<b>所有同学（含站主本人）</b>的明文密码。</span>
+                </template>
+                <template v-else-if="canSeeNormalPassword">
+                  <span style="color:#1D4ED8;">ℹ️ 你是 <b>🛡️ 普通管理员</b>，可查看 <b>除👑站主以外</b> 的所有同学明文密码；站主密码已自动隐藏（仅站主本人/全局管理员可见）。</span>
+                </template>
+                <template v-else>
+                  <span style="color:#991B1B;">⚠️ 你当前未获得任何密码明文查看权限（看到的都是脱敏后的 ****末两位）。</span>
+                </template>
+                <template v-if="curRole">
+                  <br><span style="color:#1E3A8A;">👤 当前身份：<b>{{ curRole === 'owner' ? '👑 站主' : curRole === 'admin' ? '🛡️ 管理员' : isGlobalAdmin ? '🔧 全局管理员' : '👤 普通同学' }}</b></span>
+                </template>
               </div>
               <div v-if="filteredStudentsWithPwd.length === 0" style="padding:60px;text-align:center;color:#999;">
                 <div style="font-size:48px;margin-bottom:12px;">🔐</div>
@@ -5184,6 +5212,8 @@
                 >
                   <div class="col-name">
                     <strong :class="{ 'is-crimson': (parseInt(s.titleLevel) || 0) === 4 }">{{ s.nickname }}</strong>
+                    <span v-if="s.role === 'owner'" class="status-badge status-approved" style="margin-left:6px;background:linear-gradient(135deg,#FBBF24,#F59E0B);color:#451A03;border:1px solid #D97706;font-size:11px;">👑 站主</span>
+                    <span v-else-if="s.role === 'admin'" class="status-badge status-approved" style="margin-left:6px;background:linear-gradient(135deg,#38BDF8,#0EA5E9);color:#082F49;border:1px solid #0369A1;font-size:11px;">🛡️ 管理员</span>
                     <span v-if="s.title" class="mini-title-badge" :title="s.title">🏅 {{ s.title }}</span>
                   </div>
                   <div class="col-school">
@@ -5191,7 +5221,11 @@
                     <div style="color:#999;font-size:12px;">{{ s.major || '' }}</div>
                   </div>
                   <div class="col-major" style="flex:0 0 180px;">
-                    <template v-if="!s.hasPassword">
+                    <!-- V5.3：普通管理员（admin-only）→ 站主行密码显示为"🔒 无权限" -->
+                    <template v-if="s.role === 'owner' && !canSeeOwnerPassword">
+                      <span style="color:#991B1B;font-weight:600;" title="仅站主本人或全局管理员可见">🔒 无权限查看站主密码</span>
+                    </template>
+                    <template v-else-if="!s.hasPassword">
                       <span style="color:#C0002A;font-weight:600;">❌ 未设置</span>
                     </template>
                     <template v-else>
@@ -5201,13 +5235,28 @@
                     </template>
                   </div>
                   <div class="col-actions">
-                    <button v-if="s.hasPassword" class="btn btn-sm btn-secondary" @click="toggleRevealPwd(s.id)">
-                      {{ revealPwd[s.id] ? '🙈 隐藏' : '👁️ 显示' }}
-                    </button>
-                    <button v-if="s.hasPassword" class="btn btn-sm btn-secondary" @click="copyPwd(s)">📋 复制</button>
-                    <button class="btn btn-sm btn-primary" @click="resetOnePwd(s)" style="background:linear-gradient(135deg,#D97706,#B45309);border-color:#92400E;">
-                      🔄 {{ s.hasPassword ? '重置密码' : '生成密码' }}
-                    </button>
+                    <template v-if="s.role === 'owner' && !canSeeOwnerPassword">
+                      <!-- 普通管理员：站主行密码 👁️ 显示 / 📋 复制都禁用 -->
+                      <button v-if="s.hasPassword" class="btn btn-sm btn-secondary" disabled title="仅站主本人或全局管理员可见">🔒 无权显示</button>
+                      <button v-if="s.hasPassword" class="btn btn-sm btn-secondary" disabled title="仅站主本人或全局管理员可见">🔒 无权复制</button>
+                    </template>
+                    <template v-else>
+                      <button v-if="s.hasPassword" class="btn btn-sm btn-secondary" @click="toggleRevealPwd(s.id)">
+                        {{ revealPwd[s.id] ? '🙈 隐藏' : '👁️ 显示' }}
+                      </button>
+                      <button v-if="s.hasPassword" class="btn btn-sm btn-secondary" @click="copyPwd(s)">📋 复制</button>
+                    </template>
+                    <!-- 重置密码：只有站主本人或全局管理员才能重置站主密码；普通管理员不能重置站主密码 -->
+                    <template v-if="s.role === 'owner' && !canSeeOwnerPassword">
+                      <button class="btn btn-sm btn-primary" disabled title="仅站主本人或全局管理员可重置站主密码" style="background:linear-gradient(135deg,#9CA3AF,#6B7280);border-color:#4B5563;">
+                        🔒 无权重置站主
+                      </button>
+                    </template>
+                    <template v-else>
+                      <button class="btn btn-sm btn-primary" @click="resetOnePwd(s)" style="background:linear-gradient(135deg,#D97706,#B45309);border-color:#92400E;">
+                        🔄 {{ s.hasPassword ? '重置密码' : '生成密码' }}
+                      </button>
+                    </template>
                   </div>
                 </div>
               </div>
@@ -5780,6 +5829,21 @@
         });
         const amIOwner = computed(() => curRole.value === 'owner');
         const amIAdmin = computed(() => curRole.value === 'owner' || curRole.value === 'admin');
+        const isGlobalAdmin = computed(() => !!studentsStore._isGlobalAdmin || (typeof DataProvider.isAdmin === 'function' && DataProvider.isAdmin()));
+        // V5.3：密码查看三级权限（和后端一致）
+        //   pwdPermission: 'owner-or-global' | 'admin-only' | 'none'
+        const pwdPermission = computed(() => {
+          const v = studentsStore._canSeePasswords;
+          if (v === 'owner-or-global' || v === 'admin-only' || v === 'none') return v;
+          // 前端兜底：后端没返回时按当前身份推测
+          if (isGlobalAdmin.value || curRole.value === 'owner') return 'owner-or-global';
+          if (curRole.value === 'admin') return 'admin-only';
+          return 'none';
+        });
+        // 能不能"查看所有人（包括站主👑）密码明文"——只有站主本人/全局管理员 true
+        const canSeeOwnerPassword = computed(() => pwdPermission.value === 'owner-or-global');
+        // 能不能"查看除站主以外的密码明文"——普通管理员也 true（站主/全局管理员当然也true）
+        const canSeeNormalPassword = computed(() => pwdPermission.value !== 'none');
         // V5：tabs 动态 —— 仅站主可见「角色管理」Tab
         const tabs = computed(() => {
           const base = [
@@ -6389,8 +6453,10 @@
         };
 
         const logout = () => {
+          // V5.3 双清：不管是旧的 admin_token 登录，还是顶部快捷入口（studentSession.role=admin/owner）进来的，都全部清掉并回入口页
           DataProvider.adminLogout();
-          emit('navigate', 'home');
+          DataProvider.studentLogout();
+          emit('navigate', 'entry');
         };
         const goMain = () => emit('navigate', 'home');
 
@@ -6442,8 +6508,9 @@
           approveApplication, rejectApplication,
           openEditAnnouncement, resetAnnounceForm, publishAnnouncement, removeAnnouncement,
           logout, goMain,
-          // V5：角色/身份动态
-          curRole, amIOwner, amIAdmin,
+          // V5：角色/身份动态 + V5.3 三级密码权限
+          curRole, amIOwner, amIAdmin, isGlobalAdmin,
+          pwdPermission, canSeeOwnerPassword, canSeeNormalPassword,
           // V5：角色管理 Tab（仅站主）
           roleKeyword, roleFilterOwner, roleFilterAdmin, roleFilterStudent, roleLoadingId,
           ownerStudent, adminStudents, roleFilteredList,
@@ -6799,9 +6866,11 @@
               emits: ['navigate']
             })
           };
-          // 管理员页面鉴权
-          const isAuthed = DataProvider.isAdmin();
-          if (currentPage.value === 'admin' && !isAuthed) return EntryPage;
+          // 管理员页面鉴权（V5.3 双保险：admin_token 登录 或 普通登录会话里 role=owner/admin 都放行，避免快捷入口被回退到入口页）
+          const isAdminAuthed = DataProvider.isAdmin() ||
+            !!(DataProvider.studentSession && DataProvider.studentSession.student &&
+              (DataProvider.studentSession.student.role === 'owner' || DataProvider.studentSession.student.role === 'admin'));
+          if (currentPage.value === 'admin' && !isAdminAuthed) return EntryPage;
           return map[currentPage.value] || EntryPage;
         });
 

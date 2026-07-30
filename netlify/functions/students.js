@@ -321,10 +321,32 @@ exports.handler = async (event) => {
     if (event.httpMethod === 'GET') {
       const { list } = await getAndMigrateFile();
       const ctx = authStudentContext(event, list);
-      const canSeePwd = requireOwnerOrAdmin(ctx) || ctx.isGlobalAdmin;
+
+      // V5.3 权限分级（关键：普通管理员不能看👑站主的密码，只有站主本人/全局ADMIN_TOKEN可以）
+      // 级别 1：站主本人（ctx.role === 'owner'）或 全局 ADMIN_TOKEN（ctx.isGlobalAdmin = true）
+      //          → 能看所有人的明文密码，包括站主自己
+      const canSeeOwnerPassword = !!ctx.isGlobalAdmin || ctx.role === 'owner';
+      // 级别 2：普通管理员（ctx.role === 'admin'）
+      //          → 能看除"站主 role=owner"以外的所有同学明文密码；站主行脱敏
+      // 级别 3：普通同学 / 未登录 → 全部脱敏
+      const canSeeNormalPassword = canSeeOwnerPassword || ctx.role === 'admin';
+
+      // 返回给前端的权限标志，用于前端提示（诊断用）
+      const canSeePasswordsFlag = canSeeOwnerPassword
+        ? 'owner-or-global'
+        : canSeeNormalPassword
+          ? 'admin-only'
+          : 'none';
+
       const safeList = list.map(s => {
         const copy = { ...s };
-        if (!canSeePwd) {
+        // 先判断这一行是否是"站主本人（role=owner）"记录
+        const isOwnerRow = copy.role === 'owner';
+        // 该记录是否需要脱敏：
+        // - 看站主行：必须 canSeeOwnerPassword = true 才不脱敏
+        // - 看普通同学/管理员行：只要 canSeeNormalPassword = true 就不脱敏
+        const needMaskThisRow = isOwnerRow ? !canSeeOwnerPassword : !canSeeNormalPassword;
+        if (needMaskThisRow) {
           const p = String(copy.password || '');
           if (p.length >= 4) copy.password = '****' + p.slice(-2);
           else if (p.length > 0) copy.password = '****';
@@ -344,7 +366,9 @@ exports.handler = async (event) => {
             role: ctx.role,
             adminFrame: !!ctx.student.adminFrame
           } : null,
-          isGlobalAdmin: ctx.isGlobalAdmin
+          isGlobalAdmin: ctx.isGlobalAdmin,
+          // 前端用于显示诊断提示的权限标志
+          canSeePasswords: canSeePasswordsFlag
         })
       };
     }
@@ -385,6 +409,18 @@ exports.handler = async (event) => {
         const idx = list.findIndex(s => String(s.id) === String(id));
         if (idx === -1) {
           return { statusCode: 404, headers, body: JSON.stringify({ error: '同学档案不存在' }) };
+        }
+        // V5.3 安全锁：如果要重置的目标是「👑 站主（role=owner）」
+        // → 只有「站主本人 ctx.role==='owner'」或「全局管理员 ADMIN_TOKEN ctx.isGlobalAdmin」能操作
+        // → 普通管理员（ctx.role==='admin'）禁止重置站主密码
+        const targetIsOwner = list[idx].role === 'owner';
+        const canResetOwner = !!ctx.isGlobalAdmin || ctx.role === 'owner';
+        if (targetIsOwner && !canResetOwner) {
+          return {
+            statusCode: 403,
+            headers,
+            body: JSON.stringify({ error: '⚠️ 普通管理员无权重置👑站主密码，仅站主本人或全局管理员可操作' })
+          };
         }
         // owner/admin 重置：给默认密码
         const newPass = list[idx].role === 'owner' ? V5_OWNER_DEFAULT_PASSWORD : V5_DEFAULT_STUDENT_PASSWORD;
