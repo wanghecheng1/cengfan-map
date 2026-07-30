@@ -18,8 +18,8 @@
     "password": "123456",
     "communityId": null,
     "communityName": "",
-    "role": "student",
-    "adminFrame": false,
+    "role": "admin",
+    "adminFrame": true,
     "passwordChangedAt": null
   },
   {
