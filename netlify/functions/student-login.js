@@ -100,17 +100,32 @@ const migrateV5Students = (list) => {
       if (list[i].adminFrame !== true) { list[i].adminFrame = true; changed = true; }
     }
   }
+  // ============ V5 密码规范化（CRITICAL：绝不能覆盖用户改过的密码！）============
+  // 规则：只有同时满足以下 3 个条件，才给默认密码：
+  //   1. passwordChangedAt 为空（从未修改过）
+  //   2. 当前密码是「非法值」：空字符串 / null / 长度 < 6 / undefined
+  // → 只要用户改过密码（passwordChangedAt 非空），不管密码是什么，一律不动！
+  // → 哪怕没改过，如果当前密码长度 ≥ 6（合法），也不动（可能是旧版本管理员手动设置的合法密码）
   for (let i = 0; i < list.length; i++) {
     const s = list[i];
+    const neverChanged = !s.passwordChangedAt; // 从未改过密码
+    const currentPwd = String(s.password || '').trim();
+    const currentPwdInvalid = currentPwd.length < 6; // 当前密码无效（空/过短）
+    if (!neverChanged) continue; // 改过密码的，100% 不动
+
     if (s.role === 'owner') {
-      const want = V5_OWNER_DEFAULT_PASSWORD;
-      if (String(s.password || '').trim() !== want) {
-        s.password = want; s.passwordChangedAt = null; changed = true;
+      // 站主：从未改过 + 密码无效 → 补默认站主密码 123456wHc
+      if (currentPwdInvalid) {
+        s.password = V5_OWNER_DEFAULT_PASSWORD;
+        s.passwordChangedAt = null; // 没改过就是 null
+        changed = true;
       }
     } else {
-      const want = V5_DEFAULT_STUDENT_PASSWORD;
-      if (String(s.password || '').trim() !== want) {
-        s.password = want; s.passwordChangedAt = null; changed = true;
+      // 普通同学/管理员：从未改过 + 密码无效 → 补默认 123456
+      if (currentPwdInvalid) {
+        s.password = V5_DEFAULT_STUDENT_PASSWORD;
+        s.passwordChangedAt = null;
+        changed = true;
       }
     }
   }

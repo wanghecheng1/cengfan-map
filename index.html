@@ -1809,20 +1809,19 @@
       // ===== 学生档案 =====
       async getStudents() {
         const r = await fetchWithRetry('/api/students', { headers: this._getHeaders(true, true) }, '获取学生档案');
-        // V5.3 返回: { data:[], me:{}, isGlobalAdmin:bool, canSeePasswords:'owner-or-global'|'admin-only'|'none' }
+        // V5.3 返回: { data:[], me:{}, isGlobalAdmin:bool, canSeePasswords:'owner'|'staff'|'none' }
+        //   'owner' = 站主本人（唯一能看站主密码的）
+        //   'staff' = 管理员/全局管理员(admin123)：能看除👑站主以外的
+        //   'none'  = 普通同学/未登录：全脱敏
         if (r.data && Array.isArray(r.data.data)) {
           studentsStore.list = r.data.data;
           if (r.data.data.length > 0) idCounter = Math.max(...r.data.data.map(s => s.id), 0) + 1;
           studentsStore._me = r.data.me || null;
           studentsStore._isGlobalAdmin = !!r.data.isGlobalAdmin;
-          // V5.3：三级权限（关键：普通管理员不能看👑站主密码）
-          //   'owner-or-global' → 站主本人 / 全局管理员：能看所有包括站主
-          //   'admin-only'      → 普通管理员：能看除👑站主以外的所有人
-          //   'none'            → 普通同学 / 未登录：所有人都是脱敏 ****xx
           const flag = r.data.canSeePasswords;
-          studentsStore._canSeePasswords = (flag === 'owner-or-global')
-            ? 'owner-or-global'
-            : (flag === 'admin-only') ? 'admin-only' : 'none';
+          studentsStore._canSeePasswords = (flag === 'owner' || flag === 'staff' || flag === 'none')
+            ? flag
+            : (studentsStore._isGlobalAdmin ? 'staff' : 'none');
           return r.data.data;
         }
         // 兼容老返回（纯数组）
@@ -1831,7 +1830,7 @@
           if (r.data.length > 0) idCounter = Math.max(...r.data.map(s => s.id), 0) + 1;
           studentsStore._me = null;
           studentsStore._isGlobalAdmin = !!adminToken;
-          studentsStore._canSeePasswords = adminToken ? 'owner-or-global' : 'none';
+          studentsStore._canSeePasswords = adminToken ? 'staff' : 'none';
           return r.data;
         }
         throw new Error('学生数据格式错误');
@@ -5174,19 +5173,22 @@
                   🗝️ 批量补全密码（{{ pwdStats.missing }} 人缺失）
                 </button>
               </div>
-              <!-- V5.3：三级密码查看权限诊断提示 -->
+              <!-- V5.3：三级密码查看权限诊断提示（🔴 ONLY 站主本人能看站主密码！管理员+全局管理员都不准） -->
               <div style="font-size:13px;padding:10px 14px;border:1px dashed;border-radius:8px;margin-bottom:14px;line-height:1.8;
                 background:{{ canSeeOwnerPassword ? '#F0FDF4' : (canSeeNormalPassword ? '#EFF6FF' : '#FEF2F2') }};
                 border-color:{{ canSeeOwnerPassword ? '#10B981' : (canSeeNormalPassword ? '#3B82F6' : '#EF4444') }};">
                 📌 密码为每位同学独立随机生成的 6 位数字，<b>请务必通过私下方式告知本人</b>，不要在公开场合泄露。
                 <br>
                 <template v-if="canSeeOwnerPassword">
-                  <span style="color:#065F46;">✅ 你是 <b>{{ curRole === 'owner' ? '👑 站主' : '🔧 全局管理员' }}</b>，可查看<b>所有同学（含站主本人）</b>的明文密码。</span>
+                  <!-- 站主本人：绿色提示 -->
+                  <span style="color:#065F46;">✅ 你是 👑 <b>站主本人</b>，<b>唯一</b>拥有查看所有人（含站主账户自己）密码明文的权限。</span>
                 </template>
                 <template v-else-if="canSeeNormalPassword">
-                  <span style="color:#1D4ED8;">ℹ️ 你是 <b>🛡️ 普通管理员</b>，可查看 <b>除👑站主以外</b> 的所有同学明文密码；站主密码已自动隐藏（仅站主本人/全局管理员可见）。</span>
+                  <!-- 管理员/全局管理员（admin123）：蓝色提示，明确说"站主密码看不了" -->
+                  <span style="color:#1D4ED8;">ℹ️ 你是 <b>{{ isGlobalAdmin ? '🔧 全局管理员' : '🛡️ 管理员' }}</b>，可查看 <b>除👑站主以外</b> 的所有同学明文密码；站主密码已强制隐藏，<b>只有站主本人可见</b>。</span>
                 </template>
                 <template v-else>
+                  <!-- 普通同学：红色提示 -->
                   <span style="color:#991B1B;">⚠️ 你当前未获得任何密码明文查看权限（看到的都是脱敏后的 ****末两位）。</span>
                 </template>
                 <template v-if="curRole">
@@ -5221,9 +5223,9 @@
                     <div style="color:#999;font-size:12px;">{{ s.major || '' }}</div>
                   </div>
                   <div class="col-major" style="flex:0 0 180px;">
-                    <!-- V5.3：普通管理员（admin-only）→ 站主行密码显示为"🔒 无权限" -->
+                    <!-- V5.3：🔴 非 owner（管理员/全局管理员/普通同学）→ 站主行密码显示为"🔒 仅站主可见" -->
                     <template v-if="s.role === 'owner' && !canSeeOwnerPassword">
-                      <span style="color:#991B1B;font-weight:600;" title="仅站主本人或全局管理员可见">🔒 无权限查看站主密码</span>
+                      <span style="color:#991B1B;font-weight:600;" title="🔴 仅站主本人（王鹤澄）可见，管理员/全局管理员均无权查看">🔒 仅站主本人可见</span>
                     </template>
                     <template v-else-if="!s.hasPassword">
                       <span style="color:#C0002A;font-weight:600;">❌ 未设置</span>
@@ -5236,23 +5238,18 @@
                   </div>
                   <div class="col-actions">
                     <template v-if="s.role === 'owner' && !canSeeOwnerPassword">
-                      <!-- 普通管理员：站主行密码 👁️ 显示 / 📋 复制都禁用 -->
-                      <button v-if="s.hasPassword" class="btn btn-sm btn-secondary" disabled title="仅站主本人或全局管理员可见">🔒 无权显示</button>
-                      <button v-if="s.hasPassword" class="btn btn-sm btn-secondary" disabled title="仅站主本人或全局管理员可见">🔒 无权复制</button>
+                      <!-- 🔴 非 owner：站主行所有操作（显示/复制/重置）全禁用，红色提示"仅站主本人" -->
+                      <button v-if="s.hasPassword" class="btn btn-sm btn-secondary" disabled title="🔴 仅站主本人（王鹤澄）可见">🔒 仅站主可见</button>
+                      <button v-if="s.hasPassword" class="btn btn-sm btn-secondary" disabled title="🔴 仅站主本人（王鹤澄）可复制">🔒 仅站主复制</button>
+                      <button class="btn btn-sm btn-primary" disabled title="🔴 仅站主本人可重置站主密码" style="background:linear-gradient(135deg,#9CA3AF,#6B7280);border-color:#4B5563;">
+                        🔒 仅站主可重置
+                      </button>
                     </template>
                     <template v-else>
                       <button v-if="s.hasPassword" class="btn btn-sm btn-secondary" @click="toggleRevealPwd(s.id)">
                         {{ revealPwd[s.id] ? '🙈 隐藏' : '👁️ 显示' }}
                       </button>
                       <button v-if="s.hasPassword" class="btn btn-sm btn-secondary" @click="copyPwd(s)">📋 复制</button>
-                    </template>
-                    <!-- 重置密码：只有站主本人或全局管理员才能重置站主密码；普通管理员不能重置站主密码 -->
-                    <template v-if="s.role === 'owner' && !canSeeOwnerPassword">
-                      <button class="btn btn-sm btn-primary" disabled title="仅站主本人或全局管理员可重置站主密码" style="background:linear-gradient(135deg,#9CA3AF,#6B7280);border-color:#4B5563;">
-                        🔒 无权重置站主
-                      </button>
-                    </template>
-                    <template v-else>
                       <button class="btn btn-sm btn-primary" @click="resetOnePwd(s)" style="background:linear-gradient(135deg,#D97706,#B45309);border-color:#92400E;">
                         🔄 {{ s.hasPassword ? '重置密码' : '生成密码' }}
                       </button>
@@ -5830,19 +5827,22 @@
         const amIOwner = computed(() => curRole.value === 'owner');
         const amIAdmin = computed(() => curRole.value === 'owner' || curRole.value === 'admin');
         const isGlobalAdmin = computed(() => !!studentsStore._isGlobalAdmin || (typeof DataProvider.isAdmin === 'function' && DataProvider.isAdmin()));
-        // V5.3：密码查看三级权限（和后端一致）
-        //   pwdPermission: 'owner-or-global' | 'admin-only' | 'none'
+        // V5.3：密码查看三级权限（和后端一致，ONLY owner 能看站主密码！）
+        //   pwdPermission: 'owner' | 'staff' | 'none'
+        //   'owner' = 站主本人 → 能看所有人（包括站主）密码
+        //   'staff' = 管理员(role=admin) / 全局管理员(admin123) → 能看除站主以外的所有密码（站主行脱敏）
+        //   'none'  = 普通同学/游客 → 所有密码全脱敏
         const pwdPermission = computed(() => {
           const v = studentsStore._canSeePasswords;
-          if (v === 'owner-or-global' || v === 'admin-only' || v === 'none') return v;
-          // 前端兜底：后端没返回时按当前身份推测
-          if (isGlobalAdmin.value || curRole.value === 'owner') return 'owner-or-global';
-          if (curRole.value === 'admin') return 'admin-only';
+          if (v === 'owner' || v === 'staff' || v === 'none') return v;
+          // 前端兜底（后端没返回时）
+          if (curRole.value === 'owner') return 'owner';
+          if (curRole.value === 'admin' || isGlobalAdmin.value) return 'staff';
           return 'none';
         });
-        // 能不能"查看所有人（包括站主👑）密码明文"——只有站主本人/全局管理员 true
-        const canSeeOwnerPassword = computed(() => pwdPermission.value === 'owner-or-global');
-        // 能不能"查看除站主以外的密码明文"——普通管理员也 true（站主/全局管理员当然也true）
+        // 🔴 ONLY 站主本人才能看/重置站主密码！这个变量用于站主行判断
+        const canSeeOwnerPassword = computed(() => pwdPermission.value === 'owner');
+        // 管理员/全局管理员/站主 都能看普通同学密码
         const canSeeNormalPassword = computed(() => pwdPermission.value !== 'none');
         // V5：tabs 动态 —— 仅站主可见「角色管理」Tab
         const tabs = computed(() => {
