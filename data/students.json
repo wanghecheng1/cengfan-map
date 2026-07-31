@@ -155,10 +155,10 @@
     "title": "奶豆",
     "titleLevel": 0,
     "created_at": "2026-07-29 18:23",
-    "password": "123456",
+    "password": "000000",
     "role": "student",
     "adminFrame": false,
-    "passwordChangedAt": null
+    "passwordChangedAt": "2026-07-31 20:18"
   },
   {
     "nickname": "张钦峰",
