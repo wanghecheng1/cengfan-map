@@ -14,8 +14,17 @@ const VALID_RECIPIENT_TYPES = ['admin', 'owner'];
 // V5：每条 DM 自动迁移：新增 recipientType 字段（同学发给的对象是谁？ admin=私信管理员；owner=私信站主）
 // - 老数据：如果没有 recipientType，默认为 'admin'（因为旧版都是发给管理员的私信）
 const migrateDmV5 = (all) => all.map(m => {
-  if (VALID_RECIPIENT_TYPES.includes(String(m.recipientType || ''))) return m;
-  return { ...m, recipientType: 'admin' };
+  const m1 = { ...m };
+  if (!VALID_RECIPIENT_TYPES.includes(String(m1.recipientType || ''))) m1.recipientType = 'admin';
+  // senderRole 兼容：老数据没有 senderRole 的话根据 sender 和 recipientType 推断
+  if (!m1.senderRole) {
+    if (m1.sender === 'student') m1.senderRole = 'student';
+    else if (m1.sender === 'admin') {
+      // sender='admin' 的老数据：根据 recipientType=owner 推断是站主发的，否则保守认为 admin（可能不准，但加了 senderRole 之后新数据都准）
+      m1.senderRole = (m1.recipientType === 'owner') ? 'owner' : 'admin';
+    }
+  }
+  return m1;
 });
 // 身份辅助：X-Student-Token 拿到后顺便拿身份（role）
 const isOwnerStudent = (s) => !!s && (String(s.role || '') === 'owner');
@@ -321,6 +330,18 @@ exports.handler = async (event) => {
         let targetStudentId = null;
         // V5：标记已读时也区分 recipientType
         const bodyRt = VALID_RECIPIENT_TYPES.includes(String(body.recipientType || '')) ? String(body.recipientType) : null;
+        // 🔴 新增：用 studentToken 解析出身份（role），role=admin 禁止标记 recipientType=owner 消息已读
+        let viewerRoleMark = null; // null=超级管理员(ADMIN_TOKEN)/'owner'/'admin'/'student'
+        let viewerStudentMark = null;
+        if (!isAdmin) {
+          const headerToken = event.headers['x-student-token'] || event.headers['X-Student-Token'];
+          if (headerToken) viewerStudentMark = parseStudentToken(String(headerToken), students);
+          if (!viewerStudentMark) viewerStudentMark = verifyStudent(students, body.studentName, body.studentPassword);
+          if (viewerStudentMark) {
+            const r = String(viewerStudentMark.role || '');
+            viewerRoleMark = (r === 'owner' || r === 'admin' || r === 'student') ? r : 'student';
+          }
+        }
         if (isAdmin) {
           targetStudentId = body.studentId ? String(body.studentId) : null;
           const markSender = 'student';
@@ -334,15 +355,21 @@ exports.handler = async (event) => {
             }
           }
         } else {
-          let me = null;
-          const headerToken = event.headers['x-student-token'] || event.headers['X-Student-Token'];
-          if (headerToken) me = parseStudentToken(String(headerToken), students);
-          if (!me) me = verifyStudent(students, body.studentName, body.studentPassword);
-          if (!me) return { statusCode: 401, headers, body: JSON.stringify({ error: '身份验证失败' }) };
-          targetStudentId = String(me.id);
+          if (!viewerStudentMark) return { statusCode: 401, headers, body: JSON.stringify({ error: '身份验证失败' }) };
+          // 🔴 安全检查：role=admin 若试图 mark owner 类型的消息已读，拒绝
+          if (viewerRoleMark === 'admin') {
+            const forbiddenType = bodyRt ? bodyRt : null;
+            // 如果指定了 recipientType=owner，直接拒绝
+            if (forbiddenType === 'owner') {
+              return { statusCode: 403, headers, body: JSON.stringify({ error: '管理员无权处理站主私信的已读状态' }) };
+            }
+          }
+          targetStudentId = String(viewerStudentMark.id);
           for (const m of all) {
+            // 🔴 安全：如果是 admin 身份，只允许标记 recipientType=admin 的消息为已读（owner 的跳过）
             const matchRt = bodyRt ? String(m.recipientType || 'admin') === bodyRt : true;
-            if (String(m.studentId) === targetStudentId && matchRt && m.sender === 'admin' && !m.read) {
+            const rtMatchForAdminOnly = (viewerRoleMark !== 'admin') ? true : (String(m.recipientType || 'admin') === 'admin');
+            if (String(m.studentId) === targetStudentId && matchRt && rtMatchForAdminOnly && m.sender === 'admin' && !m.read) {
               m.read = true;
               m.read_at = toBeijingTime();
               changed++;
@@ -364,9 +391,12 @@ exports.handler = async (event) => {
       let sender, studentId, studentName;
       // V5：recipientType（私信对象：admin=私信管理员；owner=私信站主）
       let recipientType = VALID_RECIPIENT_TYPES.includes(String(body.recipientType || '')) ? String(body.recipientType) : 'admin';
+      // 🔴 新增 senderRole：标记这条消息是谁发的角色（owner/admin/student/super），用于之后精准过滤
+      let senderRole = 'student';
 
       if (isAdmin) {
         sender = 'admin';
+        senderRole = 'super'; // ADMIN_TOKEN 超级管理员
         studentId = String(body.studentId || '').trim();
         if (!studentId) return { statusCode: 400, headers, body: JSON.stringify({ error: '管理员发送请指定 studentId' }) };
         const s = students.find(x => String(x.id) === studentId);
@@ -385,14 +415,45 @@ exports.handler = async (event) => {
           }
         }
       } else {
-        sender = 'student';
         let me = null;
         const headerToken = event.headers['x-student-token'] || event.headers['X-Student-Token'];
         if (headerToken) me = parseStudentToken(String(headerToken), students);
         if (!me) me = verifyStudent(students, body.studentName, body.studentPassword);
         if (!me) return { statusCode: 401, headers, body: JSON.stringify({ error: '身份验证失败，请重新登录' }) };
-        studentId = String(me.id);
-        studentName = me.nickname || studentId;
+        const r = String(me.role || '');
+        const meRole = (r === 'owner' || r === 'admin' || r === 'student') ? r : 'student';
+        senderRole = (meRole === 'owner' || meRole === 'admin') ? meRole : 'student';
+        // 🔴 新增：student token 解析出 owner/admin，且 body.asAdmin=true + body.targetStudentId → 作为管理员/站主主动给另一位同学发消息
+        const wantAsAdmin = !!body.asAdmin && body.targetStudentId && String(body.targetStudentId).trim();
+        if (wantAsAdmin && (meRole === 'owner' || meRole === 'admin')) {
+          const targetSid = String(body.targetStudentId).trim();
+          const targetS = students.find(x => String(x.id) === targetSid);
+          if (!targetS) return { statusCode: 404, headers, body: JSON.stringify({ error: '目标同学不存在' }) };
+          // 安全检查：role=admin 仍然禁止发 recipientType=owner 的给别人（站主类私信屏蔽）
+          if (meRole === 'admin' && recipientType === 'owner') {
+            return { statusCode: 403, headers, body: JSON.stringify({ error: '管理员无权代发站主类私信（recipientType=owner）' }) };
+          }
+          sender = 'admin'; // 以管理员视角发给目标同学（对方在「私信管理员」中收到）
+          studentId = targetSid;
+          studentName = targetS.nickname || targetSid;
+          // recipientType：body 有就用，否则找该同学最近一条给管理员的
+          if (!(body.recipientType && VALID_RECIPIENT_TYPES.includes(String(body.recipientType)))) {
+            const lastStudentMsg = [...all]
+              .filter(m => String(m.studentId) === studentId && m.sender === 'student')
+              .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))[0];
+            if (lastStudentMsg && VALID_RECIPIENT_TYPES.includes(String(lastStudentMsg.recipientType || ''))) {
+              recipientType = String(lastStudentMsg.recipientType);
+            }
+          }
+        } else {
+          sender = 'student';
+          studentId = String(me.id);
+          studentName = me.nickname || studentId;
+          // 🔴 安全检查：管理员（role=admin，非 owner）不能发/回复 recipientType=owner 的站主私信（完全屏蔽）
+          if (meRole === 'admin' && recipientType === 'owner') {
+            return { statusCode: 403, headers, body: JSON.stringify({ error: '管理员无权处理或发送给站主的私信（已为您屏蔽，请使用「私信管理员」通道）' }) };
+          }
+        }
       }
 
       const newMsg = {
@@ -400,6 +461,7 @@ exports.handler = async (event) => {
         studentId,
         studentName,
         sender,
+        senderRole, // 🔴 新增：发送者角色（owner/admin/student/super）
         recipientType,
         content,
         created_at: toBeijingTime(),
@@ -408,11 +470,11 @@ exports.handler = async (event) => {
       };
       let nextList = all.concat([newMsg]);
       const { trimmed, removed } = trimConv(nextList, studentId);
-      await writeFile(FILE_DM, trimmed, sha, removed ? `DM ${sender}->${recipientType} ${studentId} (trim ${removed})` : `DM ${sender}->${recipientType} ${studentId}`);
+      await writeFile(FILE_DM, trimmed, sha, removed ? `DM ${sender}(${senderRole})->${recipientType} ${studentId} (trim ${removed})` : `DM ${sender}(${senderRole})->${recipientType} ${studentId}`);
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({ ok: true, message: newMsg, recipientType, trimmedOldMsgs: removed })
+        body: JSON.stringify({ ok: true, message: newMsg, recipientType, senderRole, trimmedOldMsgs: removed })
       };
     }
 

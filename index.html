@@ -2561,6 +2561,32 @@
         }
         throw new Error((r.data && r.data.error) || '发送失败');
       },
+      // 🔴 新增：owner/admin 同学身份（student token 登录）主动以"管理员视角"给另一位同学发私信
+      async sendDirectMessageAsOwner(targetStudentId, content, opts = {}) {
+        if (!studentSession.value || !studentSession.value.student) {
+          throw new Error('请先登录同学身份');
+        }
+        const me = studentSession.value.student;
+        const meRole = String(me.role || '');
+        if (meRole !== 'owner' && meRole !== 'admin') {
+          throw new Error('仅站主或管理员可以主动私信其他同学');
+        }
+        const body = {
+          asAdmin: true,
+          targetStudentId: String(targetStudentId),
+          content
+        };
+        if (opts && (opts.recipientType === 'admin' || opts.recipientType === 'owner')) {
+          body.recipientType = opts.recipientType;
+        }
+        const r = await fetchWithRetry('/api/direct-messages', {
+          method: 'POST',
+          headers: this._getHeaders(false, true), // 携带 X-Student-Token（student token）
+          body: JSON.stringify(body)
+        }, `站主/管理员私信同学 ${targetStudentId}`);
+        if (r.data && r.data.ok) return r.data;
+        throw new Error((r.data && r.data.error) || '发送失败');
+      },
       async markDirectMessagesRead(opt = {}) {
         const isAdminCall = !!(adminToken && (opt.studentId || Object.keys(opt).length === 0));
         const r = await fetchWithRetry('/api/direct-messages/mark-read', {
@@ -2647,6 +2673,18 @@
                 <span class="entry-btn-desc">看地图/公告，姓名仅显示首字母</span>
               </button>
             </div>
+            <!-- 🔴 新增：注册按钮（申请加入档案系统）—— 新同学还没档案时走这个 -->
+            <div style="margin-top:18px;text-align:center;">
+              <div style="font-size:13px;color:#94A3B8;margin-bottom:8px;">📝 还没在本档案里？点下方提交申请，站主/管理员审核后即可登录</div>
+              <button
+                class="btn btn-lg"
+                @click="showRegister = true"
+                style="font-size:16px;padding:14px 36px;font-weight:700;
+                       background:linear-gradient(135deg,#059669,#047857);color:#fff;border:1px solid #065F46;
+                       box-shadow:0 12px 28px rgba(5,150,105,0.35);border-radius:14px;">
+                🚀 立即注册 · 申请加入档案系统
+              </button>
+            </div>
             <div class="entry-footer xiaowei" style="display:flex;flex-direction:column;gap:8px;">
               <div>同窗情谊 · 山高水长</div>
               <div style="font-size:12px;color:#94A3B8;">
@@ -2654,6 +2692,72 @@
               </div>
             </div>
           </div>
+
+          <!-- ====== 🔴 新增：注册申请弹窗（新同学提交加入档案申请）====== -->
+          <transition name="modal">
+            <div v-if="showRegister" class="modal-mask" @click.self="showRegister = false">
+              <div class="modal-content" style="max-width:520px;">
+                <div class="modal-title calligraphy">📝 申请加入档案系统 · 新同学注册</div>
+                <div style="font-size:13px;color:#065F46;background:#ECFDF5;border:1px dashed #34D399;padding:10px 14px;border-radius:8px;line-height:1.7;margin-bottom:12px;">
+                  ✅ 请如实填写信息，站主/管理员审核通过后，会为你创建档案并分配默认登录密码 <b>123456</b>，即可使用「👥 用户入口」登录。
+                </div>
+                <div class="form-group">
+                  <label>完整姓名 <span style="color:#C0002A;font-weight:700;">*</span></label>
+                  <input type="text" v-model="registerForm.nickname" placeholder="例如：王小明（必须与本名一致）" @keyup.enter="submitRegister">
+                </div>
+                <div style="display:flex;gap:10px;">
+                  <div class="form-group" style="flex:1;min-width:45%;">
+                    <label>所在省份 <span style="color:#C0002A;font-weight:700;">*</span></label>
+                    <select v-model="registerForm.province" style="width:100%;padding:10px 12px;border:1px solid var(--paper-dark);border-radius:6px;">
+                      <option value="">-- 请选择省份 --</option>
+                      <option v-for="(meta, prov) in PROVINCE_DATA" :key="prov" :value="prov">{{ prov }}</option>
+                    </select>
+                  </div>
+                  <div class="form-group" style="flex:1;min-width:45%;">
+                    <label>所在城市 <span style="color:#C0002A;font-weight:700;">*</span></label>
+                    <input type="text" v-model="registerForm.city" placeholder="例如：北京市/南京市" @keyup.enter="submitRegister">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>大学名称 <span style="color:#C0002A;font-weight:700;">*</span></label>
+                  <input type="text" v-model="registerForm.university" placeholder="例如：清华大学（全称）" @keyup.enter="submitRegister">
+                </div>
+                <div class="form-group">
+                  <label>专业方向（选填）</label>
+                  <input type="text" v-model="registerForm.major" placeholder="例如：计算机科学与技术">
+                </div>
+                <div style="display:flex;gap:10px;">
+                  <div class="form-group" style="flex:1;min-width:45%;">
+                    <label>微信 <span style="color:#C0002A;font-weight:700;">*</span>（必填，方便站主/管理员联系你）</label>
+                    <input type="text" v-model="registerForm.wechat" placeholder="微信号 / 手机号（必填）">
+                  </div>
+                  <div class="form-group" style="flex:1;min-width:45%;">
+                    <label>QQ（选填）</label>
+                    <input type="text" v-model="registerForm.qq" placeholder="QQ 号">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>兴趣爱好（选填，多个用逗号分隔）</label>
+                  <input type="text" v-model="registerForm.hobbiesText" placeholder="例如：篮球、摄影、美食、旅行">
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;margin:4px 0 10px;">
+                  <label style="margin:0;font-weight:600;"><input type="checkbox" v-model="registerForm.looking_for_food" style="transform:scale(1.2);margin-right:6px;">找饭搭子（勾选后会显示饭搭子标记）</label>
+                </div>
+                <div class="form-group">
+                  <label>申请留言 / 对站主说的话（选填）</label>
+                  <textarea v-model="registerForm.message" rows="2" placeholder="自我介绍一下，或者希望加入的原因..." style="width:100%;resize:vertical;"></textarea>
+                </div>
+                <div v-if="registerError" style="color:#C0002A;font-size:13px;margin-top:6px;text-align:center;">❌ {{ registerError }}</div>
+                <div v-if="registerSuccess" style="color:#059669;font-size:13px;margin-top:6px;text-align:center;font-weight:700;">✅ {{ registerSuccess }}</div>
+                <div class="form-actions">
+                  <button class="btn btn-secondary" @click="showRegister = false; clearRegisterForm();">取消</button>
+                  <button class="btn btn-primary" @click="submitRegister" :disabled="registerLoading" style="background:linear-gradient(135deg,#059669,#047857);border-color:#065F46;">
+                    {{ registerLoading ? '提交中...' : '✅ 提交申请（等待站主/管理员审核）' }}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </transition>
 
           <!-- ====== V5：管理员入口登录弹窗（姓名+密码，必须 role=owner/admin）====== -->
           <transition name="modal">
@@ -2769,6 +2873,71 @@
         const userLoginLoading = ref(false);
         const userLoginError = ref('');
 
+        // === 🔴 新增：新同学注册申请（提交给站主/管理员审核）===
+        const showRegister = ref(false);
+        const registerForm = reactive({
+          nickname: '', province: '', city: '', university: '', major: '',
+          wechat: '', qq: '', hobbiesText: '', looking_for_food: false, message: ''
+        });
+        const registerLoading = ref(false);
+        const registerError = ref('');
+        const registerSuccess = ref('');
+        const clearRegisterForm = () => {
+          Object.assign(registerForm, {
+            nickname: '', province: '', city: '', university: '', major: '',
+            wechat: '', qq: '', hobbiesText: '', looking_for_food: false, message: ''
+          });
+          registerError.value = '';
+          registerSuccess.value = '';
+          registerLoading.value = false;
+        };
+        const submitRegister = async () => {
+          registerError.value = '';
+          registerSuccess.value = '';
+          if (!registerForm.nickname.trim() || registerForm.nickname.trim().length < 2) {
+            registerError.value = '请输入完整姓名（至少 2 个字）'; return;
+          }
+          if (!registerForm.province) { registerError.value = '请选择所在省份'; return; }
+          if (!registerForm.city.trim()) { registerError.value = '请输入所在城市'; return; }
+          if (!registerForm.university.trim() || registerForm.university.trim().length < 2) {
+            registerError.value = '请输入大学全称（至少 2 个字）'; return;
+          }
+          // 🔴 微信必填
+          if (!registerForm.wechat.trim() || registerForm.wechat.trim().length < 2) {
+            registerError.value = '请填写微信号（必填，方便站主/管理员联系你）'; return;
+          }
+          registerLoading.value = true;
+          try {
+            const hobbies = registerForm.hobbiesText
+              ? registerForm.hobbiesText.split(/[,，、]/).map(h => h.trim()).filter(Boolean)
+              : [];
+            // message 字段先挂到 applyNote 上，pending.json 存下来
+            await DataProvider.addPending({
+              nickname: registerForm.nickname.trim(),
+              province: registerForm.province,
+              city: registerForm.city.trim(),
+              university: registerForm.university.trim(),
+              major: registerForm.major.trim(),
+              hobbies,
+              wechat: registerForm.wechat.trim(),
+              qq: registerForm.qq.trim(),
+              looking_for_food: !!registerForm.looking_for_food,
+              applyNote: registerForm.message.trim() // 注册申请留言（额外字段，pending.json 会保留）
+            });
+            registerSuccess.value = `✅ 申请已提交！站主/管理员审核通过后，你可使用 姓名 + 默认密码「123456」从「👥 用户入口」登录。`;
+            setTimeout(() => {
+              showRegister.value = false;
+              clearRegisterForm();
+              showSuccessModal('✅ 注册申请已提交',
+                '站主/管理员将尽快审核，通过后你将获得档案（默认密码 123456，首次登录后可自行修改 1 次）。', 5000);
+            }, 2200);
+          } catch (e) {
+            registerError.value = '申请提交失败：' + (e.message || String(e)) + '（请检查网络并重试）';
+          } finally {
+            registerLoading.value = false;
+          }
+        };
+
         // === 打开弹窗便捷方法 ===
         const openAdminLogin = () => {
           adminLoginForm.name = ''; adminLoginForm.password = '';
@@ -2869,7 +3038,10 @@
           showGlobalAdminLogin, adminPwd, pwdError, pwdShake, globalPwdInput, doGlobalAdminLogin,
           showAdminLogin, adminLoginForm, adminLoginLoading, adminLoginError, openAdminLogin, doAdminLogin,
           showUserLogin, userLoginForm, userLoginLoading, userLoginError, openUserLogin, doUserLogin,
-          enterAsGuest
+          enterAsGuest,
+          // 🔴 新增：新同学注册申请
+          showRegister, registerForm, registerLoading, registerError, registerSuccess,
+          clearRegisterForm, submitRegister
         };
       }
     };
@@ -2971,7 +3143,19 @@
                   <button v-if="myCommunity" class="btn btn-sm btn-danger" @click="confirmLeaveCommunity" title="退出当前社区">🚪 退社</button>
                   <!-- V5：私信双入口（管理员独立 / 站主独立） -->
                   <button class="btn btn-sm btn-secondary" @click="openDirectChat('admin')" title="私信管理员（站主也能看到）">💌 私信管理员</button>
-                  <button class="btn btn-sm btn-secondary" @click="openDirectChat('owner')" title="私信站主（仅站主可见，管理员看不到）" style="background:linear-gradient(135deg,#FEF3C7,#FDE68A);color:#78350F;border:1px solid #D97706;">👑 私信站主</button>
+                  <!-- 🔴 安全：管理员身份看不到站主私信，禁用此按钮（点也会被 openDirectChat 再次拦截）-->
+                  <button
+                    class="btn btn-sm btn-secondary"
+                    @click="openDirectChat('owner')"
+                    :disabled="isCurrentStudentAdminButNotOwner"
+                    :title="isCurrentStudentAdminButNotOwner
+                      ? '⚠️ 您当前是管理员身份：站主私信对管理员完全屏蔽，请使用「私信管理员」或直接联系站主本人。'
+                      : '私信站主（仅站主可见，管理员看不到）'"
+                    :style="isCurrentStudentAdminButNotOwner
+                      ? 'opacity:.55;cursor:not-allowed;background:#F1F5F9;color:#64748B;border:1px solid #CBD5E1;'
+                      : 'background:linear-gradient(135deg,#FEF3C7,#FDE68A);color:#78350F;border:1px solid #D97706;'">
+                    👑 私信站主{{ isCurrentStudentAdminButNotOwner ? '（管理员已屏蔽）' : '' }}
+                  </button>
                   <button class="btn btn-sm btn-secondary" @click="studentLogout">✕ 退出登录</button>
                 </div>
               </template>
@@ -3392,25 +3576,38 @@
           <transition name="modal">
             <div v-if="showDetail && selectedStudent" class="modal-mask" @click.self="closeDetailModal">
               <div class="modal-content" style="max-width:420px;">
-                <div class="modal-title calligraphy" :class="detailTitleWrapClass" :style="detailTitleWrapStyle">
-                  <!-- 扫光层（站主/管理员专有，通过 CSS 伪类控制动画显示） -->
-                  <div v-if="detailTitleWrapClass" class="shine-sweep-layer"></div>
-                  <span
-                    class="detail-student-name"
-                    :class="[
-                      (parseInt(selectedStudent.titleLevel) || 0) === 4 ? 'name-crimson' : '',
-                      (parseInt(selectedStudent.titleLevel) || 0) === 5 ? 'name-sky' : ''
-                    ]"
-                    :style="detailNameInnerStyle"
-                  >
-                    <template v-if="selectedStudent.role === 'owner'">👑</template>
-                    <template v-else-if="isStudentAdmin(selectedStudent) && selectedStudent.adminFrame">🛡️</template>
-                    <template v-else>🧑</template>
-                    {{ displayNameOf(selectedStudent) }}
-                  </span> 的档案
-                  <span v-if="selectedStudent.role === 'owner'" class="status-badge status-approved" style="margin-left:8px;font-size:12px;background:linear-gradient(135deg,#FBBF24,#F59E0B);color:#451A03;border:1px solid #D97706;">👑 站主</span>
-                  <span v-else-if="isStudentAdmin(selectedStudent)" class="status-badge status-approved" style="margin-left:8px;font-size:12px;background:linear-gradient(135deg,#38BDF8,#0EA5E9);color:#082F49;border:1px solid #0369A1;">🛡️ 管理员</span>
-                  <span v-if="selectedStudent.looking_for_food" class="status-badge status-approved" style="margin-left:8px;font-size:12px;">🍜 找饭搭子</span>
+                <div class="modal-title calligraphy" :class="detailTitleWrapClass"
+                     :style="Object.assign({}, detailTitleWrapStyle || {}, { display:'flex', justifyContent:'space-between', alignItems:'center', gap:'10px', flexWrap:'wrap' })">
+                  <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;flex:1;min-width:0;">
+                    <!-- 扫光层（站主/管理员专有，通过 CSS 伪类控制动画显示） -->
+                    <div v-if="detailTitleWrapClass" class="shine-sweep-layer"></div>
+                    <span
+                      class="detail-student-name"
+                      :class="[
+                        (parseInt(selectedStudent.titleLevel) || 0) === 4 ? 'name-crimson' : '',
+                        (parseInt(selectedStudent.titleLevel) || 0) === 5 ? 'name-sky' : ''
+                      ]"
+                      :style="detailNameInnerStyle"
+                    >
+                      <template v-if="selectedStudent.role === 'owner'">👑</template>
+                      <template v-else-if="isStudentAdmin(selectedStudent) && selectedStudent.adminFrame">🛡️</template>
+                      <template v-else>🧑</template>
+                      {{ displayNameOf(selectedStudent) }}
+                    </span> 的档案
+                    <span v-if="selectedStudent.role === 'owner'" class="status-badge status-approved" style="margin-left:0;font-size:12px;background:linear-gradient(135deg,#FBBF24,#F59E0B);color:#451A03;border:1px solid #D97706;">👑 站主</span>
+                    <span v-else-if="isStudentAdmin(selectedStudent)" class="status-badge status-approved" style="margin-left:0;font-size:12px;background:linear-gradient(135deg,#38BDF8,#0EA5E9);color:#082F49;border:1px solid #0369A1;">🛡️ 管理员</span>
+                    <span v-if="selectedStudent.looking_for_food" class="status-badge status-approved" style="margin-left:0;font-size:12px;">🍜 找饭搭子</span>
+                  </div>
+                  <!-- 🔴 新增：管理员/站主视角下，详情弹窗右上角增加「📤 主动私信这位同学」按钮 -->
+                  <div v-if="hasAuth" style="flex-shrink:0;">
+                    <button
+                      class="btn btn-sm btn-secondary"
+                      @click="openDmQuick(selectedStudent)"
+                      title="📤 主动私信这位同学（从管理员通道发出，对方会在「💌 私信管理员」中收到）"
+                      style="background:linear-gradient(135deg,#E0F2FE,#7DD3FC);color:#0C4A6E;border:1px solid #0284C7;font-weight:600;">
+                      📤 私信TA
+                    </button>
+                  </div>
                 </div>
                 <div style="padding:8px 0 20px 0;font-size:14px;line-height:2.2;">
                   <!-- V5：管理员蓝色耀眼外框（独立于头衔系统） -->
@@ -3604,11 +3801,11 @@
                 </div>
                 <div class="form-row">
                   <div class="form-group">
-                    <label>微信号</label>
-                    <input type="text" v-model="applyForm.wechat" placeholder="选填">
+                    <label>微信号 <span style="color:#C0002A;font-weight:700;">*</span>（必填，方便管理员联系）</label>
+                    <input type="text" v-model="applyForm.wechat" placeholder="微信号 / 手机号（必填，2~50字符）">
                   </div>
                   <div class="form-group">
-                    <label>QQ号</label>
+                    <label>QQ号（选填）</label>
                     <input type="text" v-model="applyForm.qq" placeholder="选填">
                   </div>
                 </div>
@@ -3829,6 +4026,73 @@
                 <div v-if="dmTrimmed > 0" style="font-size:12px;color:#B45309;margin-top:6px;text-align:right;">⚠️ 历史消息已自动清理旧 {{ dmTrimmed }} 条</div>
                 <div class="form-actions" style="margin-top:14px;">
                   <button class="btn btn-secondary" @click="onCloseDirectChat">关闭</button>
+                </div>
+              </div>
+            </div>
+          </transition>
+
+          <!-- 🔴 新增：管理员/站主主动私信某位同学的快速弹窗（从详情弹窗点「📤 私信TA」打开） -->
+          <transition name="modal">
+            <div v-if="dmQuickShow && dmQuickTarget" class="modal-mask" @click.self="closeDmQuick">
+              <div class="modal-content" style="max-width:520px;">
+                <div class="modal-title calligraphy" style="background:linear-gradient(135deg,#E0F2FE 0%,#BAE6FD 100%);color:#082F49;">
+                  📤 主动私信「<span style="color:#0369A1;">{{ dmQuickTarget.nickname || '同学' }}</span>」（通过管理员通道）
+                </div>
+                <div style="font-size:13px;color:#0C4A6E;background:#EFF6FF;border:1px dashed #93C5FD;padding:8px 12px;border-radius:8px;line-height:1.8;margin-bottom:12px;">
+                  ✅ 对方同学会在「💌 私信管理员」列表里看到你的消息（和管理员/站主平时回复的私信显示在同一个地方）。<br>
+                  🔒 对方回复：该同学回复这条私信时，你会在 AdminPage 后台「💌 单聊收件箱」🛡️ 私信管理员列表里看到。
+                </div>
+                <!-- 历史 admin 通道消息（如果有） -->
+                <div v-if="dmQuickLoadingHistory" style="text-align:center;padding:20px 0;color:#94A3B8;font-size:13px;">⏳ 加载历史消息中...</div>
+                <div v-else-if="dmQuickHistory.length > 0" style="max-height:260px;overflow-y:auto;padding:10px 12px;border:1px solid #E5E7EB;border-radius:10px;background:#F9FAFB;margin-bottom:10px;">
+                  <div style="font-size:12px;color:#64748B;margin-bottom:6px;padding-bottom:6px;border-bottom:1px dashed #E5E7EB;">
+                    📜 历史「🛡️ 私信管理员」通道消息（{{ dmQuickHistory.length }} 条）
+                  </div>
+                  <div v-for="m in dmQuickHistory" :key="m.id" style="margin-bottom:10px;">
+                    <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:3px;" :style="m.sender === 'admin' ? 'justify-content:flex-end;' : ''">
+                      <div
+                        class="chat-avatar"
+                        :class="m.sender === 'admin' ? 'chat-avatar--admin' : 'chat-avatar--me'"
+                        :style="(m.senderRole || m.recipientType) === 'owner' && m.sender === 'admin' ? {background:'linear-gradient(135deg,#FBBF24,#F59E0B)',color:'#451A03',borderColor:'#D97706'} : {}">
+                        {{ m.sender === 'admin' ? ((m.senderRole === 'owner' || m.recipientType === 'owner') ? '主' : '管') : '同' }}
+                      </div>
+                      <div style="max-width:75%;">
+                        <div style="font-size:11px;color:#94A3B8;margin-bottom:2px;" :style="m.sender === 'admin' ? 'text-align:right;' : ''">
+                          <span v-if="m.sender === 'admin'">
+                            {{ m.senderRole === 'owner' ? '👑 站主' : '🛡️ 管理员' }}
+                          </span>
+                          <span v-else>🧑 {{ m.studentName || dmQuickTarget.nickname }}</span>
+                          <span style="color:#999;font-size:11px;margin-left:6px;">{{ m.created_at }}</span>
+                        </div>
+                        <div class="chat-content" :style="m.sender === 'admin'
+                          ? 'background:linear-gradient(135deg,#0EA5E9,#0284C7);color:#fff;border-color:#0369A1;'
+                          : 'background:#fff;'">
+                          {{ m.content }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div v-else style="padding:16px 12px;border:1px dashed #CBD5E1;border-radius:10px;background:#F8FAFC;color:#64748B;font-size:13px;margin-bottom:10px;text-align:center;">
+                  还没有「🛡️ 私信管理员」通道的历史消息。下方输入第一条内容主动联系这位同学：
+                </div>
+                <!-- 发送框 -->
+                <div style="display:flex;gap:8px;align-items:flex-start;">
+                  <textarea
+                    v-model="dmQuickText"
+                    rows="3"
+                    maxlength="1000"
+                    @keyup.ctrl.enter="sendDmQuick"
+                    placeholder="📝 请输入私信内容（Ctrl+Enter 发送，最多 1000 字）。对方会在「💌 私信管理员」中收到。"
+                    style="flex:1;padding:8px 10px;border:1px solid var(--paper-dark);border-radius:6px;resize:vertical;font-family:inherit;"
+                  ></textarea>
+                  <button class="btn btn-primary" @click="sendDmQuick" :disabled="dmQuickSending || !dmQuickText.trim()"
+                    style="align-self:flex-end;background:linear-gradient(135deg,#0EA5E9,#0284C7);border-color:#0369A1;">
+                    {{ dmQuickSending ? '发送中...' : '📤 发送' }}
+                  </button>
+                </div>
+                <div class="form-actions" style="margin-top:14px;">
+                  <button class="btn btn-secondary" @click="closeDmQuick">关闭</button>
                 </div>
               </div>
             </div>
@@ -4125,6 +4389,11 @@
         const submitApply = async () => {
           if (!applyForm.nickname.trim() || !applyForm.province || !applyForm.city.trim() || !applyForm.university.trim()) {
             alert('请填写所有带 * 的必填项！');
+            return;
+          }
+          // 🔴 微信必填
+          if (!applyForm.wechat.trim() || applyForm.wechat.trim().length < 2 || applyForm.wechat.trim().length > 50) {
+            alert('请填写微信号（必填，方便管理员联系，长度 2~50 字符）');
             return;
           }
           const hobbies = applyForm.hobbiesText
@@ -4502,6 +4771,13 @@
         // ========== V5 同学端：私信管理员 / 私信站主（双 recipientType 分开存储） ==========
         const showDirectChat = ref(false);
         const dmCurrentType = ref('admin'); // 'admin' | 'owner'
+        // 🔴 新增：判断当前登录同学是不是管理员但不是站主（用于前端屏蔽站主私信通道）
+        const isCurrentStudentAdminButNotOwner = computed(() => {
+          const s = studentSession.value && studentSession.value.student;
+          if (!s) return false;
+          const r = String(s.role || '');
+          return r === 'admin'; // role=admin 但不是 owner（owner=站长）
+        });
         // directMineMessages 兼容旧字段保留（仅保留历史；新的 currentTypeMineMessages 用
         const directMineMessages = computed(() => DataProvider.directMineMessages);
         const currentTypeMineMessages = computed(() => {
@@ -4524,9 +4800,14 @@
         };
         const loadDmAndMarkRead = async (markRead = true) => {
           try {
-            const beforeCount = currentTypeMineMessages.value.length;
-            const trimmed = await DataProvider.loadDirectMessages(markRead, dmCurrentType.value);
-            const afterCount = currentTypeMineMessages.value.length;
+            // 🔴 安全：如果当前是管理员（非 owner），强行只加载 admin 类型，避免被"手工改 dmCurrentType"看到 owner 私信
+            const safeType = (isCurrentStudentAdminButNotOwner.value && dmCurrentType.value === 'owner')
+              ? 'admin'
+              : dmCurrentType.value;
+            const beforeArr = (DataProvider.getMineMessagesByType(safeType) || []);
+            const beforeCount = beforeArr.length;
+            const trimmed = await DataProvider.loadDirectMessages(markRead, safeType);
+            const afterCount = (DataProvider.getMineMessagesByType(safeType) || []).length;
             if (afterCount > beforeCount) scrollToBottom();
             if (trimmed && trimmed > 0) dmTrimmed.value = (dmTrimmed.value || 0) + trimmed;
           } catch (e) { /* 忽略 */ }
@@ -4534,6 +4815,11 @@
         const sendDirectMsg = async () => {
           const content = dmInput.value.trim();
           if (!content) return;
+          // 🔴 前端双保险：管理员身份禁止发送站主私信
+          if (isCurrentStudentAdminButNotOwner.value && dmCurrentType.value === 'owner') {
+            alert('⚠️ 您当前是管理员身份，「私信站主」通道已按安全策略为您屏蔽（站主私信对管理员完全不可见）。\n请切换到「💌 私信管理员」或直接联系站主本人。');
+            return;
+          }
           dmSending.value = true;
           try {
             await DataProvider.sendDirectMessage({ content, recipientType: dmCurrentType.value });
@@ -4545,7 +4831,14 @@
         };
         const openDirectChat = async (type = 'admin') => {
           if (!studentSession.value) { showStudentLogin.value = true; return; }
-          dmCurrentType.value = (type === 'owner') ? 'owner' : 'admin';
+          const wantType = (type === 'owner') ? 'owner' : 'admin';
+          // 🔴 前端拦截：管理员（非 owner）强行打开 owner 类型入口 → 禁止并提示
+          if (isCurrentStudentAdminButNotOwner.value && wantType === 'owner') {
+            alert('⚠️ 您当前是管理员身份：站主私信对管理员完全屏蔽，已为您自动切换至「💌 私信管理员」通道。\n（如需联系站主，请直接使用站主联系方式或使用管理员通道留言）。');
+            dmCurrentType.value = 'admin';
+          } else {
+            dmCurrentType.value = wantType;
+          }
           dmTrimmed.value = 0;
           showDirectChat.value = true;
           await loadDmAndMarkRead(true);
@@ -4556,6 +4849,11 @@
         const switchDmType = async (type) => {
           if (dmSending.value) return;
           const t = type === 'owner' ? 'owner' : 'admin';
+          // 🔴 管理员（非 owner）切换到 owner 类型时拦截
+          if (isCurrentStudentAdminButNotOwner.value && t === 'owner') {
+            alert('⚠️ 您当前是管理员身份：站主私信对管理员完全屏蔽，无法切到「👑 私信站主」视图。');
+            return;
+          }
           if (dmCurrentType.value === t) return;
           dmCurrentType.value = t;
           await loadDmAndMarkRead(true);
@@ -4564,6 +4862,97 @@
         const onCloseDirectChat = () => {
           showDirectChat.value = false;
           if (dmPollTimer) { clearInterval(dmPollTimer); dmPollTimer = null; }
+        };
+
+        // 🔴 新增：当前是否有管理员/站主权限（用于显示「📤 私信TA」按钮、「管理」入口等）
+        const hasAuth = computed(() => {
+          const sess = studentSession.value;
+          if (sess && sess.student) {
+            const r = String(sess.student.role || '');
+            if (r === 'owner' || r === 'admin') return true;
+          }
+          return false;
+        });
+
+        // 🔴 新增：详情弹窗「📤 私信TA」快速私信小弹窗
+        const dmQuickShow = ref(false);
+        const dmQuickTarget = ref(null); // 选中的同学对象
+        const dmQuickText = ref('');
+        const dmQuickSending = ref(false);
+        const dmQuickHistory = ref([]); // 与这位同学的历史 admin 通道消息
+        const dmQuickLoadingHistory = ref(false);
+        let dmQuickPollTimer = null;
+        const openDmQuick = async (student) => {
+          if (!student || !student.id) return;
+          if (!hasAuth.value) {
+            alert('⚠️ 仅站主或管理员可以主动私信其他同学。\n请使用「管理员入口」登录或联系站主。');
+            return;
+          }
+          dmQuickTarget.value = student;
+          dmQuickText.value = '';
+          dmQuickSending.value = false;
+          dmQuickShow.value = true;
+          dmQuickHistory.value = [];
+          // 加载历史 admin 通道消息（可选）
+          dmQuickLoadingHistory.value = true;
+          try {
+            await DataProvider.getDirectMessages({ studentId: student.id });
+            const active = directMessagesStore && directMessagesStore.active;
+            if (active && String(active.studentId) === String(student.id) && Array.isArray(active.messages)) {
+              dmQuickHistory.value = active.messages
+                .filter(m => String(m.recipientType || 'admin') === 'admin')
+                .sort((a, b) => String(a.created_at || '').localeCompare(String(b.created_at || '')));
+            }
+          } catch (e) {} finally { dmQuickLoadingHistory.value = false; }
+          // 轮询刷新历史
+          if (dmQuickPollTimer) clearInterval(dmQuickPollTimer);
+          dmQuickPollTimer = setInterval(async () => {
+            if (!dmQuickTarget.value || !dmQuickShow.value) return;
+            try {
+              await DataProvider.getDirectMessages({ studentId: dmQuickTarget.value.id });
+              const active = directMessagesStore && directMessagesStore.active;
+              if (active && String(active.studentId) === String(dmQuickTarget.value.id) && Array.isArray(active.messages)) {
+                dmQuickHistory.value = active.messages
+                  .filter(m => String(m.recipientType || 'admin') === 'admin')
+                  .sort((a, b) => String(a.created_at || '').localeCompare(String(b.created_at || '')));
+              }
+            } catch (e) {}
+          }, 6000);
+        };
+        const closeDmQuick = () => {
+          dmQuickShow.value = false;
+          dmQuickTarget.value = null;
+          dmQuickText.value = '';
+          if (dmQuickPollTimer) { clearInterval(dmQuickPollTimer); dmQuickPollTimer = null; }
+        };
+        const sendDmQuick = async () => {
+          const content = dmQuickText.value.trim();
+          if (!content || !dmQuickTarget.value || !dmQuickTarget.value.id) return;
+          if (!hasAuth.value) { alert('无权限'); return; }
+          dmQuickSending.value = true;
+          try {
+            // 优先用 sendDirectMessageAsOwner（student token 发，适用于 MainPage 登录的 owner/admin）
+            let sent = null;
+            try {
+              sent = await DataProvider.sendDirectMessageAsOwner(dmQuickTarget.value.id, content, { recipientType: 'admin' });
+            } catch (e1) {
+              // 若 sendDirectMessageAsOwner 失败（如没有 student token），退回到 sendDirectMessageAsAdmin（已用 ADMIN_TOKEN 登录过的全局管理员）
+              try {
+                sent = await DataProvider.sendDirectMessageAsAdmin(dmQuickTarget.value.id, content, { recipientType: 'admin' });
+              } catch (e2) {
+                throw e1 || e2;
+              }
+            }
+            dmQuickText.value = '';
+            // 乐观追加到历史
+            if (sent && sent.message) dmQuickHistory.value = [...dmQuickHistory.value, sent.message];
+            showSuccessModal('📤 私信已发送',
+              `已从管理员通道发给【${dmQuickTarget.value.nickname || '同学'}】：对方将在「💌 私信管理员」列表中看到你的消息。`, 3200);
+          } catch (e) {
+            alert('❌ 发送失败：' + (e.message || String(e)));
+          } finally {
+            dmQuickSending.value = false;
+          }
         };
 
         // ========== 留言板：发言时带上会话token，实名/匿名由后端决定 ==========
@@ -4630,7 +5019,10 @@
           showJoinCommunity, joinCommTarget, joinCommForm, joinCommError, joinCommSuccess, joinCommLoading, openJoinCommunity, submitJoinCommunity,
           confirmLeaveCommunity,
           showDirectChat, directMineMessages, dmListRef, dmInput, dmSending, dmTrimmed, sendDirectMsg, openDirectChat, onCloseDirectChat,
-          dmCurrentType, currentTypeMineMessages, switchDmType,
+          dmCurrentType, currentTypeMineMessages, switchDmType, isCurrentStudentAdminButNotOwner,
+          // 🔴 新增：管理员/站主权限 & 详情弹窗「📤 私信TA」快速私信
+          hasAuth,
+          dmQuickShow, dmQuickTarget, dmQuickText, dmQuickSending, dmQuickHistory, dmQuickLoadingHistory, openDmQuick, closeDmQuick, sendDmQuick,
           // V5 详情弹窗辅助 + 密码修改
           isStudentAdmin, isMyself, formatTs, detailTitleWrapClass, detailTitleWrapStyle, detailNameInnerStyle, closeDetailModal,
           showChangePwd, changePwdForm, changePwdError, changePwdSuccess, changePwdLoading, openChangeMyPassword, submitChangeMyPassword,
@@ -5011,7 +5403,9 @@
                   <div class="col-name">姓名</div>
                   <div class="col-province">省份/城市</div>
                   <div class="col-school">大学</div>
-                  <div class="col-major">专业</div>
+                  <div class="col-major">专业/爱好</div>
+                  <!-- 🔴 新增：申请时的留言+联系方式列（仅 pending Tab 显示） -->
+                  <div v-if="activeTab === 'pending'" class="col-note" style="flex:1 1 240px;">申请留言 / 联系方式</div>
                   <div class="col-status">饭搭子</div>
                   <div class="col-actions">操作</div>
                 </div>
@@ -5031,7 +5425,23 @@
                   </div>
                   <div class="col-province">{{ item.province }} · {{ item.city }}</div>
                   <div class="col-school">{{ item.university }}</div>
-                  <div class="col-major">{{ item.major || '—' }}</div>
+                  <div class="col-major">
+                    <div>{{ item.major || '—' }}</div>
+                    <div v-if="item.hobbies && item.hobbies.length" style="margin-top:4px;color:#0369A1;font-size:11px;">
+                      🎨 {{ Array.isArray(item.hobbies) ? item.hobbies.join('、') : item.hobbies }}
+                    </div>
+                  </div>
+                  <!-- 🔴 新增：pending Tab 显示申请留言（applyNote / message / note）、微信、QQ -->
+                  <div v-if="activeTab === 'pending'" class="col-note" style="flex:1 1 240px;font-size:12px;line-height:1.7;">
+                    <div v-if="item.applyNote || item.message || item.note" style="color:#374151;background:#EFF6FF;border:1px dashed #93C5FD;padding:6px 8px;border-radius:6px;margin-bottom:6px;">
+                      💬 {{ item.applyNote || item.message || item.note }}
+                    </div>
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;color:#475569;">
+                      <span v-if="item.wechat">💬 <b>微信:</b> {{ item.wechat }}</span>
+                      <span v-if="item.qq">🐧 <b>QQ:</b> {{ item.qq }}</span>
+                      <span v-if="item.created_at" style="color:#94A3B8;">⏰ {{ item.created_at }}</span>
+                    </div>
+                  </div>
                   <div class="col-status">
                     <span v-if="item.looking_for_food" class="status-badge status-approved">🍜 找饭搭子</span>
                     <span v-else style="color:#999;font-size:12px;">—</span>
@@ -5042,6 +5452,8 @@
                       <button class="btn btn-sm btn-danger" @click="rejectApplication(item)">拒绝</button>
                     </template>
                     <template v-else>
+                      <!-- 🔴 新增：管理员/站主从同学档案列表直接发起私信（仅 all/food tab，pending 还没 studentId） -->
+                      <button class="btn btn-sm btn-secondary" @click="startDmWithStudent(item)" title="📤 主动私信这位同学" style="background:linear-gradient(135deg,#E0F2FE,#7DD3FC);color:#0C4A6E;border:1px solid #0284C7;">📤 私信</button>
                       <button class="btn btn-sm btn-secondary" @click="openEditModal(item)">编辑</button>
                       <button class="btn btn-sm btn-danger" @click="deleteStudent(item)">删除</button>
                     </template>
@@ -5444,6 +5856,30 @@
                     <button class="btn btn-sm" :class="dmFilterType==='admin' ? 'btn-primary' : 'btn-secondary'" @click="dmFilterType='admin'">🛡️ 私信管理员</button>
                     <button class="btn btn-sm" :class="dmFilterType==='owner' ? 'btn-primary' : 'btn-secondary'" @click="dmFilterType='owner'" v-if="amIOwner || !amIAdmin">👑 私信站主</button>
                   </div>
+                  <!-- 🔴 新增：主动发起私信：下拉选择一位同学 -->
+                  <div style="padding:10px 12px;border-bottom:1px solid #EEE7DA;background:#F0FDF4;">
+                    <div style="font-size:12px;font-weight:700;color:#065F46;margin-bottom:6px;">📤 主动私信某位同学（无会话也能发）</div>
+                    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+                      <select
+                        v-model="dmInitiateSelectId"
+                        @change="onDmInitiateSelectChange"
+                        style="flex:1;min-width:160px;padding:6px 8px;border:1px solid #86EFAC;border-radius:6px;background:#fff;font-family:inherit;font-size:13px;">
+                        <option value="">-- 选择一位同学（按姓名搜索） --</option>
+                        <template v-for="s in studentsStore.list" :key="s.id">
+                          <option :value="String(s.id)">
+                            {{ s.nickname || s.id }}
+                            <template v-if="s.province || s.university">
+                              （{{ s.province ? s.province + ' · ' : '' }}{{ s.university || '' }}）
+                            </template>
+                          </option>
+                        </template>
+                      </select>
+                    </div>
+                    <div style="font-size:11px;color:#064E3B;margin-top:6px;line-height:1.6;">
+                      ✅ 选中后下方右侧输入框就可用，第一条消息发出后，会话会自动出现在左侧列表。<br>
+                      👑 站主也可从同学档案列表每行「📤 私信」按钮直接从同学详情弹窗发起。
+                    </div>
+                  </div>
                   <div style="flex:1;overflow-y:auto;">
                     <div v-if="dmFilteredConversations.length === 0" style="padding:40px 10px;text-align:center;color:#999;font-size:13px;">
                       <div style="font-size:36px;margin-bottom:6px;">📭</div>
@@ -5480,10 +5916,65 @@
                 </div>
                 <!-- 右侧：消息区域 -->
                 <div style="flex:1;border:1px solid var(--paper-dark);border-radius:10px;background:#FFFDF8;display:flex;flex-direction:column;overflow:hidden;">
-                  <template v-if="!dmActiveConversation">
+                  <!-- 🔴 新增主动发起但无历史会话的占位（dmActiveStudentObj 有值但 dmActiveConversation 为空） -->
+                  <template v-if="!dmActiveConversation && dmActiveStudentObj">
+                    <div
+                      style="padding:10px 14px;border-bottom:1px solid #BFDBFE;background:linear-gradient(135deg,#EFF6FF,#DBEAFE);display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+                      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <div style="font-weight:700;color:#1E3A8A;">👤 {{ dmActiveStudentObj.nickname || dmActiveStudentObj.id }}
+                          <template v-if="String(dmActiveStudentObj.role || '') === 'owner'"> 👑</template>
+                          <template v-else-if="String(dmActiveStudentObj.role || '') === 'admin'"> 🛡️</template>
+                        </div>
+                        <span class="msg-tag" style="font-size:11px;padding:2px 8px;background:linear-gradient(135deg,#E0F2FE,#BAE6FD);color:#0C4A6E;border:1px solid #0284C7;">🛡️ 私信管理员（新建会话）</span>
+                      </div>
+                      <div style="font-size:12px;color:#64748B;">✅ 首次发送后会话自动创建</div>
+                    </div>
+                    <div style="flex:1;padding:26px 20px;display:flex;align-items:center;justify-content:center;text-align:center;">
+                      <div style="max-width:440px;">
+                        <div style="font-size:42px;margin-bottom:8px;">💭</div>
+                        <div style="font-size:14px;color:#1F2937;font-weight:600;margin-bottom:6px;">
+                          还没有与【{{ dmActiveStudentObj.nickname || dmActiveStudentObj.id }}】的历史会话
+                        </div>
+                        <div style="font-size:12px;color:#64748B;line-height:1.9;">
+                          你可以直接在下方输入第一条消息（通过「🛡️ 私信管理员」通道发送），<br>
+                          对方同学在「💌 私信管理员」列表中会立刻收到你的消息；对方回复后，会话将自动出现在左侧「📬 同学私信箱」列表中。
+                        </div>
+                        <div style="margin-top:14px;padding:10px 14px;background:#F0FDF4;border:1px dashed #86EFAC;border-radius:10px;color:#065F46;font-size:12px;line-height:1.8;text-align:left;">
+                          <div style="font-weight:700;margin-bottom:4px;">ℹ️ 建议的私信开场白：</div>
+                          <ul style="margin:0;padding-left:18px;">
+                            <li>提醒入社申请/同学档案的审核进展</li>
+                            <li>补充询问联系方式或其他信息</li>
+                            <li>通知线下聚会、社区活动等</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                    <!-- 🔴 新增：主动发起时显示发送输入框（同 dmActiveConversation 发送输入框） -->
+                    <div style="padding:10px 14px;border-top:1px solid var(--paper-dark);background:#FBF9F1;">
+                      <div style="display:flex;gap:8px;">
+                        <textarea
+                          v-model="dmAdminSendText"
+                          rows="2"
+                          maxlength="1000"
+                          @keyup.ctrl.enter="dmAdminSend"
+                          placeholder="📝 请输入发送给这位同学的第一条消息（Ctrl+Enter 发送，最多 1000 字），将通过「🛡️ 私信管理员」通道发出。"
+                          style="flex:1;padding:8px 10px;border:1px solid var(--paper-dark);border-radius:6px;resize:vertical;font-family:inherit;"
+                        ></textarea>
+                        <button class="btn btn-primary" @click="dmAdminSend" :disabled="dmAdminSending || !dmAdminSendText.trim()"
+                          style="align-self:flex-end;background:linear-gradient(135deg,#0EA5E9,#0284C7);border-color:#0369A1;">
+                          {{ dmAdminSending ? '发送中...' : '📤 发送' }}
+                        </button>
+                      </div>
+                      <div v-if="amIAdminButNotOwner" style="font-size:11px;color:#92400E;margin-top:6px;">
+                        🛡️ 你是管理员身份：此条消息将自动通过「🛡️ 私信管理员」通道发送，无法发送「👑 私信站主」类（已对管理员屏蔽）。
+                      </div>
+                    </div>
+                  </template>
+                  <template v-else-if="!dmActiveConversation">
                     <div style="margin:auto;text-align:center;color:#999;">
                       <div style="font-size:48px;margin-bottom:10px;">💬</div>
                       <div>请从左侧选择一位同学的某类私信开始对话</div>
+                      <div style="font-size:12px;color:#64748B;margin-top:6px;">或在上方左侧「📤 主动私信某位同学」下拉中选择一位同学新建会话。</div>
                     </div>
                   </template>
                   <template v-else>
@@ -5703,11 +6194,11 @@
                 </div>
                 <div class="form-row">
                   <div class="form-group">
-                    <label>微信号</label>
-                    <input type="text" v-model="form.wechat" placeholder="选填">
+                    <label>微信号 <span style="color:var(--cinnabar)">*</span>（必填，方便联系）</label>
+                    <input type="text" v-model="form.wechat" placeholder="微信号 / 手机号（必填，2~50 字符）">
                   </div>
                   <div class="form-group">
-                    <label>QQ号</label>
+                    <label>QQ号（选填）</label>
                     <input type="text" v-model="form.qq" placeholder="选填">
                   </div>
                 </div>
@@ -6162,10 +6653,17 @@
         const dmConversations = computed(() => (directMessagesStore && directMessagesStore.conversations) || []);
         // V5：站主可见全部（admin+owner）；管理员仅能在列表中看到 admin 类型的会话
         const dmFilterType = ref('all'); // all / admin / owner
+        // 🔴 安全：判断当前登录后台身份是不是管理员但不是站主（amIAdmin && !amIOwner 对应 role=admin）
+        const amIAdminButNotOwner = computed(() => amIAdmin.value && !amIOwner.value);
         const dmFilteredConversations = computed(() => {
           let arr = dmConversations.value || [];
-          if (dmFilterType.value === 'admin') arr = arr.filter(c => String(c.recipientType || 'admin') === 'admin');
-          else if (dmFilterType.value === 'owner') arr = arr.filter(c => String(c.recipientType || 'admin') === 'owner');
+          // 🔴 强制：如果当前是管理员（非站主），无论 dmFilterType 选啥，永远只保留 admin 类型会话
+          if (amIAdminButNotOwner.value) {
+            arr = arr.filter(c => String(c.recipientType || 'admin') === 'admin');
+          } else {
+            if (dmFilterType.value === 'admin') arr = arr.filter(c => String(c.recipientType || 'admin') === 'admin');
+            else if (dmFilterType.value === 'owner') arr = arr.filter(c => String(c.recipientType || 'admin') === 'owner');
+          }
           return arr;
         });
         const dmActiveConvKey = ref(null); // 'studentId|recipientType'
@@ -6186,7 +6684,18 @@
         const dmSelectConversation = async (conv) => {
           const sid = conv && conv.studentId;
           if (!sid) return;
-          const rt = conv && (conv.recipientType === 'owner' ? 'owner' : 'admin');
+          let rt = conv && (conv.recipientType === 'owner' ? 'owner' : 'admin');
+          // 🔴 安全：管理员（非站主）强行选 owner 类型会话 → 拦截，改选 admin 类型（若不存在 admin 则打开失败并提示）
+          if (amIAdminButNotOwner.value && rt === 'owner') {
+            const altConv = dmConversations.value.find(c => String(c.studentId) === String(sid) && String(c.recipientType || 'admin') === 'admin');
+            if (!altConv) {
+              alert('⚠️ 您当前是管理员身份：同学发给「👑 私信站主」的会话内容对管理员完全屏蔽，无法打开。');
+              dmActiveStudentId.value = null;
+              dmActiveConvKey.value = null;
+              return;
+            }
+            rt = 'admin';
+          }
           dmActiveStudentId.value = sid;
           dmActiveConvKey.value = `${sid}|${rt}`;
           dmAdminSendText.value = '';
@@ -6208,7 +6717,11 @@
           const active = directMessagesStore.active || {};
           if (active && String(active.studentId) === String(dmActiveStudentId.value) && Array.isArray(active.messages)) {
             // 只保留本次会话类型的消息
-            const filtered = (active.messages || []).filter(m => String(m.recipientType || 'admin') === rt);
+            let filtered = (active.messages || []).filter(m => String(m.recipientType || 'admin') === rt);
+            // 🔴 安全兜底：管理员（非站主）再过滤一遍，防止 directMessagesStore.active 中不小心混进 owner 消息
+            if (amIAdminButNotOwner.value) {
+              filtered = filtered.filter(m => String(m.recipientType || 'admin') === 'admin');
+            }
             return {
               ...(baseConv || { studentId: dmActiveStudentId.value, studentName: active.studentName || dmActiveStudentId.value }),
               recipientType: rt,
@@ -6228,6 +6741,11 @@
           const content = dmAdminSendText.value.trim();
           if (!content || !dmActiveStudentId.value) return;
           const rt = dmActiveConversationRecipientType.value;
+          // 🔴 前端双保险：管理员（非站主）禁止回复 owner 类型会话
+          if (amIAdminButNotOwner.value && rt === 'owner') {
+            alert('⚠️ 您当前是管理员身份：站主私信对管理员完全屏蔽，无法回复此会话。\n请先切换到「🛡️ 私信管理员」类型会话。');
+            return;
+          }
           dmAdminSending.value = true;
           try {
             await DataProvider.sendDirectMessageAsAdmin(dmActiveStudentId.value, content, { recipientType: rt });
@@ -6242,6 +6760,51 @@
             alert('❌ 发送失败：' + e.message);
           } finally { dmAdminSending.value = false; }
         };
+
+        // 🔴 新增：管理员/站主从同学档案列表主动私信某位同学
+        const startDmWithStudent = async (student) => {
+          if (!student || !student.id) return;
+          // 默认切到私信 Tab，走 admin 类型通道（站主也能看到 admin 类型的）
+          activeTab.value = 'direct-messages';
+          dmFilterType.value = 'admin';
+          const sid = String(student.id);
+          // 1. 先尝试找已有 admin 类型会话
+          const existingConv = dmConversations.value.find(c =>
+            String(c.studentId) === sid && String(c.recipientType || 'admin') === 'admin'
+          );
+          // 主动发起下拉选中时清一下下拉（防止选同一个没反应）
+          if (dmInitiateSelectId.value === sid) dmInitiateSelectId.value = '';
+          if (existingConv) {
+            await dmSelectConversation(existingConv);
+            return;
+          }
+          // 2. 没有会话：直接选中该同学，发送第一条时会话自动创建（dmAdminSend 不需要会话存在）
+          dmActiveStudentId.value = sid;
+          dmActiveConvKey.value = `${sid}|admin`;
+          dmAdminSendText.value = '';
+          try {
+            await DataProvider.getDirectMessages({ studentId: sid });
+          } catch (e) {}
+          nextTick(() => {
+            const el = dmListRefAdmin.value;
+            if (el) el.scrollTop = el.scrollHeight;
+          });
+        };
+        // 🔴 新增：私信 Tab 顶部「选择同学主动发起私信」下拉
+        const dmInitiateSelectId = ref('');
+        const onDmInitiateSelectChange = async () => {
+          const sid = String(dmInitiateSelectId.value || '').trim();
+          if (!sid) return;
+          const st = studentsStore.list.find(x => String(x.id) === sid);
+          if (!st) return;
+          await startDmWithStudent(st);
+        };
+        // 当前选中同学的详情对象（用于空会话时显示同学名）
+        const dmActiveStudentObj = computed(() => {
+          if (!dmActiveStudentId.value) return null;
+          const sid = String(dmActiveStudentId.value);
+          return studentsStore.list.find(x => String(x.id) === sid) || null;
+        });
 
         const form = reactive({
           nickname: '', province: '', city: '', university: '',
@@ -6366,6 +6929,11 @@
             alert('请填写所有带 * 的必填项！');
             return;
           }
+          // 🔴 微信必填
+          if (!form.wechat || !String(form.wechat).trim() || String(form.wechat).trim().length < 2 || String(form.wechat).trim().length > 50) {
+            alert('请填写微信号（必填，方便联系，长度 2~50 字符）');
+            return;
+          }
           const center = PROVINCE_DATA[form.province]?.center || [105, 35];
           const hobbies = form.hobbiesText
             ? form.hobbiesText.split(/[,，、]/).map(h => h.trim()).filter(Boolean)
@@ -6433,7 +7001,9 @@
                 : 0,
               looking_for_food: item.looking_for_food,
               longitude: center[0] + (Math.random() - 0.5) * 0.4,
-              latitude: center[1] + (Math.random() - 0.5) * 0.4
+              latitude: center[1] + (Math.random() - 0.5) * 0.4,
+              // 🔴 保存注册申请时的留言，后续可在该同学档案里展示
+              note: item.applyNote || item.message || item.note || ''
             });
             await DataProvider.removePending(item.id);
             alert('✅ 已通过申请');
@@ -6524,7 +7094,9 @@
           showMembersModal, memberModalComm, openMembersModal, transferOwner, adminKickMember,
           communityListForManage, deleteCommunity,
           dmConversations, dmFilterType, dmFilteredConversations, dmActiveConvKey, dmActiveStudentId, dmAdminSendText, dmAdminSending, dmListRefAdmin,
-          dmLoadConversations, dmSelectStudent, dmSelectConversation, dmActiveConversation, dmActiveConversationRecipientType, dmUnreadTotal, dmAdminSend
+          dmLoadConversations, dmSelectStudent, dmSelectConversation, dmActiveConversation, dmActiveConversationRecipientType, dmUnreadTotal, dmAdminSend,
+          startDmWithStudent, // 🔴 新增：同学档案列表主动私信
+          dmInitiateSelectId, onDmInitiateSelectChange, dmActiveStudentObj, // 🔴 新增：私信 Tab 主动发起下拉 + 空会话显示同学对象
         };
       }
     };
