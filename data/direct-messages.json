@@ -8,7 +8,8 @@
     "content": "站主站主，我好喜欢你啊",
     "created_at": "2026-07-30 12:17",
     "read": true,
-    "read_at": "2026-07-30 12:18"
+    "read_at": "2026-07-30 12:18",
+    "senderRole": "student"
   },
   {
     "id": "dm_1785389189248_585",
@@ -18,6 +19,19 @@
     "recipientType": "owner",
     "content": "不谈",
     "created_at": "2026-07-30 13:26",
+    "read": false,
+    "read_at": null,
+    "senderRole": "owner"
+  },
+  {
+    "id": "dm_1785487172477_894",
+    "studentId": "1785487086144",
+    "studentName": "唐号涵",
+    "sender": "admin",
+    "senderRole": "owner",
+    "recipientType": "admin",
+    "content": "能看到吗？",
+    "created_at": "2026-07-31 16:39",
     "read": false,
     "read_at": null
   }
