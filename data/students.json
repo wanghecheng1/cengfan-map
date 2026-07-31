@@ -1254,5 +1254,34 @@
     "password": "123456",
     "communityId": null,
     "communityName": ""
+  },
+  {
+    "id": 1785456050597,
+    "created_at": "2026-07-31 08:00",
+    "nickname": "秦敖",
+    "province": "江苏",
+    "city": "南通市",
+    "university": "南通大学",
+    "major": "临床医学",
+    "hobbies": [
+      "睡觉",
+      "旅行",
+      "文学",
+      "画画",
+      "影视"
+    ],
+    "wechat": "",
+    "qq": "3341978035",
+    "title": "",
+    "titleLevel": 0,
+    "looking_for_food": true,
+    "longitude": 118.80542075982369,
+    "latitude": 31.86877780385053,
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null,
+    "password": "123456",
+    "communityId": null,
+    "communityName": ""
   }
 ]
