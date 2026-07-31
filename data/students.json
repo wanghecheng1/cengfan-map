@@ -1283,5 +1283,28 @@
     "password": "123456",
     "communityId": null,
     "communityName": ""
+  },
+  {
+    "id": 1785479658290,
+    "created_at": "2026-07-31 14:34",
+    "nickname": "刘舒涵",
+    "province": "江苏",
+    "city": "南京市",
+    "university": "河海大学",
+    "major": "",
+    "hobbies": [],
+    "wechat": "",
+    "qq": "",
+    "title": "",
+    "titleLevel": 0,
+    "looking_for_food": false,
+    "longitude": 118.95962895662053,
+    "latitude": 32.138344107336636,
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null,
+    "password": "123456",
+    "communityId": null,
+    "communityName": ""
   }
 ]
