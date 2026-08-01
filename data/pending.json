@@ -189,22 +189,6 @@
     "looking_for_food": false
   },
   {
-    "id": 1785556541223,
-    "created_at": "2026-08-01 11:55",
-    "nickname": "曹哲",
-    "province": "江苏",
-    "city": "徐州",
-    "university": "中国矿业大学",
-    "major": "机械",
-    "hobbies": [
-      "足球"
-    ],
-    "wechat": "17805228609",
-    "qq": "",
-    "looking_for_food": false,
-    "applyNote": ""
-  },
-  {
     "id": 1785556542220,
     "created_at": "2026-08-01 11:55",
     "nickname": "田乐苒",
