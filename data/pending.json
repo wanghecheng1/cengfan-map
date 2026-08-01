@@ -187,21 +187,5 @@
     "wechat": "",
     "qq": "",
     "looking_for_food": false
-  },
-  {
-    "id": 1785556542220,
-    "created_at": "2026-08-01 11:55",
-    "nickname": "田乐苒",
-    "province": "江苏",
-    "city": "江阴",
-    "university": "南理工",
-    "major": "",
-    "hobbies": [
-      "足球"
-    ],
-    "wechat": "18360112199",
-    "qq": "",
-    "looking_for_food": true,
-    "applyNote": ""
   }
 ]
