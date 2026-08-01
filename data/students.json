@@ -1378,5 +1378,31 @@
     "password": "123456",
     "communityId": null,
     "communityName": ""
+  },
+  {
+    "id": 1785557308268,
+    "created_at": "2026-08-01 12:08",
+    "nickname": "曹哲",
+    "province": "江苏",
+    "city": "徐州",
+    "university": "中国矿业大学",
+    "major": "机械",
+    "hobbies": [
+      "足球"
+    ],
+    "wechat": "17805228609",
+    "qq": "",
+    "title": "",
+    "titleLevel": 0,
+    "looking_for_food": false,
+    "longitude": 118.8587341627404,
+    "latitude": 31.997907747247424,
+    "note": "",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null,
+    "password": "123456",
+    "communityId": null,
+    "communityName": ""
   }
 ]
