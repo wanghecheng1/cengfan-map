@@ -187,5 +187,19 @@
     "wechat": "",
     "qq": "",
     "looking_for_food": false
+  },
+  {
+    "id": 1785641575907,
+    "created_at": "2026-08-02 11:32",
+    "nickname": "尹文瀚",
+    "province": "江苏",
+    "city": "无锡市",
+    "university": "江南大学",
+    "major": "低空技术与工程",
+    "hobbies": [],
+    "wechat": "19551805228",
+    "qq": "",
+    "looking_for_food": true,
+    "applyNote": ""
   }
 ]
