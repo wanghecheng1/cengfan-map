@@ -201,5 +201,19 @@
     "qq": "",
     "looking_for_food": true,
     "applyNote": ""
+  },
+  {
+    "id": 1785643143140,
+    "created_at": "2026-08-02 11:59",
+    "nickname": "尹文瀚",
+    "province": "江苏",
+    "city": "无锡",
+    "university": "江南大学",
+    "major": "",
+    "hobbies": [],
+    "wechat": "abc",
+    "qq": "",
+    "looking_for_food": false,
+    "applyNote": ""
   }
 ]
