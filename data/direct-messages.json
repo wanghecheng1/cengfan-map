@@ -19,8 +19,8 @@
     "recipientType": "owner",
     "content": "不谈",
     "created_at": "2026-07-30 13:26",
-    "read": false,
-    "read_at": null,
+    "read": true,
+    "read_at": "2026-08-04 21:11",
     "senderRole": "owner"
   },
   {
