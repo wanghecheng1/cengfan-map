@@ -201,5 +201,19 @@
     "qq": "",
     "looking_for_food": false,
     "applyNote": ""
+  },
+  {
+    "id": 1785929396614,
+    "created_at": "2026-08-05 19:29",
+    "nickname": "陈默",
+    "province": "江苏",
+    "city": "苏州",
+    "university": "江苏科技大学",
+    "major": "机器人工程",
+    "hobbies": [],
+    "wechat": "17805219888",
+    "qq": "2147610953",
+    "looking_for_food": true,
+    "applyNote": ""
   }
 ]
