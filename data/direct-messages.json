@@ -44,8 +44,8 @@
     "recipientType": "owner",
     "content": "qvq",
     "created_at": "2026-08-11 16:50",
-    "read": false,
-    "read_at": null
+    "read": true,
+    "read_at": "2026-08-11 20:14"
   },
   {
     "id": "dm_1786438255809_769",
