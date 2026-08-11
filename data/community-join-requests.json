@@ -50,11 +50,11 @@
     "communityName": "二次元元老社",
     "applyNote": "老资历来的",
     "wechatContact": "19826253566",
-    "status": "pending",
+    "status": "approved",
     "created_at": "2026-08-11 16:58",
-    "decided_by_role": null,
-    "decided_by_id": null,
-    "decided_at": null,
+    "decided_by_role": "owner",
+    "decided_by_id": 1785292734723,
+    "decided_at": "2026-08-11 20:42",
     "rejectReason": ""
   },
   {
