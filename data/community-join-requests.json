@@ -56,5 +56,20 @@
     "decided_by_id": null,
     "decided_at": null,
     "rejectReason": ""
+  },
+  {
+    "id": "jr_1786438890529_634",
+    "studentId": 1786438186144,
+    "studentName": "张书豪",
+    "communityId": "c_1785389868000_152",
+    "communityName": "二次元元老社",
+    "applyNote": "三玖天下第一",
+    "wechatContact": "张书豪",
+    "status": "pending",
+    "created_at": "2026-08-11 17:01",
+    "decided_by_role": null,
+    "decided_by_id": null,
+    "decided_at": null,
+    "rejectReason": ""
   }
 ]
