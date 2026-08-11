@@ -201,21 +201,5 @@
     "qq": "",
     "looking_for_food": false,
     "applyNote": ""
-  },
-  {
-    "id": 1786438227417,
-    "created_at": "2026-08-11 16:50",
-    "nickname": "卜瑞哲",
-    "province": "江苏",
-    "city": "苏州市",
-    "university": "苏州大学",
-    "major": "软件工程",
-    "hobbies": [
-      "篮球"
-    ],
-    "wechat": "17714915427",
-    "qq": "3371633742",
-    "looking_for_food": true,
-    "applyNote": "豪情在天"
   }
 ]
