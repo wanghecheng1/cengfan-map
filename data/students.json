@@ -1433,5 +1433,32 @@
     "password": "chenmo0214",
     "communityId": null,
     "communityName": ""
+  },
+  {
+    "id": 1786417701902,
+    "created_at": "2026-08-11 11:08",
+    "nickname": "耿敬贤",
+    "province": "江苏",
+    "city": "南京",
+    "university": "南京林业大学",
+    "major": "生物技术",
+    "hobbies": [
+      "篮球",
+      "足球"
+    ],
+    "wechat": "13151816627",
+    "qq": "180338948",
+    "title": "",
+    "titleLevel": 0,
+    "looking_for_food": true,
+    "longitude": 118.68747055344602,
+    "latitude": 32.149988009232274,
+    "note": "晚来天欲雪，能饮一杯无",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null,
+    "password": "123456",
+    "communityId": null,
+    "communityName": ""
   }
 ]
