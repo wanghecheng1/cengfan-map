@@ -1538,5 +1538,31 @@
     "password": "123456",
     "communityId": null,
     "communityName": ""
+  },
+  {
+    "id": 1786438321258,
+    "created_at": "2026-08-11 16:52",
+    "nickname": "卜瑞哲",
+    "province": "江苏",
+    "city": "苏州市",
+    "university": "苏州大学",
+    "major": "软件工程",
+    "hobbies": [
+      "篮球"
+    ],
+    "wechat": "17714915427",
+    "qq": "3371633742",
+    "title": "",
+    "titleLevel": 0,
+    "looking_for_food": true,
+    "longitude": 118.91105127260975,
+    "latitude": 32.15587245184386,
+    "note": "豪情在天",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null,
+    "password": "123456",
+    "communityId": null,
+    "communityName": ""
   }
 ]
