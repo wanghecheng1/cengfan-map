@@ -1512,5 +1512,31 @@
     "password": "123456",
     "communityId": null,
     "communityName": ""
+  },
+  {
+    "id": 1786438214038,
+    "created_at": "2026-08-11 16:50",
+    "nickname": "张宇",
+    "province": "江苏",
+    "city": "徐州市",
+    "university": "中国矿业大学",
+    "major": "计算机科学与技术",
+    "hobbies": [
+      "ctrl"
+    ],
+    "wechat": "18251068527",
+    "qq": "2057414233",
+    "title": "",
+    "titleLevel": 0,
+    "looking_for_food": true,
+    "longitude": 118.66553689283852,
+    "latitude": 31.872205834169534,
+    "note": "",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null,
+    "password": "123456",
+    "communityId": null,
+    "communityName": ""
   }
 ]
