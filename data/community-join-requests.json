@@ -71,5 +71,20 @@
     "decided_by_id": null,
     "decided_at": null,
     "rejectReason": ""
+  },
+  {
+    "id": "jr_1786450599144_41",
+    "studentId": 1785293808536,
+    "studentName": "庄玉轩",
+    "communityId": "c_1785389868000_152",
+    "communityName": "二次元元老社",
+    "applyNote": "我喜欢社长",
+    "wechatContact": "test",
+    "status": "pending",
+    "created_at": "2026-08-11 20:16",
+    "decided_by_role": null,
+    "decided_by_id": null,
+    "decided_at": null,
+    "rejectReason": ""
   }
 ]
