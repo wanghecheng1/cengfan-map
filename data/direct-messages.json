@@ -94,5 +94,17 @@
     "created_at": "2026-08-11 17:32",
     "read": false,
     "read_at": null
+  },
+  {
+    "id": "dm_1786447629658_673",
+    "studentId": "1785293808536",
+    "studentName": "庄玉轩",
+    "sender": "student",
+    "senderRole": "student",
+    "recipientType": "owner",
+    "content": "test",
+    "created_at": "2026-08-11 19:27",
+    "read": false,
+    "read_at": null
   }
 ]
