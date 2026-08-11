@@ -1486,5 +1486,31 @@
     "password": "123456",
     "communityId": null,
     "communityName": ""
+  },
+  {
+    "id": 1786438186144,
+    "created_at": "2026-08-11 16:49",
+    "nickname": "张书豪",
+    "province": "江苏",
+    "city": "南京市",
+    "university": "南京林业大学",
+    "major": "物联网工程",
+    "hobbies": [
+      "羽毛球"
+    ],
+    "wechat": "zhshh2008",
+    "qq": "969629365",
+    "title": "",
+    "titleLevel": 0,
+    "looking_for_food": true,
+    "longitude": 118.61954465130333,
+    "latitude": 31.955121234649322,
+    "note": "",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null,
+    "password": "123456",
+    "communityId": null,
+    "communityName": ""
   }
 ]
