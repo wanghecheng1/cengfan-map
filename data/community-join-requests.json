@@ -41,5 +41,20 @@
     "decided_by_id": "admin",
     "decided_at": "2026-07-30 16:13",
     "rejectReason": ""
+  },
+  {
+    "id": "jr_1786438725639_846",
+    "studentId": 1786438170241,
+    "studentName": "高梓铭",
+    "communityId": "c_1785389868000_152",
+    "communityName": "二次元元老社",
+    "applyNote": "老资历来的",
+    "wechatContact": "19826253566",
+    "status": "pending",
+    "created_at": "2026-08-11 16:58",
+    "decided_by_role": null,
+    "decided_by_id": null,
+    "decided_at": null,
+    "rejectReason": ""
   }
 ]
