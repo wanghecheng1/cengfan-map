@@ -70,5 +70,17 @@
     "created_at": "2026-08-11 16:51",
     "read": false,
     "read_at": null
+  },
+  {
+    "id": "dm_1786438311830_934",
+    "studentId": "1786438186144",
+    "studentName": "张书豪",
+    "sender": "student",
+    "senderRole": "student",
+    "recipientType": "owner",
+    "content": "what can i say?",
+    "created_at": "2026-08-11 16:51",
+    "read": false,
+    "read_at": null
   }
 ]
