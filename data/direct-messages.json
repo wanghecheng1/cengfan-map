@@ -58,5 +58,17 @@
     "created_at": "2026-08-11 16:50",
     "read": true,
     "read_at": "2026-08-11 16:50"
+  },
+  {
+    "id": "dm_1786438277396_542",
+    "studentId": "1786438214038",
+    "studentName": "张宇",
+    "sender": "student",
+    "senderRole": "student",
+    "recipientType": "owner",
+    "content": "ok",
+    "created_at": "2026-08-11 16:51",
+    "read": false,
+    "read_at": null
   }
 ]
