@@ -201,5 +201,20 @@
     "qq": "",
     "looking_for_food": false,
     "applyNote": ""
+  },
+  {
+    "id": 1786438772629,
+    "created_at": "2026-08-11 16:59",
+    "nickname": "张宇",
+    "province": "江苏",
+    "city": "徐州市",
+    "university": "中国矿业大学",
+    "major": "计算机科学与技术",
+    "hobbies": [
+      "ctrl"
+    ],
+    "wechat": "18251068527",
+    "qq": "2057414233",
+    "looking_for_food": true
   }
 ]
