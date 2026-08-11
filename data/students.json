@@ -1564,5 +1564,33 @@
     "password": "123456",
     "communityId": null,
     "communityName": ""
+  },
+  {
+    "id": 1786438461519,
+    "created_at": "2026-08-11 16:54",
+    "nickname": "张洋",
+    "province": "江苏",
+    "city": "宿迁市",
+    "university": "中国警察大学",
+    "major": "网络安全与执法",
+    "hobbies": [
+      "乒乓球",
+      "羽毛球",
+      "游泳"
+    ],
+    "wechat": "19825118399",
+    "qq": "2871680553",
+    "title": "",
+    "titleLevel": 0,
+    "looking_for_food": true,
+    "longitude": 118.8701690238955,
+    "latitude": 32.0215980155707,
+    "note": "喂",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null,
+    "password": "123456",
+    "communityId": null,
+    "communityName": ""
   }
 ]
