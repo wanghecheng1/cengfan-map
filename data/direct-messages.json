@@ -32,8 +32,9 @@
     "recipientType": "admin",
     "content": "能看到吗？",
     "created_at": "2026-07-31 16:39",
-    "read": false,
-    "read_at": null
+    "read": true,
+    "read_at": "2026-08-12 20:20",
+    "isAnonymous": false
   },
   {
     "id": "dm_1786438253425_504",
