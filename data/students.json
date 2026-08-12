@@ -66,7 +66,9 @@
     "password": "123456",
     "role": "student",
     "adminFrame": false,
-    "passwordChangedAt": null
+    "passwordChangedAt": null,
+    "communityId": "c_1785389868000_152",
+    "communityName": "二次元元老社"
   },
   {
     "nickname": "韩景琦",
