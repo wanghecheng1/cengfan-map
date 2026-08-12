@@ -231,24 +231,5 @@
     "wechat": "18251068527",
     "qq": "2057414233",
     "looking_for_food": true
-  },
-  {
-    "id": 1786532713132,
-    "created_at": "2026-08-12 19:05",
-    "nickname": "张炫其",
-    "province": "陕西",
-    "city": "西安市",
-    "university": "西北工业大学",
-    "major": "人工智能",
-    "hobbies": [
-      "摄影",
-      "美食",
-      "旅行",
-      "小说"
-    ],
-    "wechat": "wxid_pywp70s6j9dl22",
-    "qq": "",
-    "looking_for_food": true,
-    "applyNote": "我是唐王"
   }
 ]
