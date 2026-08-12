@@ -95,11 +95,11 @@
     "communityName": "二次元元老社",
     "applyNote": "老二次元了",
     "wechatContact": "ckreschen",
-    "status": "pending",
+    "status": "approved",
     "created_at": "2026-08-11 21:35",
-    "decided_by_role": null,
-    "decided_by_id": null,
-    "decided_at": null,
+    "decided_by_role": "admin",
+    "decided_by_id": "admin",
+    "decided_at": "2026-08-12 11:06",
     "rejectReason": ""
   }
 ]
