@@ -1594,5 +1594,34 @@
     "password": "123456",
     "communityId": null,
     "communityName": ""
+  },
+  {
+    "id": 1786532851396,
+    "created_at": "2026-08-12 19:07",
+    "nickname": "张炫其",
+    "province": "陕西",
+    "city": "西安市",
+    "university": "西北工业大学",
+    "major": "人工智能",
+    "hobbies": [
+      "摄影",
+      "美食",
+      "旅行",
+      "小说"
+    ],
+    "wechat": "wxid_pywp70s6j9dl22",
+    "qq": "",
+    "title": "",
+    "titleLevel": 0,
+    "looking_for_food": true,
+    "longitude": 108.8957487212506,
+    "latitude": 34.281926314314454,
+    "note": "我是唐王",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null,
+    "password": "123456",
+    "communityId": null,
+    "communityName": ""
   }
 ]
