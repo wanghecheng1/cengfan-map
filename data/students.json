@@ -1628,5 +1628,29 @@
     "password": "123456",
     "communityId": null,
     "communityName": ""
+  },
+  {
+    "id": 1786618354829,
+    "created_at": "2026-08-13 18:52",
+    "nickname": "孙宇扬",
+    "province": "江苏",
+    "city": "南京市",
+    "university": "南京邮电大学",
+    "major": "信息安全",
+    "hobbies": [],
+    "wechat": "17205070098",
+    "qq": "3461495058",
+    "title": "",
+    "titleLevel": 0,
+    "looking_for_food": false,
+    "longitude": 118.99132676549071,
+    "latitude": 31.98806431976047,
+    "note": "",
+    "role": "student",
+    "adminFrame": false,
+    "passwordChangedAt": null,
+    "password": "123456",
+    "communityId": null,
+    "communityName": ""
   }
 ]
