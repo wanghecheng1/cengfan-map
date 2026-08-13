@@ -275,5 +275,19 @@
     "qq": "",
     "looking_for_food": false,
     "applyNote": ""
+  },
+  {
+    "id": 1786630629416,
+    "created_at": "2026-08-13 22:17",
+    "nickname": "陈思成",
+    "province": "江苏",
+    "city": "泗阳",
+    "university": "江苏大学",
+    "major": "金属材料工程",
+    "hobbies": [],
+    "wechat": "19825093196",
+    "qq": "",
+    "looking_for_food": true,
+    "applyNote": ""
   }
 ]
