@@ -305,5 +305,21 @@
     "qq": "",
     "looking_for_food": false,
     "applyNote": ""
+  },
+  {
+    "id": 1786639140608,
+    "created_at": "2026-08-14 00:39",
+    "nickname": "时浚耀",
+    "province": "江苏",
+    "city": "宿迁市",
+    "university": "南京邮电大学",
+    "major": "物联网工程",
+    "hobbies": [
+      "懒"
+    ],
+    "wechat": "15366938267",
+    "qq": "",
+    "looking_for_food": false,
+    "applyNote": ""
   }
 ]
