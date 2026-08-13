@@ -289,5 +289,21 @@
     "qq": "",
     "looking_for_food": false,
     "applyNote": ""
+  },
+  {
+    "id": 1786612889655,
+    "created_at": "2026-08-13 17:21",
+    "nickname": "晏文睿",
+    "province": "江苏",
+    "city": "南通市",
+    "university": "南通大学",
+    "major": "电气工程及其自动化",
+    "hobbies": [
+      "足球"
+    ],
+    "wechat": "ywr080514",
+    "qq": "2466943722",
+    "looking_for_food": false,
+    "applyNote": ""
   }
 ]
