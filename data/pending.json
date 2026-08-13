@@ -231,5 +231,19 @@
     "wechat": "18251068527",
     "qq": "2057414233",
     "looking_for_food": true
+  },
+  {
+    "id": 1786597551776,
+    "created_at": "2026-08-13 13:05",
+    "nickname": "赵忆然",
+    "province": "江苏",
+    "city": "常州市",
+    "university": "常州工学院",
+    "major": "车辆工程",
+    "hobbies": [],
+    "wechat": "18651244098",
+    "qq": "",
+    "looking_for_food": false,
+    "applyNote": ""
   }
 ]
