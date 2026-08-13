@@ -245,5 +245,21 @@
     "qq": "",
     "looking_for_food": false,
     "applyNote": ""
+  },
+  {
+    "id": 1786598774242,
+    "created_at": "2026-08-13 13:26",
+    "nickname": "杨林",
+    "province": "江苏",
+    "city": "南京市",
+    "university": "南京工业大学",
+    "major": "计算机科学与技术",
+    "hobbies": [
+      "迷你世界中文无敌版"
+    ],
+    "wechat": "Wie_einst",
+    "qq": "431711612",
+    "looking_for_food": false,
+    "applyNote": "进来看一眼。"
   }
 ]
