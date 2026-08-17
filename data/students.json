@@ -1323,7 +1323,7 @@
     "nickname": "田乐苒",
     "province": "江苏",
     "city": "江阴",
-    "university": "南理工",
+    "university": "南京理工大学",
     "major": "",
     "hobbies": [
       "足球"
@@ -1331,10 +1331,10 @@
     "wechat": "18360112199",
     "qq": "",
     "title": "",
-    "titleLevel": 0,
+    "titleLevel": 1,
     "looking_for_food": true,
-    "longitude": 118.62733382924375,
-    "latitude": 31.89712287157707,
+    "longitude": 118.90808224976034,
+    "latitude": 31.927530964464353,
     "note": "",
     "role": "student",
     "adminFrame": false,
